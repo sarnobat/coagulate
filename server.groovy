@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.ws.rs.GET;
@@ -191,6 +192,19 @@ public class Coagulate {
 		public Response list(@QueryParam("dirs") String locations)
 				throws JSONException, IOException {
 			String[] locs = locations.split("\\n");
+//			{
+//				String[] locats = locations.split("\\n");
+//				List<String> l = new LinkedList<String>();
+//				
+//				for (String loc : locats) {
+//					String httpLink;
+//					
+//						httpLink = loc.replaceFirst("/Volumes/Unsorted", "http://netgear.rohidekar.com:8020/");
+//					l.add(httpLink);
+//					
+//				}
+//				locs = l.toArray(locats);
+//			}
 			JSONObject response = new JSONObject();
 			_1: {
 				JSONObject locationsJSON = new JSONObject();
@@ -247,6 +261,8 @@ public class Coagulate {
 								JSONObject fileDetails = new JSONObject();
 								fileDetails.put("location",
 										loc.getAbsolutePath());
+								fileDetails.put("httpUrl",
+										httpLinkFor(absolutePath));
 
 								filesInLocation.put(absolutePath, fileDetails);
 								++i;
@@ -273,6 +289,19 @@ public class Coagulate {
 					.entity(response.toString(4)).type("application/json")
 					.build();
 			return build;
+		}
+
+		private String httpLinkFor(String absolutePath) {
+			// Unsorted
+			String http = absolutePath.replaceFirst("/Volumes/Unsorted", "http://netgear.rohidekar.com:8020/");
+			http = http.replaceFirst("/media/sarnobat/Unsorted", "http://netgear.rohidekar.com:8020/");
+			
+			// Large
+			http = http.replaceFirst("/media/sarnobat/Large/", "http://netgear.rohidekar.com:8021/");
+			http = http.replaceFirst("/Volumes/Large/", "http://netgear.rohidekar.com:8021/");
+			
+			
+			return http;
 		}
 
 		private void addDirs(File dir, JSONObject locationDetails,

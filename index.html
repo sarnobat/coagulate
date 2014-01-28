@@ -7,11 +7,11 @@
 <script>
 
 
-var urlBase = "http://localhost:8011/cmsfs/list";
+var urlBase = "http://netgear.rohidekar.com:8011/cmsfs/";
 $(document).ready(function(){
 
 
- $.getJSON("http://localhost:8011/cmsfs/list?dirs=" + encodeURIComponent($("#locations").val()),function(response){
+ $.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response){
   	var id = 0;
 	for(var key in response.items) { 
 
@@ -91,13 +91,13 @@ function addslashes( str ) {
 });
 
 function moveFile(filePath, destinationDirSimpleName,id) {
-	$.getJSON("http://localhost:8011/cmsfs/move?filePath="+encodeURIComponent(filePath) + "&destinationDirSimpleName=" + destinationDirSimpleName,function(response){
+	$.getJSON(urlBase + "/move?filePath="+encodeURIComponent(filePath) + "&destinationDirSimpleName=" + destinationDirSimpleName,function(response){
 		$("#" + id).remove();
 	});
 }
 
 function moveFileToParent(filePath, id) {
-	$.getJSON("http://localhost:8011/cmsfs/moveToParent?filePath="+encodeURIComponent(filePath), function(response){
+	$.getJSON(urlBase + "/moveToParent?filePath="+encodeURIComponent(filePath), function(response){
 		$("#" + id).remove();
 	});
 }
