@@ -55,14 +55,15 @@ $(document).ready(function(){
 					buttons += "</td><td>";
 				}
 				var color = "";
-				if (dir == 'other') {
+				if (dir == 'other' || dir == 'divas') {
 					color = 'pink';
 				} else if (dir.match(/Atletico/i)) {
 					color = 'red';
 				} else if (dir.match(/soccer/i)) {
 					color = 'green';
 				}
-				buttons += "<button onclick='moveFile(\"" + escaped + "\",\"" + dir + "\",\""+idstring+"\")' style='background-color:"+color+"'>"+dirsArray[dir]+"</button><br>";
+				var dirName = dirsArray[dir];
+				buttons += "<button onclick='moveFile(\"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+color+"'>"+dirName+"</button><br>";
 
 			}
 			buttons += "</td></tr></table>";

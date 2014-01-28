@@ -38,7 +38,10 @@ public class Server {
 		private static final int LIMIT = 60;
 
 		private static final String[] _locations = Lists.newArrayList(
-				"/Volumes/Unsorted/Videos/other", "/Volumes/Unsorted/Videos",
+				//"/Volumes/Unsorted/Videos/other", 
+				"/Volumes/Unsorted/Videos/wwf", 
+				"/Volumes/Unsorted/Videos",
+				"/Users/sarnobat/Windows/misc/ind",
 				"/Users/sarnobat/Windows/misc"
 		// "/Volumes/Unsorted/Videos/other", "/Volumes/Unsorted/Videos",
 		// "/Users/sarnobat/Windows/misc",
