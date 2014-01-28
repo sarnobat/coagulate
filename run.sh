@@ -7,7 +7,7 @@ mkdir -p ~/.groovy/lib
 cp *jar ~/.groovy/lib/
 cd ../..
 
-groovy webserver_json.groovy &
+groovy server.groovy &
 
 sleep 3s
 
