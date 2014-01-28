@@ -7,13 +7,9 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Produces;
@@ -28,35 +24,11 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
-
-public class Server {
+public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
 	public static class MyResource { // Must be public
 
 		private static final int LIMIT = 60;
-
-		private static final String[] _locations = Lists.newArrayList(
-				//"/Volumes/Unsorted/Videos/other", 
-				"/Volumes/Unsorted/Videos/wwf", 
-				"/Volumes/Unsorted/Videos",
-				"/Users/sarnobat/Windows/misc/ind",
-				"/Users/sarnobat/Windows/misc"
-		// "/Volumes/Unsorted/Videos/other", "/Volumes/Unsorted/Videos",
-		// "/Users/sarnobat/Windows/misc",
-		// "/Users/sarnobat/Windows/misc/ind",
-		// "/Volumes/Unsorted/Videos/soccer",
-		// "/Users/sarnobat/Windows/favorites",
-		// "/Users/sarnobat/Desktop/new/videos/Atletico"
-		// "/Users/sarnobat/Desktop/new/",
-		// "/Users/sarnobat/Windows/Web/Personal Development/Romance",
-		// "/e/new",
-				).toArray(new String[0]);
-		private static final Set<PosixFilePermission> perms = PosixFilePermissions
-				.fromString("rwxr-x---");
-		private static final FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions
-				.asFileAttribute(perms);
 
 		//
 		// mutators
@@ -212,38 +184,6 @@ public class Server {
 			}
 		}
 
-		@Deprecated
-		private static boolean imagePathAlreadyContainsFolder(File imageFile,
-				String folderName) {
-			if (imageFile == null) {
-				return false;
-			}
-			if (imageFile.getName().equals(folderName)) {
-				return true;
-			} else {
-				return imagePathAlreadyContainsFolder(
-						imageFile.getParentFile(), folderName);
-			}
-		}
-
-		@Deprecated
-		private static void verifySourceImageExists(File imageFile)
-				throws IllegalAccessError {
-			Preconditions.checkNotNull(imageFile);
-			if (!imageFile.exists()) {
-				try {
-					throw new IllegalAccessError(
-							"Developer Error. File doesn't exist:"
-									+ imageFile.getCanonicalPath());
-				} catch (IllegalAccessError e) {
-					throw new IllegalAccessError(
-							"Developer Error. File doesn't exist:");
-				} catch (IOException e) {
-					throw new IllegalAccessError(
-							"Developer Error. File doesn't exist:");
-				}
-			}
-		}
 
 		@GET
 		@javax.ws.rs.Path("list")
