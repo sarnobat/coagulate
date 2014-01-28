@@ -35,9 +35,19 @@ public class Server {
 	public static class MyResource { // Must be public
 
 		private static final int LIMIT = 60;
-		private static final String[] _locations = {
-				"/Volumes/Unsorted/Videos/other", "/Volumes/Unsorted/Videos",
-				"/Users/sarnobat/Windows/misc",
+		private static final Set<PosixFilePermission> perms = PosixFilePermissions
+				.fromString("rwxr-x---");
+		private static final FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions
+				.asFileAttribute(perms);
+
+		private static final String[] _locations = new String[]{""};
+		//getLocations();
+		//static String[] getLocations() {
+		//			return new String[]{
+		//				"/Volumes/Unsorted/Videos/other", "/Volumes/Unsorted/Videos",
+		//				"/Users/sarnobat/Windows/misc",}; 
+		//		}
+		//private static final String[] _locations = { "/Volumes/Unsorted/Videos/other", "/Volumes/Unsorted/Videos", "/Users/sarnobat/Windows/misc" };
 		// "/Users/sarnobat/Windows/misc/ind",
 		// "/Volumes/Unsorted/Videos/soccer",
 
@@ -46,11 +56,6 @@ public class Server {
 		// "/Users/sarnobat/Desktop/new/",
 		// "/Users/sarnobat/Windows/Web/Personal Development/Romance",
 		// "/e/new",
-		};
-		private static final Set<PosixFilePermission> perms = PosixFilePermissions
-				.fromString("rwxr-x---");
-		private static final FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions
-				.asFileAttribute(perms);
 
 		//
 		// mutators
