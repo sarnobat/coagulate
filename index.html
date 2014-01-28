@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"> -->
+<script src="jquery/jquery-1.9.1.js">
+</script>
+<script>
+
+function up(field,id) {
+	$.getJSON("http://localhost:9099/helloworld/moveUp?path=" + encodeURIComponent(field),function(result){
+		var currentLevel = $("#"+id).parent().attr("id")
+		var targetLevel = parseInt(currentLevel) + 1;
+		// TODO: handle the case where target level doesn't exist
+		var elem = $("#"+id).remove();
+		$("#" + targetLevel).append(elem);
+	});
+}
+
+function down(field,id) {
+	$.getJSON("http://localhost:9099/helloworld/moveDown?path=" + encodeURIComponent(field),function(result){
+		var currentLevel = $("#"+id).parent().attr("id")
+		var targetLevel = parseInt(currentLevel) - 1;
+		// TODO: handle the case where target level doesn't exist
+		var elem = $("#"+id).remove();
+		$("#" + targetLevel).append(elem);
+    });
+}
+
+function duplicate(field,id) {
+	$.getJSON("http://localhost:9099/helloworld/duplicate?path=" + encodeURIComponent(field),function(result){
+		var elem = $("#"+id).remove();
+    });
+}
+
+// TODO: handle case where parent dir contains a file with the same name
+function wrongCategory(field,id) {
+	$.getJSON("http://localhost:9099/helloworld/wrongCategory?path=" + encodeURIComponent(field),function(result){
+		var elem = $("#"+id).remove();
+    });
+}
+
+function getImages(url) {
+	$("#dir").val(url);
+	$("#thumbnails").empty();
+	var counter = 1;
+
+	var dir = url;	
+	var dirEncoded = "";
+	if (dir != null) {
+		dirEncoded = encodeURIComponent(dir);
+	}
+ 	window.history.pushState(null,"vi", "index.html?dir=" + dirEncoded );
+	// TODO (minor): update the combo box value
+
+	$("#thumbnails").append(dir);
+	var videoCount = 0;
+    $.getJSON("http://localhost:9099/helloworld/json?dir=" + encodeURIComponent(dir),function(result){
+		var keys = [];
+		for(var k in result) keys.unshift(parseInt(k));
+		keys.sort().reverse();
+		for (var i = 0; i < keys.length; i++) {
+			var j = keys[i];
+			var sectionNumber = j;
+			console.debug(sectionNumber);
+			var section = $("<div>").attr("id", sectionNumber).attr("style","float : left").attr("align", "center");
+			section.append($("<h3>").append("Level " + sectionNumber));
+			$("#thumbnails").append(section);
+			var v2 = result[j];
+			$.each(v2, function(i,field){
+				var img;
+				if (/.*mp4/.test(field) || /.*flv/.test(field) || /.*webm/.test(field)) {
+					console.debug("video: " + field);					
+
+					if (videoCount < 20) {
+						var img = $("<video>").attr("height", "250px").attr('controls','').attr('muted','');
+						img.append($("<source>").attr("src",field).attr('type','video/x-flv'));
+						img.append($("<source>").attr("src",field).attr('type','video/mp4'));
+						img.append($("<source>").attr("src",field).attr('type','video/webm'));
+						img.append($("<source>").attr("src",field).attr('type','video/mpg'));
+						videoCount++;
+					}
+					//.attr("src", field )
+					//<video height="240" preload controls><source src="$1"  /><source src="$1" type="video/webm"></video>
+				} else {
+					//console.debug(field);
+					var img = $("<img>").attr("src", field ).attr("height","250px").attr("border","3px").attr("style","border-color:#ffffff;");
+				}
+				var id = counter;
+				var container = $("<span>").attr('id',id).attr("style","float : left").attr("align", "left");
+				var upButton = $("<button>").text("-Up-").click(function(){up(field, id)});
+				var downButton = $("<button>").text("Down").click(function(){down(field, id)});
+				var duplicateButton = $("<button>").text("Duplicate").click(function(){duplicate(field, id)});
+				var wrongCategoryButton = $("<button>").text("Wrong Category").click(function(){wrongCategory(field, id)});
+				var thumbnail = container.append("<br>").append(img).append("<br>").append(field).append("<br>").append(upButton).append("<br>").append(downButton).append("<br>").append(duplicateButton).append("<br>").append(wrongCategoryButton);
+				section.append(thumbnail);
+				counter++;
+			});
+		}
+	});
+}
+
+$(document).ready(function(){
+	if (window.location.search.length == 0) {
+		dir = $("#dir").val();
+	} 
+	// Textbox
+	else {
+		dir = decodeURIComponent(window.location.search.replace('?dir=',''));
+	}
+	getImages(dir);
+	
+  
+});
+</script>
+</head>
+
+<body>
+
+	<select id="dir" name="sometext" onchange="getImages($('#dir').val())">	
+		<!--
+		
+		<option></option>
+							-->
+							<option>/Users/sarnobat/videos/other</option>
+							<option>/Users/sarnobat/videos/other/teen</option>
+		<option>/Volumes/Unsorted/Videos/other/</option>
+		<option>/Volumes/Unsorted/Videos/other/teen</option>
+		<option>/Volumes/MAC/Sridhar_move_these_2/videos/other/teen</option>
+		<option>/Volumes/MAC/Sridhar_move_these_2/videos/other</option>
+		<option>/Users/sarnobat/Desktop/new/videos/Atletico</option>
+		<option>/Users/sarnobat/Desktop/samsaya/btt</option>
+		<option>/Users/sarnobat/Windows/usb/Photos/2013-12-28 Family portraits</option>
+		<option>/Users/sarnobat/Windows/usb/Photos/2013-12-28 Family portraits/individual</option>
+		<option>/Users/sarnobat/Desktop/family</option>
+		<option>/Users/sarnobat/Windows/Web/Friends/Priyal</option>
+		<option>/Users/sarnobat/Windows/Web/Friends/Ketaki/Jayaprakash uncle's albums/(1m) Jp Prakash's Photos - shravanabelagola, Halebidu, Belur_files</option>
+		<option>/Users/sarnobat/Windows/Web/Friends/Ketaki/script</option>
+		<option>/Users/sarnobat/Windows/misc/ind/tammana/lips</option>
+		<option>/Users/sarnobat/Windows/misc/ind/tammana/brst</option>
+		<option>/Users/sarnobat/Windows/misc/vg</option>
+		<option> /Users/sarnobat/Windows/misc/brst</option>	
+		<option> /Users/sarnobat/Windows/misc/hips</option>	
+		<option>/Users/sarnobat/Windows/misc/ind/lips</option>	
+		<option> /Users/sarnobat/Windows/misc/olsen twins</option>
+		<option>
+	/Users/sarnobat/Windows/favorites/teen/cris
+		</option>	
+		<option>
+	/Users/sarnobat/Windows/favorites/teen/Kristina Fey
+		</option>
+		<option>
+/Users/sarnobat/Windows/misc/ind/brst
+		</option>	
+		<option>	
+			/Users/sarnobat/Windows/misc/teen/middle
+		</option>
+		<option>
+			/Users/sarnobat/Windows/misc/wwe/Candice/brst
+		</option>
+		<option>
+/Users/sarnobat/Windows/usb/Photos/2013-12-24 Liverpool Anfield stadium tour/Anfield
+		</option>
+		<option>
+			/Users/sarnobat/Windows/misc/ind/btt
+		</option>
+
+		<option>
+			/Users/sarnobat/Windows/misc/btt/ind
+		</option>
+		<option>
+			/Users/sarnobat/Windows/misc/ind/legs
+		</option>
+		<option>
+/Users/sarnobat/Windows/misc/teen/primejailbat.com/middle
+		</option>
+		<option>
+		/Users/sarnobat/Windows/favorites/legs
+		</option>
+		<option>
+/Users/sarnobat/Windows/favorites/tennis
+		</option>
+		<option>
+/Users/sarnobat/Windows/favorites/teen
+		</option>
+		<option>
+/Users/sarnobat/Windows/favorites
+		</option>
+		<option>
+/Users/sarnobat/Windows/favorites/friends
+		</option>
+		<option>
+/Users/sarnobat/Windows/favorites/ind
+		</option>
+		<option>
+			/Users/sarnobat/Windows/misc/teen/primejailbat.com/middle/legs
+		</option>
+		<option>
+			/Users/sarnobat/Windows/misc/teen/primejailbat.com/middle/btt
+		</option>
+		<option>
+			/Users/sarnobat/Windows/misc/teen/primejailbat.com/middle/brst
+		</option>
+		<option>
+			/Users/sarnobat/Windows/misc/wwe/Rosa Mendes
+		</option>
+		<option>
+			/Users/sarnobat/Windows/misc/teen/primejailbat.com/high/brst
+		</option>
+		<option>
+			/Users/sarnobat/Windows/misc/teen/primejailbat.com/high/legs
+		</option>
+		<option>
+			/Users/sarnobat/Windows/misc/teen/primejailbat.com/high/btt
+		</option>
+		<option>
+			/Users/sarnobat/Windows/misc/wwe/Sunny
+		</option>
+		
+		<!--option>
+			 /Users/sarnobat/Windows/Web/Friends/Poorvi Rohidekar/script_sorted
+		</option-->
+		<option>
+			/Users/sarnobat/Windows/Web/Friends/Poorvi/script
+		</option>
+
+		<option>
+		  /Users/sarnobat/Windows/Web/Friends/Poorvi Rohidekar
+		</option>
+		<option>
+			/Users/sarnobat/Windows/Web/Friends/Poorvi
+		</option>
+		<option>
+			/Users/sarnobat/Windows/misc/btt
+		</option>
+		<option>/Users/sarnobat/Windows/misc/ind/brst/amateur</option>
+		<option>/Users/sarnobat/Windows/misc/wwe/Bella/btt</option>
+		<option>/Users/sarnobat/Windows/misc/brst</option>
+		<option>/Users/sarnobat/Windows/misc/teen/primejailbat.com/high/brst</option>
+	</select>
+
+	<div id="thumbnails"></div>
+
+</body>
+</html>
