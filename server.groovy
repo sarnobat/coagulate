@@ -427,6 +427,5 @@ public class Server {
 		JdkHttpServerFactory.createHttpServer(
 				new URI("http://localhost:8011/"), new ResourceConfig(
 						MyResource.class));
-		System.out.println("I can't get this to work in Groovy");
 	}
 }
