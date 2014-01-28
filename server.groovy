@@ -36,31 +36,24 @@ public class Server {
 	public static class MyResource { // Must be public
 
 		private static final int LIMIT = 60;
-		// private static final String[] _locations = getLocations();
-		// {
+
+		private static final String[] _locations = Lists.newArrayList(
+				"/Volumes/Unsorted/Videos/other", "/Volumes/Unsorted/Videos",
+				"/Users/sarnobat/Windows/misc"
 		// "/Volumes/Unsorted/Videos/other", "/Volumes/Unsorted/Videos",
 		// "/Users/sarnobat/Windows/misc",
 		// "/Users/sarnobat/Windows/misc/ind",
 		// "/Volumes/Unsorted/Videos/soccer",
-
 		// "/Users/sarnobat/Windows/favorites",
 		// "/Users/sarnobat/Desktop/new/videos/Atletico"
 		// "/Users/sarnobat/Desktop/new/",
 		// "/Users/sarnobat/Windows/Web/Personal Development/Romance",
 		// "/e/new",
-		// };
-		String[] _locations = Lists.newArrayList(
-				"/Volumes/Unsorted/Videos/other", "/Volumes/Unsorted/Videos",
-				"/Users/sarnobat/Windows/misc").toArray(new String[0]);
+				).toArray(new String[0]);
 		private static final Set<PosixFilePermission> perms = PosixFilePermissions
 				.fromString("rwxr-x---");
 		private static final FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions
 				.asFileAttribute(perms);
-
-		// static String[] getLocations() {
-		// return new String[] { "/Volumes/Unsorted/Videos/other",
-		// "/Volumes/Unsorted/Videos", "/Users/sarnobat/Windows/misc", };
-		// }
 
 		//
 		// mutators
@@ -352,7 +345,7 @@ public class Server {
 		private Collection<String> addKeyBindings(String location,
 				JSONObject locationDetails) throws IOException, JSONException {
 			Collection<String> dirsWithBoundKey = new HashSet<String>();
-			_6:{
+			_6: {
 				JSONObject fileBindingsJson = new JSONObject();
 				File f = new File(location + "/" + "categories.txt");
 				File f2 = new File(location + "/" + "photoSorter.txt");
