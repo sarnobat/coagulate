@@ -21,7 +21,7 @@ $(document).ready(function(){
 		var itemsInDir = response.items[key];
 		for (var item in itemsInDir) {
 			var toBeAppended = "";
-			var res = item.match(/.*\.jpe?g/gi);
+			var res = item.match(/.*\.((jpe?g)|(png))/gi);
 			
 			var httpUrl = response.items[key][item].httpUrl;
 			
@@ -111,11 +111,12 @@ function moveFileToParent(filePath, id) {
 Key bindings<br>
 <textarea id="locations">
 #/sarnobat.garagebandbroken/Windows/usb/Photos/2014-05-13 Los Angeles/originals
+/e/Sridhar/Photos/camera phone photos/iPhone/sort_these
 /e/Sridhar/Photos/camera phone photos/iPhone
 
 
 #/Users/sarnobat/Desktop
-/Volumes/Large/Videos
+#/Volumes/Large/Videos
 #/Volumes/Unsorted/Videos
 
 #/Users/sarnobat/Windows/misc/ind
