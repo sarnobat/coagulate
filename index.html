@@ -62,13 +62,40 @@ function getImages(url) {
 			var j = keys[i];
 			var sectionNumber = j;
 			console.debug(sectionNumber);
-			var section = $("<div>").attr("id", sectionNumber).attr("style","float : left").attr("align", "center");
-			section.append($("<h3>").append("Level " + sectionNumber));
-			$("#thumbnails").append(section);
+			//var section = $("<div>").attr("id", sectionNumber).attr("style","float : left").attr("align", "center");
+			//section.append($("<h3>").append("Level " + sectionNumber));
+			
+			var table = $("<table>");
+			table.attr("width", "250px");
+			table.attr("background-color", "green");
+			$("#thumbnails").append(table);
+
 			var v2 = result[j];
 			$.each(v2, function(i,field){
 				var img;
+				var tr = $("<tr>");
+				table.append(tr);
 				if (/.*mp4/.test(field) || /.*flv/.test(field) || /.*webm/.test(field)) {
+					if (videoCount < 20) {
+						img = $("<video>").attr("height", "250px").attr('controls','').attr('muted','');
+						img.append($("<source>").attr("src",field).attr('type','video/x-flv'));
+						img.append($("<source>").attr("src",field).attr('type','video/mp4'));
+						img.append($("<source>").attr("src",field).attr('type','video/webm'));
+						img.append($("<source>").attr("src",field).attr('type','video/mpg'));
+						videoCount++;
+					}
+				} else {
+					//console.debug(field);
+					img = $("<img>").attr("src", field ).attr("width","250px").attr("border","3px").attr("style","border-color:#ffffff;");
+				}
+				tr.append($("<br>"));
+				tr.append(img);
+				tr.append($("<br>"));
+				tr.append(field);
+				tr.append($("<br>"));
+				tr.append($("<br>"));
+				tr.append($("<br>"));
+				/*if (/.*mp4/.test(field) || /.*flv/.test(field) || /.*webm/.test(field)) {
 					console.debug("video: " + field);					
 
 					if (videoCount < 20) {
@@ -92,8 +119,9 @@ function getImages(url) {
 				var duplicateButton = $("<button>").text("Duplicate").click(function(){duplicate(field, id)});
 				var wrongCategoryButton = $("<button>").text("Wrong Category").click(function(){wrongCategory(field, id)});
 				var thumbnail = container.append("<br>").append(img).append("<br>").append(field).append("<br>").append(upButton).append("<br>").append(downButton).append("<br>").append(duplicateButton).append("<br>").append(wrongCategoryButton);
-				section.append(thumbnail);
+				//section.append(thumbnail).append("<br>").append("<br>");
 				counter++;
+				//container.append("<br>");*/
 			});
 		}
 	});
