@@ -29,25 +29,17 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 
 public class Server {
 	@javax.ws.rs.Path("cmsfs")
 	public static class MyResource { // Must be public
 
 		private static final int LIMIT = 60;
-		private static final Set<PosixFilePermission> perms = PosixFilePermissions
-				.fromString("rwxr-x---");
-		private static final FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions
-				.asFileAttribute(perms);
-
-		private static final String[] _locations = new String[]{""};
-		//getLocations();
-		//static String[] getLocations() {
-		//			return new String[]{
-		//				"/Volumes/Unsorted/Videos/other", "/Volumes/Unsorted/Videos",
-		//				"/Users/sarnobat/Windows/misc",}; 
-		//		}
-		//private static final String[] _locations = { "/Volumes/Unsorted/Videos/other", "/Volumes/Unsorted/Videos", "/Users/sarnobat/Windows/misc" };
+		// private static final String[] _locations = getLocations();
+		// {
+		// "/Volumes/Unsorted/Videos/other", "/Volumes/Unsorted/Videos",
+		// "/Users/sarnobat/Windows/misc",
 		// "/Users/sarnobat/Windows/misc/ind",
 		// "/Volumes/Unsorted/Videos/soccer",
 
@@ -56,6 +48,19 @@ public class Server {
 		// "/Users/sarnobat/Desktop/new/",
 		// "/Users/sarnobat/Windows/Web/Personal Development/Romance",
 		// "/e/new",
+		// };
+		String[] _locations = Lists.newArrayList(
+				"/Volumes/Unsorted/Videos/other", "/Volumes/Unsorted/Videos",
+				"/Users/sarnobat/Windows/misc").toArray(new String[0]);
+		private static final Set<PosixFilePermission> perms = PosixFilePermissions
+				.fromString("rwxr-x---");
+		private static final FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions
+				.asFileAttribute(perms);
+
+		// static String[] getLocations() {
+		// return new String[] { "/Volumes/Unsorted/Videos/other",
+		// "/Volumes/Unsorted/Videos", "/Users/sarnobat/Windows/misc", };
+		// }
 
 		//
 		// mutators
@@ -248,14 +253,14 @@ public class Server {
 		public Response list(@QueryParam("dirs") String locations)
 				throws JSONException, IOException {
 			JSONObject response = new JSONObject();
-			{
+			_1: {
 				JSONObject locationsJSON = new JSONObject();
 				response.put("locations", locationsJSON);
 			}
-			{
+			_2: {
 				JSONObject items = new JSONObject();
 				JSONObject locationsJson = new JSONObject();
-				{
+				_3: {
 					for (String location : _locations) {
 						File loc = new File(location);
 						if (!loc.exists()) {
@@ -268,7 +273,7 @@ public class Server {
 							continue;
 						}
 						File dir = loc;
-						{
+						_4: {
 							JSONObject filesInLocation = new JSONObject();
 
 							java.nio.file.Path dir2 = Paths.get(dir
@@ -330,26 +335,24 @@ public class Server {
 
 		private void addDirs(File dir, JSONObject locationDetails,
 				Collection<String> dirsWithBoundKey) throws JSONException {
-			{
-				JSONObject containedDirsJson = new JSONObject();
+			JSONObject containedDirsJson = new JSONObject();
 
-				for (File file : getDirectories(dir)) {
-					if (file.getName().endsWith("_files")) {
-						continue;
-					}
-					if (dirsWithBoundKey.contains(file.getName())) {
-						// continue;
-					}
-					containedDirsJson.put(file.getName(), "");
+			for (File file : getDirectories(dir)) {
+				if (file.getName().endsWith("_files")) {
+					continue;
 				}
-				locationDetails.put("dirs", containedDirsJson);
+				if (dirsWithBoundKey.contains(file.getName())) {
+					// continue;
+				}
+				containedDirsJson.put(file.getName(), "");
 			}
+			locationDetails.put("dirs", containedDirsJson);
 		}
 
 		private Collection<String> addKeyBindings(String location,
 				JSONObject locationDetails) throws IOException, JSONException {
 			Collection<String> dirsWithBoundKey = new HashSet<String>();
-			{
+			_6:{
 				JSONObject fileBindingsJson = new JSONObject();
 				File f = new File(location + "/" + "categories.txt");
 				File f2 = new File(location + "/" + "photoSorter.txt");
