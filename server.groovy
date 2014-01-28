@@ -250,6 +250,7 @@ public class Server {
 		@Produces("application/json")
 		public Response list(@QueryParam("dirs") String locations)
 				throws JSONException, IOException {
+			String[] locs = locations.split("\\n");
 			JSONObject response = new JSONObject();
 			_1: {
 				JSONObject locationsJSON = new JSONObject();
@@ -259,7 +260,10 @@ public class Server {
 				JSONObject items = new JSONObject();
 				JSONObject locationsJson = new JSONObject();
 				_3: {
-					for (String location : _locations) {
+					for (String location : locs) {
+						if(location.startsWith("#")) {
+							continue;
+						}
 						File loc = new File(location);
 						if (!loc.exists()) {
 							System.out.println(location + " doesn't exist.");

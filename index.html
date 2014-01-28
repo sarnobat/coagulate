@@ -11,7 +11,7 @@ var urlBase = "http://localhost:8011/cmsfs/list";
 $(document).ready(function(){
 
 
- $.getJSON("http://localhost:8011/cmsfs/list?dir=",function(response){
+ $.getJSON("http://localhost:8011/cmsfs/list?dirs=" + encodeURIComponent($("#locations").val()),function(response){
   	var id = 0;
 	for(var key in response.items) { 
 
@@ -100,11 +100,10 @@ function moveFileToParent(filePath, id) {
 
 Key bindings<br>
 <textarea id="locations">
-/media/sarnobat/Unsorted/Videos
-/media/sarnobat/e/Sridhar/Web/Personal Development/Romance
-/media/sarnobat/e/new
-/media/sarnobat/e/misc
-
+#/Volumes/Unsorted/Videos/wwf
+#/Volumes/Unsorted/Videos
+/Users/sarnobat/Windows/misc/ind
+#/Users/sarnobat/Windows/misc
 </textarea>
 <br><br>
 <button>get urls</button>
