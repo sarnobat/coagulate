@@ -155,9 +155,7 @@ public class Server {
 				throws IllegalAccessError {
 			// if destination file exists, rename the file to be moved(while
 			// loop)
-			String destinationFilePath = subfolder.normalize().toAbsolutePath()
-					.toString()
-					+ "/" + imageFile.getFileName().toString();
+			String destinationFilePath = subfolder.normalize().toAbsolutePath().toString() + "/" + imageFile.getFileName().toString();
 
 			Path destinationFile = determineDestinationPathAvoidingExisting(destinationFilePath);
 			return destinationFile;
@@ -171,8 +169,7 @@ public class Server {
 			Path destinationFile = Paths.get(destinationFilePath);
 			while (Files.exists(destinationFile)) {
 				destinationFilePathWithoutExtension += "1";
-				destinationFilePath = destinationFilePathWithoutExtension + "."
-						+ extension;
+				destinationFilePath = destinationFilePathWithoutExtension + "." + extension;
 				destinationFile = Paths.get(destinationFilePath);
 			}
 			if (Files.exists(destinationFile)) {
