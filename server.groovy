@@ -141,7 +141,7 @@ public class Server {
 				System.out.println("Success: file now at "
 						+ destinationFile.toAbsolutePath());
 			} catch (IOException e) {
-				System.out.println(e);
+				e.printStackTrace();
 				throw new IllegalAccessError("Moving did not work");
 			}
 		}
@@ -371,6 +371,7 @@ public class Server {
 									folderName);
 							dirsWithBoundKey.add(folderName);
 						} catch (RuntimeException e) {
+							e.printStackTrace();
 							System.err.println("Exception: " + e.getMessage()
 									+ ": " + aBindingLine);
 						}
@@ -424,5 +425,6 @@ public class Server {
 		JdkHttpServerFactory.createHttpServer(
 				new URI("http://localhost:8011/"), new ResourceConfig(
 						MyResource.class));
+		System.out.println("I can't get this to work in Groovy");
 	}
 }
