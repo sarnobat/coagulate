@@ -3,6 +3,8 @@
 set -m
 
 cd .groovy/lib
+rm json-20090211.jar
+rm ~/.groovy/lib/json-20090211.jar
 mkdir -p ~/.groovy/lib
 cp *jar ~/.groovy/lib/
 cd ../..

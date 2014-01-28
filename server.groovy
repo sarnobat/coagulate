@@ -98,7 +98,12 @@ public class Server {
 				throw new RuntimeException("Need to move the _files folder too");
 			}
 
-			moveFileToSubfolder(filePath, destinationDirSimpleName);
+			try {
+				moveFileToSubfolder(filePath, destinationDirSimpleName);
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new RuntimeException(e);
+			}
 			JSONObject response = new JSONObject();
 			Response build = Response.ok()
 					.header("Access-Control-Allow-Origin", "*")
