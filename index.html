@@ -15,7 +15,7 @@ $(document).ready(function(){
   	var id = 0;
 	for(var key in response.items) { 
 
-		// height ensures buttons don't jump around between sortings. But it's not as nice to view
+		// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
 		var width = "250px";
 		var height = "300px";
 		var itemsInDir = response.items[key];
@@ -23,23 +23,19 @@ $(document).ready(function(){
 			var toBeAppended = "";
 			var res = item.match(/.*\.jpe?g/gi);
 			if (res !=null) {
-				toBeAppended = '<img height="'+height+'" src="file:///' +item+ '"/>';
+				toBeAppended = '<img width="'+width+'" src="file:///' +item+ '"/>';
 			}
-			
-
-			var res1 = item.match(/.*((mp4)|(webm))/gi);
-			if (res1 !=null) {
-				console.debug(item);
-				toBeAppended = '&nbsp;<video height="'+height+'" controls="" muted=""><source type="video/mp4" src="file:///' +item+ '"/></video>';
-				//toBeAppended = item;
+			var matchesVideo = item.match(/.*((mp4)|(webm))/gi);
+			if (matchesVideo != null) {
+				toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="file:///' +item+ '"/></video>';
 			}
 			var buttons = "<table><tr><td>";
-			var i =0;
+			var i = 0;
 		
 			++id;
 			var idstring = "i" + id;
 			
-			var escaped = item.replace(/'/g, "&apos;");//.replace(/"/g, '\\"')
+			var escaped = item.replace(/'/g, "&apos;");
 
 			buttons += "<button onclick='moveFileToParent(\"" + escaped + "\",\""+idstring+"\")'>Wrong Category</button><br>";
 			var dirs = response.locations[key].dirs;
@@ -48,26 +44,35 @@ $(document).ready(function(){
 				if (a.toLowerCase() > b.toLowerCase()) return 1;
 				return 0;
 			  });
-			console.debug(dirsArray);
 			for(var dir in dirsArray) {
 				i++;
 				if (i%15 == 0) {
 					buttons += "</td><td>";
 				}
-				var color = "";
-				if (dir == 'other' || dir == 'divas') {
-					color = 'pink';
-				} else if (dir.match(/Atletico/i)) {
-					color = 'red';
-				} else if (dir.match(/soccer/i)) {
-					color = 'green';
-				}
 				var dirName = dirsArray[dir];
+				var color = "";
+				if (dirName == 'other' || dir == 'divas') {
+					color = 'pink';
+				} else if (dirName.match(/Atletico/i) || dirName == 'brst') {
+					color = 'red';
+				} else if (dirName == 'legs') {
+					color = 'yellow';
+				}  else if (dirName == 'navel') {
+					color = 'purple';
+				}  else if (dirName == 'teen') {
+					color = 'white';
+				} else if (dirName.match(/soccer/i)) {
+					color = 'green';
+				} else if (dirName == 'ind') {
+					color = 'orange';
+					console.debug('found ind');
+				}
+				console.debug(dirName);
 				buttons += "<button onclick='moveFile(\"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+color+"'>"+dirName+"</button><br>";
 
 			}
 			buttons += "</td></tr></table>";
-			var tile = "<tr id='" +idstring+"'><td><table><tr><td>"+toBeAppended + "<td><td>"+buttons+"</td></tr><tr><td colspan=2><textarea style=height:4;width:"+width+"; word-wrap:break-word;'>" + decodeURIComponent(item)+"</textarea></td></tr></table></td></tr>";
+			var tile = "<tr id='" +idstring+"'><td><table><tr><td>"+toBeAppended + "<td><td>"+buttons+"</td></tr><tr><td colspan=2><textarea rows=4 style='width:"+width+"; word-wrap:break-word;'>" + decodeURIComponent(item)+"</textarea></td></tr></table></td></tr>";
 			if (toBeAppended.length > 0) {
 				$('#items').append(tile);
 			}
@@ -100,10 +105,23 @@ function moveFileToParent(filePath, id) {
 
 Key bindings<br>
 <textarea id="locations">
-#/Volumes/Unsorted/Videos/wwf
+#/sarnobat.garagebandbroken/Windows/usb/Photos/2014-05-13 Los Angeles/originals
+/e/Sridhar/Photos/camera phone photos/iPhone
+
+
+#/Users/sarnobat/Desktop
+/Volumes/Large/Videos
 #/Volumes/Unsorted/Videos
-/Users/sarnobat/Windows/misc/ind
-#/Users/sarnobat/Windows/misc
+
+#/Users/sarnobat/Windows/misc/ind
+#/Volumes/Unsorted/images
+#/Users/sarnobat/Windows/misc/favorites
+
+#/Volumes/Large/Videos/wwf
+
+#/Volumes/Unsorted/Videos/Atletico
+#/Volumes/Unsorted/Videos/wwf
+
 </textarea>
 <br><br>
 <button>get urls</button>
