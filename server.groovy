@@ -221,50 +221,7 @@ public class Coagulate {
 						}
 						_4: {
 
-							String aLocalFileSystemPath = aDirectory
-									.getAbsolutePath();
-							java.nio.file.Path aDirectoryPath = Paths
-									.get(aLocalFileSystemPath);
-							DirectoryStream.Filter<java.nio.file.Path> filter = new DirectoryStream.Filter<java.nio.file.Path>() {
-								public boolean accept(java.nio.file.Path entry)
-										throws IOException {
-									return !Files.isDirectory(entry);
-
-								}
-							};
-							DirectoryStream<java.nio.file.Path> theDirectoryStream = Files
-									.newDirectoryStream(aDirectoryPath, filter);
-							JSONObject filesInLocationJson = new JSONObject();
-							int fileCount = 0;
-							for (Path aFilePath : theDirectoryStream) {
-								String filename = aFilePath.getFileName()
-										.toString();
-								String fileAbsolutePath = aFilePath
-										.toAbsolutePath().toString();
-								if (filename.contains("DS_Store")) {
-									continue;
-								}
-								if (filename.endsWith(".html")
-										|| filename.endsWith(".htm")
-										|| aDirectory.getName().endsWith(
-												"_files")) {
-									System.out.println("Not supported yet: "
-											+ filename);
-									continue;
-								}
-								JSONObject fileEntryJson = createFileEntryJson(
-										aLocalFileSystemPath,
-										httpLinkFor(fileAbsolutePath));
-
-								filesInLocationJson.put(fileAbsolutePath,
-										fileEntryJson);
-								++fileCount;
-								if (fileCount > LIMIT) {
-									break;
-								}
-								System.out.println(fileAbsolutePath);
-
-							}
+							JSONObject filesInLocationJson = getContentsAsJson(aDirectory);
 							items.put(aDirectoryPathString, filesInLocationJson);
 						}
 						JSONObject locationDetailsJson = new JSONObject();
@@ -284,6 +241,55 @@ public class Coagulate {
 					.entity(response.toString(4)).type("application/json")
 					.build();
 			return build;
+		}
+
+		private JSONObject getContentsAsJson(File aDirectory)
+				throws IOException {
+			JSONObject filesInLocationJson = new JSONObject();
+			int fileCount = 0;
+			for (Path aFilePath : getDirectoryStream(aDirectory)) {
+				String filename = aFilePath.getFileName().toString();
+				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
+				if (filename.contains("DS_Store")) {
+					continue;
+				}
+				if (filename.endsWith(".html") || filename.endsWith(".htm")
+						|| aDirectory.getName().endsWith("_files")) {
+					System.out.println("Not supported yet: " + filename);
+					continue;
+				}
+				JSONObject fileEntryJson = createFileEntryJson(
+						aDirectory.getAbsolutePath(),
+						httpLinkFor(fileAbsolutePath));
+
+				filesInLocationJson.put(fileAbsolutePath, fileEntryJson);
+				++fileCount;
+				if (fileCount > LIMIT) {
+					break;
+				}
+				System.out.println(fileAbsolutePath);
+
+			}
+			return filesInLocationJson;
+		}
+
+		private DirectoryStream<Path> getDirectoryStream(File aDirectory)
+				throws IOException {
+			return getDirectoryStream(Paths.get(aDirectory.getAbsolutePath()));
+		}
+
+		private DirectoryStream<Path> getDirectoryStream(Path aDirectoryPath)
+				throws IOException {
+			DirectoryStream<Path> theDirectoryStream = Files
+					.newDirectoryStream(aDirectoryPath,
+							new DirectoryStream.Filter<Path>() {
+								public boolean accept(Path entry)
+										throws IOException {
+									return !Files.isDirectory(entry);
+
+								}
+							});
+			return theDirectoryStream;
 		}
 
 		private JSONObject createFileEntryJson(String iLocalFileSystemPath,
