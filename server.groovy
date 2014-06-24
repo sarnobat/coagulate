@@ -208,23 +208,21 @@ public class Coagulate {
 						if (aDirectoryPathString.startsWith("#")) {
 							continue;
 						}
-						File loc = new File(aDirectoryPathString);
-						if (!loc.exists()) {
+						File aDirectory = new File(aDirectoryPathString);
+						if (!aDirectory.exists()) {
 							System.out.println(aDirectoryPathString
 									+ " doesn't exist.");
 							continue;
 						}
-						if (!loc.isDirectory()) {
+						if (!aDirectory.isDirectory()) {
 							System.out.println(aDirectoryPathString
 									+ " is not a directory");
 							continue;
 						}
-						File theDirectory = loc;
 						_4: {
-							JSONObject filesInLocation = new JSONObject();
 
 							java.nio.file.Path aDirectoryPath = Paths
-									.get(theDirectory.getAbsolutePath());
+									.get(aDirectory.getAbsolutePath());
 							DirectoryStream.Filter<java.nio.file.Path> filter = new DirectoryStream.Filter<java.nio.file.Path>() {
 								public boolean accept(java.nio.file.Path entry)
 										throws IOException {
@@ -234,43 +232,50 @@ public class Coagulate {
 							};
 							DirectoryStream<java.nio.file.Path> theDirectoryStream = Files
 									.newDirectoryStream(aDirectoryPath, filter);
-							int i = 0;
-							for (java.nio.file.Path filePath : theDirectoryStream) {
-								String name = filePath.getFileName().toString();
-								String absolutePath = filePath.toAbsolutePath()
+							JSONObject filesInLocationJson = new JSONObject();
+							int fileCount = 0;
+							for (Path aFilePath : theDirectoryStream) {
+								String name = aFilePath.getFileName()
 										.toString();
+								String absolutePath = aFilePath
+										.toAbsolutePath().toString();
 								if (name.contains("DS_Store")) {
 									continue;
 								}
 								if (name.endsWith(".html")
 										|| name.endsWith(".htm")
-										|| loc.getName().endsWith("_files")) {
+										|| aDirectory.getName().endsWith(
+												"_files")) {
 									System.out.println("Not supported yet: "
 											+ name);
 									continue;
 								}
-								JSONObject fileDetails = new JSONObject();
-								fileDetails.put("location",
-										loc.getAbsolutePath());
-								fileDetails.put("httpUrl",
-										httpLinkFor(absolutePath));
+								{
+									JSONObject fileEntryJson = new JSONObject();
+									fileEntryJson.put("location",
+											aDirectory.getAbsolutePath());
+									fileEntryJson.put("httpUrl",
+											httpLinkFor(absolutePath));
 
-								filesInLocation.put(absolutePath, fileDetails);
-								++i;
-								if (i > LIMIT) {
+									filesInLocationJson.put(absolutePath,
+											fileEntryJson);
+								}
+								++fileCount;
+								if (fileCount > LIMIT) {
 									break;
 								}
 								System.out.println(absolutePath);
 
 							}
-							items.put(aDirectoryPathString, filesInLocation);
+							items.put(aDirectoryPathString, filesInLocationJson);
 						}
-						JSONObject locationDetails = new JSONObject();
-						locationsJson
-								.put(aDirectoryPathString, locationDetails);
+						JSONObject locationDetailsJson = new JSONObject();
+						locationsJson.put(aDirectoryPathString,
+								locationDetailsJson);
 						Collection<String> dirsWithBoundKey = addKeyBindings(
-								aDirectoryPathString, locationDetails);
-						addDirs(theDirectory, locationDetails, dirsWithBoundKey);
+								aDirectoryPathString, locationDetailsJson);
+						addDirs(aDirectory, locationDetailsJson,
+								dirsWithBoundKey);
 					}
 				}
 				response.put("items", items);
