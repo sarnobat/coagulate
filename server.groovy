@@ -7,7 +7,11 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileTime;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 
@@ -260,11 +264,11 @@ public class Coagulate {
 
 		private JSONObject getContentsAsJson(File aDirectory)
 				throws IOException {
-			JSONObject filesInLocationJson = new JSONObject();
-			int fileCount = 0;
+			// TODO: order the directory stream by date
+			List<Path> files = new ArrayList<>();
+
 			for (Path aFilePath : getDirectoryStream(aDirectory)) {
 				String filename = aFilePath.getFileName().toString();
-				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
 				if (filename.contains("DS_Store")) {
 					continue;
 				}
@@ -273,45 +277,57 @@ public class Coagulate {
 					System.out.println("Not supported yet: " + filename);
 					continue;
 				}
+				files.add(aFilePath);
+			}
+			
+			Collections.sort(files, new Comparator<Path>() {
+			    public int compare(Path o1, Path o2) {
+			        try {
+			            return Files.getLastModifiedTime(o1).compareTo(Files.getLastModifiedTime(o2));
+			        } catch (IOException e) {
+			            return 0;
+			        }
+			    }
+			});
+
+			JSONObject filesInLocationJson = new JSONObject();
+			int fileCount = 0;
+			for (Path aFilePath : files) {
+				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
 				JSONObject fileEntryJson = createFileEntryJson(
 						aDirectory.getAbsolutePath(),
-						httpLinkFor(fileAbsolutePath));
-
+						httpLinkFor(fileAbsolutePath),
+						Files.getLastModifiedTime(aFilePath));
 				filesInLocationJson.put(fileAbsolutePath, fileEntryJson);
 				++fileCount;
 				if (fileCount > LIMIT) {
 					break;
 				}
-				System.out.println(fileAbsolutePath);
-
+				System.out.println(fileAbsolutePath);				
 			}
 			return filesInLocationJson;
 		}
 
 		private DirectoryStream<Path> getDirectoryStream(File aDirectory)
 				throws IOException {
-			return getDirectoryStream(Paths.get(aDirectory.getAbsolutePath()));
-		}
-
-		private DirectoryStream<Path> getDirectoryStream(Path aDirectoryPath)
-				throws IOException {
 			DirectoryStream<Path> theDirectoryStream = Files
-					.newDirectoryStream(aDirectoryPath,
+					.newDirectoryStream(Paths.get(aDirectory.getAbsolutePath()),
 							new DirectoryStream.Filter<Path>() {
 								public boolean accept(Path entry)
 										throws IOException {
 									return !Files.isDirectory(entry);
-
+			
 								}
 							});
 			return theDirectoryStream;
 		}
 
 		private JSONObject createFileEntryJson(String iLocalFileSystemPath,
-				String iHttpUrl) {
+				String iHttpUrl, FileTime fileTime) {
 			JSONObject fileEntryJson = new JSONObject();
 			fileEntryJson.put("location", iLocalFileSystemPath);
 			fileEntryJson.put("httpUrl", iHttpUrl);
+			fileEntryJson.put("lastModified", fileTime.toString());
 			return fileEntryJson;
 		}
 

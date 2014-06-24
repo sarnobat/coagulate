@@ -24,6 +24,7 @@ $(document).ready(function(){
 			var res = item.match(/.*\.((jpe?g)|(png))/gi);
 			
 			var httpUrl = response.items[key][item].httpUrl;
+			var lastModified = response.items[key][item].lastModified;
 			
 			if (res !=null) {
 				//toBeAppended = '<img width="'+width+'" src="file:///' +item+ '"/>';
@@ -77,7 +78,7 @@ $(document).ready(function(){
 
 			}
 			buttons += "</td></tr></table>";
-			var tile = "<tr id='" +idstring+"'><td><table><tr><td>"+toBeAppended + "<td><td>"+buttons+"</td></tr><tr><td colspan=2><textarea rows=4 style='width:"+width+"; word-wrap:break-word;'>" + decodeURIComponent(item)+"</textarea></td></tr></table></td></tr>";
+			var tile = "<tr id='" +idstring+"'><td><table><tr><td>"+toBeAppended + "<td><td>"+buttons+"</td></tr><tr><td colspan=2><textarea rows=4 style='width:"+width+"; word-wrap:break-word;'>" + decodeURIComponent(item)+"</textarea><br>"+lastModified+"</td></tr></table></td></tr>";
 			if (toBeAppended.length > 0) {
 				$('#items').append(tile);
 			}
