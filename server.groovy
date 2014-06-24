@@ -88,29 +88,36 @@ public class Coagulate {
 		}
 
 		private static void moveFileToSubfolder(String filePath,
-				String folderName) throws IllegalAccessError, IOException {
-			Path path = Paths.get(filePath);
-			// File imageFile = path.toFile();
-			if (!Files.exists(path)) {
+				String subfolderSimpleName) throws IllegalAccessError, IOException {
+			Path sourceFilePath = Paths.get(filePath);
+			if (!Files.exists(sourceFilePath)) {
 				throw new RuntimeException("File doesn't exist");
 			}
 
-			// Already in right location
-			if (imagePathAlreadyContainsFolder(path, folderName)) {
-				System.out.println("Path already contains " + folderName);
-			}
-
-			// if the subfolder exists, do nothing
-			String parentDirPath = path.getParent().toAbsolutePath().toString();
-			String destinationFolderPath = parentDirPath + "/" + folderName;
-			if (folderName.equals(path.getParent().getFileName().toString())) {
+			if (fileAlreadyInDesiredSubdir(subfolderSimpleName, sourceFilePath)) {
 				System.out.println("Not moving to identical subfolder");
 				return;
 			}
-			Path subfolder = getOrCreateDestinationFolder(destinationFolderPath);
-			Path destinationFile = allocateFile(path, subfolder);
-			doMove(path, destinationFile);
+			doMove(sourceFilePath, getDestinationFile(subfolderSimpleName, sourceFilePath));
 
+		}
+
+		private static boolean fileAlreadyInDesiredSubdir(
+				String subfolderSimpleName, Path sourceFilePath) {
+			return subfolderSimpleName.equals(sourceFilePath.getParent().getFileName().toString());
+		}
+
+		private static Path getDestinationFile(String folderName, Path path)
+				throws IllegalAccessError, IOException {
+			Path destinationFile;
+			{
+				String parentDirPath = path.getParent().toAbsolutePath()
+						.toString();
+				String destinationFolderPath = parentDirPath + "/" + folderName;
+				Path subfolder = getOrCreateDestinationFolder(destinationFolderPath);
+				destinationFile = allocateFile(path, subfolder);
+			}
+			return destinationFile;
 		}
 
 		private static void doMove(Path path, Path destinationFile)
@@ -160,7 +167,6 @@ public class Coagulate {
 		private static java.nio.file.Path getOrCreateDestinationFolder(
 				String destinationFolderPath) throws IllegalAccessError,
 				IOException {
-			// File subfolder = new File(destinationFolderPath);
 			java.nio.file.Path subfolder = Paths.get(destinationFolderPath);
 			// if the subfolder does not exist, create it
 			if (!Files.exists(subfolder)) {
@@ -174,8 +180,8 @@ public class Coagulate {
 			return subfolder;
 		}
 
-		private static boolean imagePathAlreadyContainsFolder(
-				java.nio.file.Path imageFile, String folderName) {
+		private static boolean imagePathAlreadyContainsFolder(Path imageFile,
+				String folderName) {
 			if (imageFile == null) {
 				return false;
 			}
