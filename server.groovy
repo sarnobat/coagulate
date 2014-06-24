@@ -9,7 +9,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 
 import javax.ws.rs.GET;
@@ -90,7 +89,7 @@ public class Coagulate {
 
 		private static void moveFileToSubfolder(String filePath,
 				String folderName) throws IllegalAccessError, IOException {
-			java.nio.file.Path path = Paths.get(filePath);
+			Path path = Paths.get(filePath);
 			// File imageFile = path.toFile();
 			if (!Files.exists(path)) {
 				throw new RuntimeException("File doesn't exist");
@@ -108,14 +107,14 @@ public class Coagulate {
 				System.out.println("Not moving to identical subfolder");
 				return;
 			}
-			java.nio.file.Path subfolder = getOrCreateDestinationFolder(destinationFolderPath);
-			java.nio.file.Path destinationFile = allocateFile(path, subfolder);
+			Path subfolder = getOrCreateDestinationFolder(destinationFolderPath);
+			Path destinationFile = allocateFile(path, subfolder);
 			doMove(path, destinationFile);
 
 		}
 
-		private static void doMove(java.nio.file.Path path,
-				java.nio.file.Path destinationFile) throws IllegalAccessError {
+		private static void doMove(Path path, Path destinationFile)
+				throws IllegalAccessError {
 			try {
 				Files.move(path, destinationFile);// By default, it won't
 													// overwrite existing
@@ -203,20 +202,11 @@ public class Coagulate {
 				JSONObject locationsJson = new JSONObject();
 				_3: {
 					for (String aDirectoryPathString : allDirectoryPathStrings) {
-						if (aDirectoryPathString.startsWith("#")) {
+						if (shouldNotGetContents(aDirectoryPathString)) {
 							continue;
 						}
+
 						File aDirectory = new File(aDirectoryPathString);
-						if (!aDirectory.exists()) {
-							System.out.println(aDirectoryPathString
-									+ " doesn't exist.");
-							continue;
-						}
-						if (!aDirectory.isDirectory()) {
-							System.out.println(aDirectoryPathString
-									+ " is not a directory");
-							continue;
-						}
 						itemsJson.put(aDirectoryPathString,
 								getContentsAsJson(aDirectory));
 						JSONObject locationDetailsJson = new JSONObject();
@@ -241,6 +231,23 @@ public class Coagulate {
 					.entity(response.toString(4)).type("application/json")
 					.build();
 			return build;
+		}
+
+		private boolean shouldNotGetContents(String aDirectoryPathString) {
+			File aDirectory = new File(aDirectoryPathString);
+			if (aDirectoryPathString.startsWith("#")) {
+				return false;
+			}
+			if (!aDirectory.exists()) {
+				System.out.println(aDirectoryPathString + " doesn't exist.");
+				return false;
+			}
+			if (!aDirectory.isDirectory()) {
+				System.out
+						.println(aDirectoryPathString + " is not a directory");
+				return false;
+			}
+			return true;
 		}
 
 		private JSONObject getContentsAsJson(File aDirectory)
