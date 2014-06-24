@@ -29,21 +29,24 @@ $(document).ready(function(){
 			var item = itemsInDirSorted[sortedKey];
 			var toBeAppended = "";
 
-			
-			var httpUrl = response.items[key][item].httpUrl;
-			var lastModified = response.items[key][item].lastModified;
 			{
-				var res = item.match(/.*\.((jpe?g)|(png))/gi);			
-				if (res !=null) {
-					//toBeAppended = '<img width="'+width+'" src="file:///' +item+ '"/>';
-					toBeAppended = '<img width="'+width+'" src="' + httpUrl + '"/>';
+				var httpUrl = response.items[key][item].httpUrl;
+				{
+					var lastModified = response.items[key][item].lastModified;
+					{
+						var res = item.match(/.*\.((jpe?g)|(png))/gi);			
+						if (res !=null) {
+							//toBeAppended = '<img width="'+width+'" src="file:///' +item+ '"/>';
+							toBeAppended = '<img width="'+width+'" src="' + httpUrl + '"/>';
+						}
+					}
 				}
-			}
-			{
-				var matchesVideo = item.match(/.*((mp4)|(webm))/gi);
-				if (matchesVideo != null) {
-					//toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="file:///' +item+ '"/></video>';
-					toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="' +httpUrl+ '"/></video>';
+				{
+					var matchesVideo = item.match(/.*((mp4)|(webm))/gi);
+					if (matchesVideo != null) {
+						//toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="file:///' +item+ '"/></video>';
+						toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="' +httpUrl+ '"/></video>';
+					}
 				}
 			}
 			{
