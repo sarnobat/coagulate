@@ -196,12 +196,10 @@ public class Coagulate {
 			String[] allDirectoryPathStrings = iDirectoryPathsString
 					.split("\\n");
 			JSONObject response = new JSONObject();
-			_1: {
-				JSONObject locationsJSON = new JSONObject();
-				response.put("locations", locationsJSON);
-			}
+			// TODO: do we need this?
+			response.put("locations", new JSONObject());
 			_2: {
-				JSONObject items = new JSONObject();
+				JSONObject itemsJson = new JSONObject();
 				JSONObject locationsJson = new JSONObject();
 				_3: {
 					for (String aDirectoryPathString : allDirectoryPathStrings) {
@@ -219,21 +217,23 @@ public class Coagulate {
 									+ " is not a directory");
 							continue;
 						}
-						_4: {
-
-							JSONObject filesInLocationJson = getContentsAsJson(aDirectory);
-							items.put(aDirectoryPathString, filesInLocationJson);
-						}
+						itemsJson.put(aDirectoryPathString,
+								getContentsAsJson(aDirectory));
 						JSONObject locationDetailsJson = new JSONObject();
-						locationsJson.put(aDirectoryPathString,
-								locationDetailsJson);
-						Collection<String> dirsWithBoundKey = addKeyBindings(
-								aDirectoryPathString, locationDetailsJson);
-						addDirs(aDirectory, locationDetailsJson,
-								dirsWithBoundKey);
+						{
+							locationsJson.put(aDirectoryPathString,
+									locationDetailsJson);
+							{
+								Collection<String> dirsWithBoundKey = addKeyBindings(
+										aDirectoryPathString,
+										locationDetailsJson);
+								addDirs(aDirectory, locationDetailsJson,
+										dirsWithBoundKey);
+							}
+						}
 					}
 				}
-				response.put("items", items);
+				response.put("items", itemsJson);
 				response.put("locations", locationsJson);
 			}
 			Response build = Response.ok()
