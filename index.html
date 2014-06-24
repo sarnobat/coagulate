@@ -81,7 +81,7 @@ $(document).ready(function(){
 					console.debug('found ind');
 				}
 				//console.debug(dirName);
-				buttons += "<button onclick='moveFile(\"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+color+"'>"+dirName+"</button><br>";
+				buttons += "<button onclick='moveFile(\"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+color+"' onmousedown=\"this.style.background = \'red\'\" onmouseup=\"this.style.background=\'green\'\">"+dirName+"</button><br>";
 
 			}
 			buttons += "</td></tr></table>";
@@ -99,6 +99,7 @@ function addslashes( str ) {
 });
 
 function moveFile(filePath, destinationDirSimpleName,id) {
+	// This is slow not because of the network trip. It seems like the page is too widget-heavy.
 	$.getJSON(urlBase + "/move?filePath="+encodeURIComponent(filePath) + "&destinationDirSimpleName=" + destinationDirSimpleName,function(response){
 		$("#" + id).remove();
 	});
