@@ -131,7 +131,9 @@ public class Coagulate {
 				throws IllegalAccessError {
 			// if destination file exists, rename the file to be moved(while
 			// loop)
-			String destinationFilePath = subfolder.normalize().toAbsolutePath().toString() + "/" + imageFile.getFileName().toString();
+			String destinationFilePath = subfolder.normalize().toAbsolutePath()
+					.toString()
+					+ "/" + imageFile.getFileName().toString();
 
 			Path destinationFile = determineDestinationPathAvoidingExisting(destinationFilePath);
 			return destinationFile;
@@ -145,7 +147,8 @@ public class Coagulate {
 			Path destinationFile = Paths.get(destinationFilePath);
 			while (Files.exists(destinationFile)) {
 				destinationFilePathWithoutExtension += "1";
-				destinationFilePath = destinationFilePathWithoutExtension + "." + extension;
+				destinationFilePath = destinationFilePathWithoutExtension + "."
+						+ extension;
 				destinationFile = Paths.get(destinationFilePath);
 			}
 			if (Files.exists(destinationFile)) {
@@ -185,26 +188,13 @@ public class Coagulate {
 			}
 		}
 
-
 		@GET
 		@javax.ws.rs.Path("list")
 		@Produces("application/json")
-		public Response list(@QueryParam("dirs") String locations)
+		public Response list(@QueryParam("dirs") String iDirectoryPathsString)
 				throws JSONException, IOException {
-			String[] locs = locations.split("\\n");
-//			{
-//				String[] locats = locations.split("\\n");
-//				List<String> l = new LinkedList<String>();
-//				
-//				for (String loc : locats) {
-//					String httpLink;
-//					
-//						httpLink = loc.replaceFirst("/Volumes/Unsorted", "http://netgear.rohidekar.com:8020/");
-//					l.add(httpLink);
-//					
-//				}
-//				locs = l.toArray(locats);
-//			}
+			String[] allDirectoryPathStrings = iDirectoryPathsString
+					.split("\\n");
 			JSONObject response = new JSONObject();
 			_1: {
 				JSONObject locationsJSON = new JSONObject();
@@ -214,26 +204,27 @@ public class Coagulate {
 				JSONObject items = new JSONObject();
 				JSONObject locationsJson = new JSONObject();
 				_3: {
-					for (String location : locs) {
-						if(location.startsWith("#")) {
+					for (String aDirectoryPathString : allDirectoryPathStrings) {
+						if (aDirectoryPathString.startsWith("#")) {
 							continue;
 						}
-						File loc = new File(location);
+						File loc = new File(aDirectoryPathString);
 						if (!loc.exists()) {
-							System.out.println(location + " doesn't exist.");
+							System.out.println(aDirectoryPathString
+									+ " doesn't exist.");
 							continue;
 						}
 						if (!loc.isDirectory()) {
-							System.out
-									.println(location + " is not a directory");
+							System.out.println(aDirectoryPathString
+									+ " is not a directory");
 							continue;
 						}
-						File dir = loc;
+						File theDirectory = loc;
 						_4: {
 							JSONObject filesInLocation = new JSONObject();
 
-							java.nio.file.Path dir2 = Paths.get(dir
-									.getAbsolutePath());
+							java.nio.file.Path aDirectoryPath = Paths
+									.get(theDirectory.getAbsolutePath());
 							DirectoryStream.Filter<java.nio.file.Path> filter = new DirectoryStream.Filter<java.nio.file.Path>() {
 								public boolean accept(java.nio.file.Path entry)
 										throws IOException {
@@ -242,7 +233,7 @@ public class Coagulate {
 								}
 							};
 							DirectoryStream<java.nio.file.Path> theDirectoryStream = Files
-									.newDirectoryStream(dir2, filter);
+									.newDirectoryStream(aDirectoryPath, filter);
 							int i = 0;
 							for (java.nio.file.Path filePath : theDirectoryStream) {
 								String name = filePath.getFileName().toString();
@@ -272,13 +263,14 @@ public class Coagulate {
 								System.out.println(absolutePath);
 
 							}
-							items.put(location, filesInLocation);
+							items.put(aDirectoryPathString, filesInLocation);
 						}
 						JSONObject locationDetails = new JSONObject();
-						locationsJson.put(location, locationDetails);
+						locationsJson
+								.put(aDirectoryPathString, locationDetails);
 						Collection<String> dirsWithBoundKey = addKeyBindings(
-								location, locationDetails);
-						addDirs(dir, locationDetails, dirsWithBoundKey);
+								aDirectoryPathString, locationDetails);
+						addDirs(theDirectory, locationDetails, dirsWithBoundKey);
 					}
 				}
 				response.put("items", items);
@@ -293,15 +285,20 @@ public class Coagulate {
 
 		private String httpLinkFor(String absolutePath) {
 			// Unsorted
-			String http = absolutePath.replaceFirst("/Volumes/Unsorted", "http://netgear.rohidekar.com:8020/");
-			http = http.replaceFirst("/media/sarnobat/Unsorted", "http://netgear.rohidekar.com:8020/");
-			
+			String http = absolutePath.replaceFirst("/Volumes/Unsorted",
+					"http://netgear.rohidekar.com:8020/");
+			http = http.replaceFirst("/media/sarnobat/Unsorted",
+					"http://netgear.rohidekar.com:8020/");
+
 			// Large
-			http = http.replaceFirst("/media/sarnobat/Large/", "http://netgear.rohidekar.com:8021/");
-			http = http.replaceFirst("/Volumes/Large/", "http://netgear.rohidekar.com:8021/");
-		
-                        http = http.replaceFirst("^/e/Sridhar/Photos", "http://netgear.rohidekar.com:8022/");
-			
+			http = http.replaceFirst("/media/sarnobat/Large/",
+					"http://netgear.rohidekar.com:8021/");
+			http = http.replaceFirst("/Volumes/Large/",
+					"http://netgear.rohidekar.com:8021/");
+
+			http = http.replaceFirst("^/e/Sridhar/Photos",
+					"http://netgear.rohidekar.com:8022/");
+
 			return http;
 		}
 
