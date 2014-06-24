@@ -9,7 +9,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 
 import javax.ws.rs.GET;
@@ -145,7 +144,8 @@ public class Coagulate {
 			Path destinationFile = Paths.get(destinationFilePath);
 			while (Files.exists(destinationFile)) {
 				destinationFilePathWithoutExtension += "1";
-				destinationFilePath = destinationFilePathWithoutExtension + "." + extension;
+				destinationFilePath = destinationFilePathWithoutExtension + "."
+						+ extension;
 				destinationFile = Paths.get(destinationFilePath);
 			}
 			if (Files.exists(destinationFile)) {
@@ -185,103 +185,44 @@ public class Coagulate {
 			}
 		}
 
-
 		@GET
 		@javax.ws.rs.Path("list")
 		@Produces("application/json")
-		public Response list(@QueryParam("dirs") String locations)
+		public Response list(@QueryParam("dirs") String iDirectoryPathsString)
 				throws JSONException, IOException {
-			String[] locs = locations.split("\\n");
-//			{
-//				String[] locats = locations.split("\\n");
-//				List<String> l = new LinkedList<String>();
-//				
-//				for (String loc : locats) {
-//					String httpLink;
-//					
-//						httpLink = loc.replaceFirst("/Volumes/Unsorted", "http://netgear.rohidekar.com:8020/");
-//					l.add(httpLink);
-//					
-//				}
-//				locs = l.toArray(locats);
-//			}
+			String[] allDirectoryPathStrings = iDirectoryPathsString
+					.split("\\n");
 			JSONObject response = new JSONObject();
-			_1: {
-				JSONObject locationsJSON = new JSONObject();
-				response.put("locations", locationsJSON);
-			}
+			// TODO: do we need this?
+			response.put("locations", new JSONObject());
 			_2: {
-				JSONObject items = new JSONObject();
+				JSONObject itemsJson = new JSONObject();
 				JSONObject locationsJson = new JSONObject();
 				_3: {
-					for (String location : locs) {
-						if(location.startsWith("#")) {
+					for (String aDirectoryPathString : allDirectoryPathStrings) {
+						System.out.println(aDirectoryPathString );
+						if (!shouldGetContents(aDirectoryPathString)) {
 							continue;
 						}
-						File loc = new File(location);
-						if (!loc.exists()) {
-							System.out.println(location + " doesn't exist.");
-							continue;
-						}
-						if (!loc.isDirectory()) {
-							System.out
-									.println(location + " is not a directory");
-							continue;
-						}
-						File dir = loc;
+
+						File aDirectory = new File(aDirectoryPathString);
+						itemsJson.put(aDirectoryPathString,
+								getContentsAsJson(aDirectory));
+						JSONObject locationDetailsJson = new JSONObject();
 						_4: {
-							JSONObject filesInLocation = new JSONObject();
-
-							java.nio.file.Path dir2 = Paths.get(dir
-									.getAbsolutePath());
-							DirectoryStream.Filter<java.nio.file.Path> filter = new DirectoryStream.Filter<java.nio.file.Path>() {
-								public boolean accept(java.nio.file.Path entry)
-										throws IOException {
-									return !Files.isDirectory(entry);
-
-								}
-							};
-							DirectoryStream<java.nio.file.Path> stream = Files
-									.newDirectoryStream(dir2, filter);
-							int i = 0;
-							for (java.nio.file.Path entry : stream) {
-								String name = entry.getFileName().toString();
-								String absolutePath = entry.toAbsolutePath()
-										.toString();
-								if (name.contains("DS_Store")) {
-									continue;
-								}
-								if (name.endsWith(".html")
-										|| name.endsWith(".htm")
-										|| loc.getName().endsWith("_files")) {
-									System.out.println("Not supported yet: "
-											+ name);
-									continue;
-								}
-								JSONObject fileDetails = new JSONObject();
-								fileDetails.put("location",
-										loc.getAbsolutePath());
-								fileDetails.put("httpUrl",
-										httpLinkFor(absolutePath));
-
-								filesInLocation.put(absolutePath, fileDetails);
-								++i;
-								if (i > LIMIT) {
-									break;
-								}
-								System.out.println(absolutePath);
-
+							locationsJson.put(aDirectoryPathString,
+									locationDetailsJson);
+							_5: {
+								Collection<String> dirsWithBoundKey = addKeyBindings(
+										aDirectoryPathString,
+										locationDetailsJson);
+								addDirs(aDirectory, locationDetailsJson,
+										dirsWithBoundKey);
 							}
-							items.put(location, filesInLocation);
 						}
-						JSONObject locationDetails = new JSONObject();
-						locationsJson.put(location, locationDetails);
-						Collection<String> dirsWithBoundKey = addKeyBindings(
-								location, locationDetails);
-						addDirs(dir, locationDetails, dirsWithBoundKey);
 					}
 				}
-				response.put("items", items);
+				response.put("items", itemsJson);
 				response.put("locations", locationsJson);
 			}
 			Response build = Response.ok()
@@ -291,17 +232,96 @@ public class Coagulate {
 			return build;
 		}
 
+		private boolean shouldGetContents(String aDirectoryPathString) {
+			File aDirectory = new File(aDirectoryPathString);
+			if (aDirectoryPathString.startsWith("#")) {
+				return false;
+			}
+			if (!aDirectory.exists()) {
+				System.out.println(aDirectoryPathString + " doesn't exist.");
+				return false;
+			}
+			if (!aDirectory.isDirectory()) {
+				System.out
+						.println(aDirectoryPathString + " is not a directory");
+				return false;
+			}
+			return true;
+		}
+
+		private JSONObject getContentsAsJson(File aDirectory)
+				throws IOException {
+			JSONObject filesInLocationJson = new JSONObject();
+			int fileCount = 0;
+			for (Path aFilePath : getDirectoryStream(aDirectory)) {
+				String filename = aFilePath.getFileName().toString();
+				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
+				if (filename.contains("DS_Store")) {
+					continue;
+				}
+				if (filename.endsWith(".html") || filename.endsWith(".htm")
+						|| aDirectory.getName().endsWith("_files")) {
+					System.out.println("Not supported yet: " + filename);
+					continue;
+				}
+				JSONObject fileEntryJson = createFileEntryJson(
+						aDirectory.getAbsolutePath(),
+						httpLinkFor(fileAbsolutePath));
+
+				filesInLocationJson.put(fileAbsolutePath, fileEntryJson);
+				++fileCount;
+				if (fileCount > LIMIT) {
+					break;
+				}
+				System.out.println(fileAbsolutePath);
+
+			}
+			return filesInLocationJson;
+		}
+
+		private DirectoryStream<Path> getDirectoryStream(File aDirectory)
+				throws IOException {
+			return getDirectoryStream(Paths.get(aDirectory.getAbsolutePath()));
+		}
+
+		private DirectoryStream<Path> getDirectoryStream(Path aDirectoryPath)
+				throws IOException {
+			DirectoryStream<Path> theDirectoryStream = Files
+					.newDirectoryStream(aDirectoryPath,
+							new DirectoryStream.Filter<Path>() {
+								public boolean accept(Path entry)
+										throws IOException {
+									return !Files.isDirectory(entry);
+
+								}
+							});
+			return theDirectoryStream;
+		}
+
+		private JSONObject createFileEntryJson(String iLocalFileSystemPath,
+				String iHttpUrl) {
+			JSONObject fileEntryJson = new JSONObject();
+			fileEntryJson.put("location", iLocalFileSystemPath);
+			fileEntryJson.put("httpUrl", iHttpUrl);
+			return fileEntryJson;
+		}
+
 		private String httpLinkFor(String absolutePath) {
 			// Unsorted
-			String http = absolutePath.replaceFirst("/Volumes/Unsorted", "http://netgear.rohidekar.com:8020/");
-			http = http.replaceFirst("/media/sarnobat/Unsorted", "http://netgear.rohidekar.com:8020/");
-			
+			String http = absolutePath.replaceFirst("/Volumes/Unsorted",
+					"http://netgear.rohidekar.com:8020/");
+			http = http.replaceFirst("/media/sarnobat/Unsorted",
+					"http://netgear.rohidekar.com:8020/");
+
 			// Large
-			http = http.replaceFirst("/media/sarnobat/Large/", "http://netgear.rohidekar.com:8021/");
-			http = http.replaceFirst("/Volumes/Large/", "http://netgear.rohidekar.com:8021/");
-		
-                        http = http.replaceFirst("^/e/Sridhar/Photos", "http://netgear.rohidekar.com:8022/");
-			
+			http = http.replaceFirst("/media/sarnobat/Large/",
+					"http://netgear.rohidekar.com:8021/");
+			http = http.replaceFirst("/Volumes/Large/",
+					"http://netgear.rohidekar.com:8021/");
+
+			http = http.replaceFirst("^/e/Sridhar/Photos",
+					"http://netgear.rohidekar.com:8022/");
+
 			return http;
 		}
 
