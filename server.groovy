@@ -221,8 +221,10 @@ public class Coagulate {
 						}
 						_4: {
 
+							String aLocalFileSystemPath = aDirectory
+									.getAbsolutePath();
 							java.nio.file.Path aDirectoryPath = Paths
-									.get(aDirectory.getAbsolutePath());
+									.get(aLocalFileSystemPath);
 							DirectoryStream.Filter<java.nio.file.Path> filter = new DirectoryStream.Filter<java.nio.file.Path>() {
 								public boolean accept(java.nio.file.Path entry)
 										throws IOException {
@@ -235,36 +237,32 @@ public class Coagulate {
 							JSONObject filesInLocationJson = new JSONObject();
 							int fileCount = 0;
 							for (Path aFilePath : theDirectoryStream) {
-								String name = aFilePath.getFileName()
+								String filename = aFilePath.getFileName()
 										.toString();
-								String absolutePath = aFilePath
+								String fileAbsolutePath = aFilePath
 										.toAbsolutePath().toString();
-								if (name.contains("DS_Store")) {
+								if (filename.contains("DS_Store")) {
 									continue;
 								}
-								if (name.endsWith(".html")
-										|| name.endsWith(".htm")
+								if (filename.endsWith(".html")
+										|| filename.endsWith(".htm")
 										|| aDirectory.getName().endsWith(
 												"_files")) {
 									System.out.println("Not supported yet: "
-											+ name);
+											+ filename);
 									continue;
 								}
-								{
-									JSONObject fileEntryJson = new JSONObject();
-									fileEntryJson.put("location",
-											aDirectory.getAbsolutePath());
-									fileEntryJson.put("httpUrl",
-											httpLinkFor(absolutePath));
+								JSONObject fileEntryJson = createFileEntryJson(
+										aLocalFileSystemPath,
+										httpLinkFor(fileAbsolutePath));
 
-									filesInLocationJson.put(absolutePath,
-											fileEntryJson);
-								}
+								filesInLocationJson.put(fileAbsolutePath,
+										fileEntryJson);
 								++fileCount;
 								if (fileCount > LIMIT) {
 									break;
 								}
-								System.out.println(absolutePath);
+								System.out.println(fileAbsolutePath);
 
 							}
 							items.put(aDirectoryPathString, filesInLocationJson);
@@ -286,6 +284,14 @@ public class Coagulate {
 					.entity(response.toString(4)).type("application/json")
 					.build();
 			return build;
+		}
+
+		private JSONObject createFileEntryJson(String iLocalFileSystemPath,
+				String iHttpUrl) {
+			JSONObject fileEntryJson = new JSONObject();
+			fileEntryJson.put("location", iLocalFileSystemPath);
+			fileEntryJson.put("httpUrl", iHttpUrl);
+			return fileEntryJson;
 		}
 
 		private String httpLinkFor(String absolutePath) {
