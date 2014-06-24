@@ -241,12 +241,12 @@ public class Coagulate {
 
 								}
 							};
-							DirectoryStream<java.nio.file.Path> stream = Files
+							DirectoryStream<java.nio.file.Path> theDirectoryStream = Files
 									.newDirectoryStream(dir2, filter);
 							int i = 0;
-							for (java.nio.file.Path entry : stream) {
-								String name = entry.getFileName().toString();
-								String absolutePath = entry.toAbsolutePath()
+							for (java.nio.file.Path filePath : theDirectoryStream) {
+								String name = filePath.getFileName().toString();
+								String absolutePath = filePath.toAbsolutePath()
 										.toString();
 								if (name.contains("DS_Store")) {
 									continue;
