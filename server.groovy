@@ -193,43 +193,52 @@ public class Coagulate {
 			String[] allDirectoryPathStrings = iDirectoryPathsString
 					.split("\\n");
 			JSONObject response = new JSONObject();
-			// TODO: do we need this?
-			response.put("locations", new JSONObject());
-			_2: {
-				JSONObject itemsJson = new JSONObject();
-				JSONObject locationsJson = new JSONObject();
-				_3: {
-					for (String aDirectoryPathString : allDirectoryPathStrings) {
-						System.out.println(aDirectoryPathString );
-						if (!shouldGetContents(aDirectoryPathString)) {
-							continue;
-						}
+			response.put("items", getItems(allDirectoryPathStrings));
+			response.put("locations", getLocationsJson(allDirectoryPathStrings));
 
-						File aDirectory = new File(aDirectoryPathString);
-						itemsJson.put(aDirectoryPathString,
-								getContentsAsJson(aDirectory));
-						JSONObject locationDetailsJson = new JSONObject();
-						_4: {
-							locationsJson.put(aDirectoryPathString,
-									locationDetailsJson);
-							_5: {
-								Collection<String> dirsWithBoundKey = addKeyBindings(
-										aDirectoryPathString,
-										locationDetailsJson);
-								addDirs(aDirectory, locationDetailsJson,
-										dirsWithBoundKey);
-							}
-						}
-					}
-				}
-				response.put("items", itemsJson);
-				response.put("locations", locationsJson);
-			}
 			Response build = Response.ok()
 					.header("Access-Control-Allow-Origin", "*")
 					.entity(response.toString(4)).type("application/json")
 					.build();
 			return build;
+		}
+
+		private JSONObject getItems(String[] allDirectoryPathStrings)
+				throws IOException {
+			JSONObject itemsJson = new JSONObject();
+			for (String aDirectoryPathString : allDirectoryPathStrings) {
+				if (!shouldGetContents(aDirectoryPathString)) {
+					continue;
+				}
+				itemsJson.put(aDirectoryPathString, getContentsAsJson(new File(
+						aDirectoryPathString)));
+			}
+			return itemsJson;
+		}
+
+		private JSONObject getLocationsJson(String[] allDirectoryPathStrings)
+				throws IOException {
+			JSONObject locationsJson = new JSONObject();
+			for (String aDirectoryPathString : allDirectoryPathStrings) {
+				if (!shouldGetContents(aDirectoryPathString)) {
+					continue;
+				}
+
+				JSONObject locationDetailsJson = new JSONObject();
+				_4: {
+					locationsJson
+							.put(aDirectoryPathString, locationDetailsJson);
+					_5: {
+						Collection<String> dirsWithBoundKey = addKeyBindings(
+								aDirectoryPathString, locationDetailsJson);
+						File aDirectory2 = new File(aDirectoryPathString);
+						addDirs(aDirectory2, locationDetailsJson,
+								dirsWithBoundKey);
+					}
+				}
+			}
+
+			return locationsJson;
 		}
 
 		private boolean shouldGetContents(String aDirectoryPathString) {
