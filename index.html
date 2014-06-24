@@ -19,7 +19,14 @@ $(document).ready(function(){
 		var width = "250px";
 		var height = "300px";
 		var itemsInDir = response.items[key];
-		for (var item in itemsInDir) {
+		if (itemsInDir.length < 1) {
+			continue;
+		}
+
+		var itemsInDirSorted = Object.keys(itemsInDir).sort();
+		console.log(itemsInDirSorted);
+		for (var sortedKey in itemsInDirSorted) {
+			var item = itemsInDirSorted[sortedKey];
 			var toBeAppended = "";
 			var res = item.match(/.*\.((jpe?g)|(png))/gi);
 			
@@ -73,7 +80,7 @@ $(document).ready(function(){
 					color = 'orange';
 					console.debug('found ind');
 				}
-				console.debug(dirName);
+				//console.debug(dirName);
 				buttons += "<button onclick='moveFile(\"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+color+"'>"+dirName+"</button><br>";
 
 			}

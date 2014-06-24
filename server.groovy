@@ -7,6 +7,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -282,11 +283,7 @@ public class Coagulate {
 			
 			Collections.sort(files, new Comparator<Path>() {
 			    public int compare(Path o1, Path o2) {
-			        try {
-			            return Files.getLastModifiedTime(o1).compareTo(Files.getLastModifiedTime(o2));
-			        } catch (IOException e) {
-			            return 0;
-			        }
+			        return o1.getFileName().compareTo(o1.getFileName());
 			    }
 			});
 
@@ -297,7 +294,8 @@ public class Coagulate {
 				JSONObject fileEntryJson = createFileEntryJson(
 						aDirectory.getAbsolutePath(),
 						httpLinkFor(fileAbsolutePath),
-						Files.getLastModifiedTime(aFilePath));
+						Files.readAttributes(aFilePath, BasicFileAttributes.class).creationTime()
+						);
 				filesInLocationJson.put(fileAbsolutePath, fileEntryJson);
 				++fileCount;
 				if (fileCount > LIMIT) {
