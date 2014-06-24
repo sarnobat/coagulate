@@ -28,14 +28,16 @@ $(document).ready(function(){
 		for (var sortedKey in itemsInDirSorted) {
 			var item = itemsInDirSorted[sortedKey];
 			var toBeAppended = "";
-			var res = item.match(/.*\.((jpe?g)|(png))/gi);
+
 			
 			var httpUrl = response.items[key][item].httpUrl;
 			var lastModified = response.items[key][item].lastModified;
-			
-			if (res !=null) {
-				//toBeAppended = '<img width="'+width+'" src="file:///' +item+ '"/>';
-				toBeAppended = '<img width="'+width+'" src="' + httpUrl + '"/>';
+			{
+				var res = item.match(/.*\.((jpe?g)|(png))/gi);			
+				if (res !=null) {
+					//toBeAppended = '<img width="'+width+'" src="file:///' +item+ '"/>';
+					toBeAppended = '<img width="'+width+'" src="' + httpUrl + '"/>';
+				}
 			}
 			{
 				var matchesVideo = item.match(/.*((mp4)|(webm))/gi);
