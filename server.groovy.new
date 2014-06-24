@@ -299,8 +299,7 @@ public class Coagulate {
 			// Large
 			http = http.replaceFirst("/media/sarnobat/Large/", "http://netgear.rohidekar.com:8021/");
 			http = http.replaceFirst("/Volumes/Large/", "http://netgear.rohidekar.com:8021/");
-		
-                        http = http.replaceFirst("^/e/Sridhar/Photos", "http://netgear.rohidekar.com:8022/");
+			
 			
 			return http;
 		}
