@@ -12,22 +12,14 @@ $(document).ready(function(){
 	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response){
 		var id = 0;
 		for(var key in response.items) { 
-	
-			// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
-	
 			var itemsInDir = response.items[key];
 			if (itemsInDir.length < 1) {
 				continue;
 			}
-	
-			var itemsInDirSorted = Object.keys(itemsInDir).sort();
-			console.log(itemsInDirSorted);
-			for (var sortedKey in itemsInDirSorted) {				
+			var filesInDirSorted = Object.keys(itemsInDir).sort();
+			for (var sortedKey in filesInDirSorted) {				
 				++id;
-				var item = itemsInDirSorted[sortedKey];
-				var toBeAppended = createItemHtml(response, item, key, id);
-					
-				$('#items').append(toBeAppended);
+				$('#items').append(createItemHtml(response, filesInDirSorted[sortedKey], key, id));
 			}
 		}
 	});
@@ -36,6 +28,7 @@ $(document).ready(function(){
 
 function createItemHtml(response, item, key, id)				
 {	
+	// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
 	var width = "250px";
 	var height = "300px";
 	{
