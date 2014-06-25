@@ -9,6 +9,7 @@
 
 var urlBase = "http://netgear.rohidekar.com:4451/cmsfs/";
 
+
 // TODO: This code is nice and simple thanks to the functional refactorings. What would 
 // be even better is if we could replace the loops with recursion.
 $(document).ready(function(){
@@ -25,9 +26,28 @@ $(document).ready(function(){
 				$('#items').append(createItemHtml(response, filesInDirSortedMap[sortedIndex], dirIndex, id));
 			}
 		}
+		
+		loadImagesSequentially(0);
 	});
 });
 
+function loadImagesSequentially(i) {
+	var images = $('.myimage');
+	if (i >= images.length) {
+		return
+	}
+
+	var imageAttrs = images[i].attributes;
+	var datasrc = $(images[i]).attr('data-src');
+	$(images[i]).attr('src',datasrc);
+	var a = function(j) {
+		console.log(images[j]);
+		console.log('finished loading');
+		loadImagesSequentially(++i);
+	};
+	$(images[i]).load(a(i));
+
+}
 
 function createItemHtml(response, item, key, id)				
 {	
@@ -42,7 +62,7 @@ function createItemHtml(response, item, key, id)
 			{
 				var res = item.match(/.*\.((jpe?g)|(png))/gi);			
 				if (res !=null) {
-					toBeAppended = '<img width="'+width+'" src="' + httpUrl + '"/>';
+					toBeAppended = '<img width="'+width+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + httpUrl + '"/>';
 				}
 			}
 		}
