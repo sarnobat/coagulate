@@ -50,6 +50,7 @@ $(document).ready(function(){
 				}
 			}			
 			++id;
+			var copyOfId = id;
 			{
 
 				{
@@ -58,8 +59,8 @@ $(document).ready(function(){
 						
 						{
 
-
-							var buttons = createButtonsPanel(item, escaped, response);
+							var idstring = "i" + copyOfId;
+							var buttons = createButtonsPanel(item, response, key, idstring);
 							
 							{
 								var tile = "<tr id='" +idstring+"'><td><table><tr><td>"+toBeAppended + "<td><td>"+buttons+"</td></tr><tr><td colspan=2><textarea rows=4 style='width:"+width+"; word-wrap:break-word;'>" + decodeURIComponent(item)+"</textarea><br>"+lastModified+"</td></tr></table></td></tr>";
@@ -76,8 +77,8 @@ $(document).ready(function(){
 });
 
 
-function createButtonsPanel(item, escaped, response) {
-	var idstring = "i" + id;
+function createButtonsPanel(item, response, key, idstring) {
+
 	buttons = "<table><tr><td>";							
 	{
 		var escaped = item.replace(/'/g, "&apos;");
@@ -106,6 +107,7 @@ function createButtonsPanel(item, escaped, response) {
 		}
 	}
 	buttons += "</td></tr></table>";
+	return buttons;
 }
 							
 function getColorForDir(dirName) {								
