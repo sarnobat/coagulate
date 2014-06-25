@@ -50,12 +50,8 @@ $(document).ready(function(){
 				}
 			}			
 			++id;
-			
 			var tile = createTile(response, key, "i" + id, toBeAppended, width, item, lastModified);
-			if (toBeAppended.length > 0) {
-				$('#items').append(tile);
-			}
-			
+			$('#items').append(tile);			
 		}
 	}
 });
