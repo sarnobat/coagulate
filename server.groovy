@@ -235,7 +235,7 @@ public class Coagulate {
 					}
 					System.out.println("21 " + aDirectoryPathString);
 
-					createItemDetailsJson(itemsJson, aDirectoryPathString);
+					itemsJson.put(aDirectoryPathString, createItemDetailsJson(itemsJson, aDirectoryPathString));
 				}
 			}
 			System.out.println("200");
@@ -262,7 +262,6 @@ public class Coagulate {
 		private JSONObject createItemDetailsJson(JSONObject itemsJson,
 				String aDirectoryPathString) throws IOException {
 			System.out.println("210 " + aDirectoryPathString);
-			JSONObject itemDetailsJson = new JSONObject();
 			_1: {
 				System.out.println("211 " + aDirectoryPathString);
 				File aDirectory = new File(aDirectoryPathString);
@@ -270,19 +269,21 @@ public class Coagulate {
 				JSONObject contentsJson = getContentsAsJson(aDirectory);
 				System.out.println("213 " + aDirectoryPathString);
 				// TODO: Bad. This is mutable
-				itemsJson.put(aDirectoryPathString, contentsJson);
+				
 				System.out.println("214 " + aDirectoryPathString);
 
 
 				_2: {
+					// TODO: delete, I think
+					JSONObject itemDetailsJson = new JSONObject();
 					Collection<String> dirsWithBoundKey = addKeyBindings(
 							aDirectoryPathString,
 							itemDetailsJson);
 					addDirs(aDirectory, itemDetailsJson,
 							dirsWithBoundKey);
 				}
+				return contentsJson;
 			}
-			return itemDetailsJson;
 		}
 		
 		private JSONObject createLocationDetailsJson(String aDirectoryPathString) throws IOException {
