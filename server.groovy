@@ -164,8 +164,7 @@ public class Coagulate {
 			Path rDestinationFile = Paths.get(destinationFilePath);
 			while (Files.exists(rDestinationFile)) {
 				destinationFilePathWithoutExtension += "1";
-				destinationFilePath = destinationFilePathWithoutExtension + "."
-						+ extension;
+				destinationFilePath = destinationFilePathWithoutExtension + "."						+ extension;
 				rDestinationFile = Paths.get(destinationFilePath);
 			}
 			if (Files.exists(rDestinationFile)) {
@@ -352,9 +351,9 @@ public class Coagulate {
 
 		private String httpLinkFor(String iAbsolutePath) {
 			// Unsorted
-			String rHttpUrl = iAbsolutePath.replaceFirst("/Volumes/Unsorted",
+			String rHttpUrl = iAbsolutePath.replaceFirst("/Volumes/Unsorted/",
 					"http://netgear.rohidekar.com:8020/");
-			rHttpUrl = rHttpUrl.replaceFirst("/media/sarnobat/Unsorted",
+			rHttpUrl = rHttpUrl.replaceFirst("/media/sarnobat/Unsorted/",
 					"http://netgear.rohidekar.com:8020/");
 
 			// Large
