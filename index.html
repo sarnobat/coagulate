@@ -74,26 +74,7 @@ $(document).ready(function(){
 									buttons += "</td><td>";
 								}
 								var dirName = dirsArray[dir];
-								var color;
-								{
-									color = "";
-									if (dirName == 'other' || dir == 'divas') {
-										color = 'pink';
-									} else if (dirName.match(/Atletico/i) || dirName == 'brst') {
-										color = 'red';
-									} else if (dirName == 'legs') {
-										color = 'yellow';
-									}  else if (dirName == 'navel') {
-										color = 'purple';
-									}  else if (dirName == 'teen') {
-										color = 'white';
-									} else if (dirName.match(/soccer/i)) {
-										color = 'green';
-									} else if (dirName == 'ind') {
-										color = 'orange';
-										console.debug('found ind');
-									}
-								}
+								var color = getColorForDir(dirName);
 								buttons += "<button onclick='moveFile(\"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+color+"'>"+dirName+"</button><br>";
 							}
 						}
@@ -108,6 +89,28 @@ $(document).ready(function(){
 		}
 	}
 });
+
+function getColorForDir(dirName) {								
+	var color = "";
+	if (dirName == 'other' || dirName == 'divas') {
+		color = 'pink';
+	} else if (dirName.match(/Atletico/i) || dirName == 'brst') {
+		color = 'red';
+	} else if (dirName == 'legs') {
+		color = 'yellow';
+	}  else if (dirName == 'navel') {
+		color = 'purple';
+	}  else if (dirName == 'teen') {
+		color = 'white';
+	} else if (dirName.match(/soccer/i)) {
+		color = 'green';
+	} else if (dirName == 'ind') {
+		color = 'orange';
+		console.debug('found ind');
+	}
+	return color
+}
+
 function addslashes( str ) {
     return (str + '').replace(/[\\"']/g, '\\$&').replace(/\u0000/g, '\\0');
 }
