@@ -50,14 +50,20 @@ $(document).ready(function(){
 			}			
 			++id;
 			var idstring = "i" + id;
-			$('#items').append("<tr id='" +idstring+"'><td><table><tr><td>"+toBeAppended + "<td><td>"+createButtonsPanel(item, response, key, idstring)+"</td></tr><tr><td colspan=2><textarea rows=4 style='width:"+width+"; word-wrap:break-word;'>" + decodeURIComponent(item)+"</textarea><br>"+lastModified+"</td></tr></table></td></tr>");
+			$('#items').append(
+				  "<tr id='" +idstring+"'><td><table><tr><td>"
+				+ toBeAppended + "<td><td>"+createButtonsPanel(item, response, key, idstring)
+				+"</td></tr><tr><td colspan=2><textarea rows=4 style='width:"
+				+ width+"; word-wrap:break-word;'>" 
+				+ decodeURIComponent(item)+"</textarea><br>"+lastModified
+				+"</td></tr></table></td></tr>");
 		}
 	}
 });
 
 function createButtonsPanel(item, response, key, idstring) {
 
-	buttons = "<table><tr><td>";							
+	var buttons = "<table><tr><td>";							
 	{
 		var escaped = item.replace(/'/g, "&apos;");
 
