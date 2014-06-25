@@ -1,18 +1,34 @@
 <!DOCTYPE html>
 <html>
 <head>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js">
-<script type="text/javascript" src="js/kb_shortcut.packed.js" ></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="http://netgear.rohidekar.com/yurl/jquery/purl.js"></script>
+<script src="http://www.webtoolkit.info/djs/webtoolkit.md5.js"></script>
 </script>
 <script>
 
 
 var urlBase = "http://netgear.rohidekar.com:4451/cmsfs/";
 
+function updateURLIfEmpty() {
+	var locations = $.url().param('locations');
+	if (locations == null || locations == '') {
+			updateURL();
+	} else {
+		$("#locations").val(decodeURIComponent(locations));
+	}
+}
+
+function updateURL() {
+	history.pushState(null, null, '/coagulate?locations=' + encodeURIComponent($("#locations").val())); // HTML5
+}
 
 // TODO: This code is nice and simple thanks to the functional refactorings. What would 
 // be even better is if we could replace the loops with recursion.
 $(document).ready(function(){
+
+	updateURLIfEmpty();
+
 	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response){
 		var id = 0;
 		console.log(response.items);
@@ -87,7 +103,8 @@ function createItemHtml(response, item, key, id)
 	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
 		+ toBeAppended + "<td><td>"+createButtonsPanel(item, response, key, idstring)
 		+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
-		+ decodeURIComponent(item)+"</textarea><br>"+lastModified
+		+ decodeURIComponent(item)+"</textarea><br>"+lastModified + "</td>"
+		+ "<td><a href='" +httpUrl+"'>" + httpUrl + "</a><br>" +
 		+ "</td></tr></table></td></tr>";
 
 	return toBeAppended;
@@ -168,11 +185,12 @@ function moveFileToParent(filePath, id) {
 <table id="items"></table>
 
 Key bindings<br>
-<textarea id="locations">
-/Volumes/Unsorted/Videos/wwf/
+<textarea id="locations" cols="100" rows="30" onblur="updateURL()">
+#/Volumes/Unsorted/Videos/wwf/
 /media/sarnobat/Unsorted/Videos/Atletico
 /media/sarnobat/Unsorted/Videos/soccer
 /media/sarnobat/Unsorted/Videos/
+
 #/e/Sridhar/Photos/Courtesy of others/dad	
 #/e/Sridhar/Photos/camera phone photos/iPhone/Sridhar
 #/e/Sridhar/Photos/camera phone photos/iPhone
