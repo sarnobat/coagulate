@@ -15,6 +15,7 @@ var urlBase = "http://netgear.rohidekar.com:4451/cmsfs/";
 $(document).ready(function(){
 	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response){
 		var id = 0;
+		console.log(response.items);
 		for(var dirIndex in response.items) { 
 			var filesInDir = response.items[dirIndex];
 			if (filesInDir.length < 1) {
@@ -23,6 +24,9 @@ $(document).ready(function(){
 			var filesInDirSortedMap = Object.keys(filesInDir).sort();
 			for (var sortedIndex in filesInDirSortedMap) {				
 				++id;
+				if (id > 160) {
+					break;
+				}
 				$('#items').append(createItemHtml(response, filesInDirSortedMap[sortedIndex], dirIndex, id));
 			}
 		}
@@ -41,8 +45,6 @@ function loadImagesSequentially(i) {
 	var datasrc = $(images[i]).attr('data-src');
 	$(images[i]).attr('src',datasrc);
 	var a = function(j) {
-		console.log(images[j]);
-		console.log('finished loading');
 		loadImagesSequentially(++i);
 	};
 	$(images[i]).load(a(i));
@@ -160,10 +162,11 @@ function moveFileToParent(filePath, id) {
 
 Key bindings<br>
 <textarea id="locations">
+/media/sarnobat/Unsorted/Videos/Atletico
 #/e/Sridhar/Photos/Courtesy of others/dad	
 #/sarnobat.garagebandbroken/Windows/usb/Photos/2014-05-13 Los Angeles/originals
-#/e/Sridhar/Photos/camera phone photos/iPhone/sort_these
-/e/Sridhar/Photos/camera phone photos/iPhone
+#/e/Sridhar/Photos/camera phone photos/iPhone/Sridhar
+#/e/Sridhar/Photos/camera phone photos/iPhone
 #/Volumes/Unsorted/images
 
 #/Users/sarnobat/Desktop

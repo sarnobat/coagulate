@@ -164,7 +164,7 @@ public class Coagulate {
 			Path rDestinationFile = Paths.get(destinationFilePath);
 			while (Files.exists(rDestinationFile)) {
 				destinationFilePathWithoutExtension += "1";
-				destinationFilePath = destinationFilePathWithoutExtension + "."						+ extension;
+				destinationFilePath = destinationFilePathWithoutExtension + "."	+ extension;
 				rDestinationFile = Paths.get(destinationFilePath);
 			}
 			if (Files.exists(rDestinationFile)) {
@@ -311,9 +311,11 @@ public class Coagulate {
 
 				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
 				++fileCount;
-				if (fileCount > LIMIT) {
-					break;
-				}
+				// Do this on the client to save network roundtrips (though it is possible
+				// for hackers to abuse).
+				//if (fileCount > LIMIT) {
+				//	break;
+				//}
 				System.out.println(fileAbsolutePath);
 
 			}
