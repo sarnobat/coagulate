@@ -304,8 +304,6 @@ public class Coagulate {
 			JSONObject locationDetailsJson = new JSONObject();
 			_1: {
 				File aDirectory = new File(aDirectoryPathString);
-				deleteThis.put(aDirectoryPathString,
-						getContentsAsJson(aDirectory));
 
 				_2: {
 					Collection<String> dirsWithBoundKey = addKeyBindings(
