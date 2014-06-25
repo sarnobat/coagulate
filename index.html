@@ -63,11 +63,7 @@ $(document).ready(function(){
 
 							
 							{
-								var tile;
-								{
-									var buttons = createButtonsPanel(item, response, key, idstring);
-									tile = "<tr id='" +idstring+"'><td><table><tr><td>"+toBeAppended + "<td><td>"+buttons+"</td></tr><tr><td colspan=2><textarea rows=4 style='width:"+width+"; word-wrap:break-word;'>" + decodeURIComponent(item)+"</textarea><br>"+lastModified+"</td></tr></table></td></tr>";
-								}
+								var tile = createTile(idstring, toBeAppended, buttons, width, item, lastModified);
 								if (toBeAppended.length > 0) {
 									$('#items').append(tile);
 								}
@@ -80,6 +76,10 @@ $(document).ready(function(){
 	}
 });
 
+function createTile(idstring, toBeAppended, buttons, width, item, lastModified) {
+	var buttons = createButtonsPanel(item, response, key, idstring);
+	tile = "<tr id='" +idstring+"'><td><table><tr><td>"+toBeAppended + "<td><td>"+buttons+"</td></tr><tr><td colspan=2><textarea rows=4 style='width:"+width+"; word-wrap:break-word;'>" + decodeURIComponent(item)+"</textarea><br>"+lastModified+"</td></tr></table></td></tr>";
+}
 
 function createButtonsPanel(item, response, key, idstring) {
 
