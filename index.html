@@ -44,23 +44,16 @@ $(document).ready(function(){
 				{
 					var matchesVideo = item.match(/.*((mp4)|(webm))/gi);
 					if (matchesVideo != null) {
-						//toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="file:///' +item+ '"/></video>';
 						toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="' +httpUrl+ '"/></video>';
 					}
 				}
 			}			
 			++id;
-			var tile = createTile(response, key, "i" + id, toBeAppended, width, item, lastModified);
-			$('#items').append(tile);			
+			var idstring = "i" + id;
+			$('#items').append("<tr id='" +idstring+"'><td><table><tr><td>"+toBeAppended + "<td><td>"+createButtonsPanel(item, response, key, idstring)+"</td></tr><tr><td colspan=2><textarea rows=4 style='width:"+width+"; word-wrap:break-word;'>" + decodeURIComponent(item)+"</textarea><br>"+lastModified+"</td></tr></table></td></tr>");
 		}
 	}
 });
-
-function createTile(response, key, idstring, toBeAppended, width, item, lastModified) {
-	var buttons = createButtonsPanel(item, response, key, idstring);
-	tile = "<tr id='" +idstring+"'><td><table><tr><td>"+toBeAppended + "<td><td>"+buttons+"</td></tr><tr><td colspan=2><textarea rows=4 style='width:"+width+"; word-wrap:break-word;'>" + decodeURIComponent(item)+"</textarea><br>"+lastModified+"</td></tr></table></td></tr>";
-	return tile;
-}
 
 function createButtonsPanel(item, response, key, idstring) {
 
