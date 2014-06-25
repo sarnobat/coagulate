@@ -259,23 +259,9 @@ public class Coagulate {
 			return locationsJson;
 		}
 
-		private JSONObject createItemDetailsJson(String aDirectoryPathString) throws IOException {
-			_1: {
-				File aDirectory = new File(aDirectoryPathString);
-				JSONObject contentsJson = getContentsAsJson(aDirectory);
-				
-
-				_2: {
-					// TODO: delete, I think
-					JSONObject itemDetailsJson = new JSONObject();
-					Collection<String> dirsWithBoundKey = addKeyBindings(
-							aDirectoryPathString,
-							itemDetailsJson);
-					addDirs(aDirectory, itemDetailsJson,
-							dirsWithBoundKey);
-				}
-				return contentsJson;
-			}
+		private JSONObject createItemDetailsJson(String aDirectoryPathString)
+				throws IOException {
+			return getContentsAsJson(new File(aDirectoryPathString));
 		}
 		
 		private JSONObject createLocationDetailsJson(String aDirectoryPathString) throws IOException {
