@@ -51,7 +51,7 @@ $(document).ready(function(){
 			}
 			{
 
-				var i = 0;			
+				var buttonsAdded = 0;			
 				++id;
 				{
 					var buttons = "<table><tr><td>";
@@ -69,8 +69,8 @@ $(document).ready(function(){
 								return 0;
 							});
 							for (var dir in dirsArray) {
-								i++;
-								if (i%15 == 0) {
+								buttonsAdded++;
+								if (buttonsAdded%15 == 0) {
 									buttons += "</td><td>";
 								}
 								var dirName = dirsArray[dir];
