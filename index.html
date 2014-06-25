@@ -11,8 +11,8 @@ var urlBase = "http://netgear.rohidekar.com:4451/cmsfs/";
 $(document).ready(function(){
 	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response){
 		var id = 0;
-		for(var key in response.items) { 
-			var filesInDir = response.items[key];
+		for(var dirIndex in response.items) { 
+			var filesInDir = response.items[dirIndex];
 			if (filesInDir.length < 1) {
 				continue;
 			}
@@ -20,7 +20,7 @@ $(document).ready(function(){
 			for (var sortedIndex in filesInDirSorted) {				
 				++id;
 				console.log(sortedIndex);
-				$('#items').append(createItemHtml(response, filesInDirSorted[sortedIndex], key, id));
+				$('#items').append(createItemHtml(response, filesInDirSorted[sortedIndex], dirIndex, id));
 			}
 		}
 	});
