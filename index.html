@@ -12,14 +12,15 @@ $(document).ready(function(){
 	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response){
 		var id = 0;
 		for(var key in response.items) { 
-			var itemsInDir = response.items[key];
-			if (itemsInDir.length < 1) {
+			var filesInDir = response.items[key];
+			if (filesInDir.length < 1) {
 				continue;
 			}
-			var filesInDirSorted = Object.keys(itemsInDir).sort();
-			for (var sortedKey in filesInDirSorted) {				
+			var filesInDirSorted = Object.keys(filesInDir).sort();
+			for (var sortedIndex in filesInDirSorted) {				
 				++id;
-				$('#items').append(createItemHtml(response, filesInDirSorted[sortedKey], key, id));
+				console.log(sortedIndex);
+				$('#items').append(createItemHtml(response, filesInDirSorted[sortedIndex], key, id));
 			}
 		}
 	});
