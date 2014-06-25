@@ -11,64 +11,64 @@ var urlBase = "http://netgear.rohidekar.com:4451/cmsfs/";
 $(document).ready(function(){
 
 
- $.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response){
-  	var id = 0;
-	for(var key in response.items) { 
-
-		// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
-
-		var itemsInDir = response.items[key];
-		if (itemsInDir.length < 1) {
-			continue;
-		}
-
-		var itemsInDirSorted = Object.keys(itemsInDir).sort();
-		console.log(itemsInDirSorted);
-		for (var sortedKey in itemsInDirSorted) {				
-			++id;
-			var item = itemsInDirSorted[sortedKey];
-			var toBeAppended = createItemHtml(response, item, key, id);
-				
-			$('#items').append(toBeAppended);
-		}
-	}
-});
-
-
-			function createItemHtml(response, item, key, id)				
-			{	
-				var width = "250px";
-				var height = "300px";
-				{
-					var toBeAppended = "";
-					var httpUrl = response.items[key][item].httpUrl;
-					{
-						var lastModified = response.items[key][item].lastModified;
-						{
-							var res = item.match(/.*\.((jpe?g)|(png))/gi);			
-							if (res !=null) {
-								toBeAppended = '<img width="'+width+'" src="' + httpUrl + '"/>';
-							}
-						}
-					}
-					{
-						var matchesVideo = item.match(/.*((mp4)|(webm))/gi);
-						if (matchesVideo != null) {
-							toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="' +httpUrl+ '"/></video>';
-						}
-					}
-				}	
-				var idstring = "i" + id;
-				
-				var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
-					+ toBeAppended + "<td><td>"+createButtonsPanel(item, response, key, idstring)
-					+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
-					+ decodeURIComponent(item)+"</textarea><br>"+lastModified
-					+ "</td></tr></table></td></tr>";
-					
+	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response){
+		var id = 0;
+		for(var key in response.items) { 
 	
-				return toBeAppended;
+			// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
+	
+			var itemsInDir = response.items[key];
+			if (itemsInDir.length < 1) {
+				continue;
 			}
+	
+			var itemsInDirSorted = Object.keys(itemsInDir).sort();
+			console.log(itemsInDirSorted);
+			for (var sortedKey in itemsInDirSorted) {				
+				++id;
+				var item = itemsInDirSorted[sortedKey];
+				var toBeAppended = createItemHtml(response, item, key, id);
+					
+				$('#items').append(toBeAppended);
+			}
+		}
+	});
+
+
+function createItemHtml(response, item, key, id)				
+{	
+	var width = "250px";
+	var height = "300px";
+	{
+		var toBeAppended = "";
+		var httpUrl = response.items[key][item].httpUrl;
+		{
+			var lastModified = response.items[key][item].lastModified;
+			{
+				var res = item.match(/.*\.((jpe?g)|(png))/gi);			
+				if (res !=null) {
+					toBeAppended = '<img width="'+width+'" src="' + httpUrl + '"/>';
+				}
+			}
+		}
+		{
+			var matchesVideo = item.match(/.*((mp4)|(webm))/gi);
+			if (matchesVideo != null) {
+				toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="' +httpUrl+ '"/></video>';
+			}
+		}
+	}	
+	var idstring = "i" + id;
+	
+	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
+		+ toBeAppended + "<td><td>"+createButtonsPanel(item, response, key, idstring)
+		+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
+		+ decodeURIComponent(item)+"</textarea><br>"+lastModified
+		+ "</td></tr></table></td></tr>";
+
+	return toBeAppended;
+}
+
 function createButtonsPanel(item, response, key, idstring) {
 
 	var buttons = "<table><tr><td>";							
