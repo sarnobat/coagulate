@@ -8,6 +8,9 @@
 
 
 var urlBase = "http://netgear.rohidekar.com:4451/cmsfs/";
+
+// TODO: This code is nice and simple thanks to the functional refactorings. What would 
+// be even better is if we could replace the loops with recursion.
 $(document).ready(function(){
 	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response){
 		var id = 0;
