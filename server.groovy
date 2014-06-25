@@ -191,19 +191,6 @@ public class Coagulate {
 			return subfolder;
 		}
 
-		private static boolean imagePathAlreadyContainsFolder(Path imageFile,
-				String folderName) {
-			if (imageFile == null) {
-				return false;
-			}
-			if (imageFile.toString().equals(folderName)) {
-				return true;
-			} else {
-				return imagePathAlreadyContainsFolder(imageFile.getParent(),
-						folderName);
-			}
-		}
-
 		@GET
 		@javax.ws.rs.Path("list")
 		@Produces("application/json")
@@ -235,7 +222,7 @@ public class Coagulate {
 
 		private JSONObject createFilesJson(String[] allDirectoryPathStrings)
 				throws IOException {
-			JSONObject deleteThis = new JSONObject();
+			
 			JSONObject itemsJson = new JSONObject();
 
 			_3: {
@@ -258,7 +245,6 @@ public class Coagulate {
 		private JSONObject createLocationsJson(String[] allDirectoryPathStrings)
 				throws IOException {
 			JSONObject locationsJson = new JSONObject();
-			JSONObject deleteThis = new JSONObject();
 
 			_3: {
 				for (String aDirectoryPathString : allDirectoryPathStrings) {
@@ -267,40 +253,39 @@ public class Coagulate {
 					}
 					locationsJson.put(
 							aDirectoryPathString,
-							createLocationDetailsJson(deleteThis,
-									aDirectoryPathString));
+							createLocationDetailsJson(aDirectoryPathString));
 				}
 			}
 			return locationsJson;
 		}
 
 		private JSONObject createItemDetailsJson(JSONObject itemsJson,
-				String deleteThis) throws IOException {
-			System.out.println("210 " + deleteThis);
-			JSONObject locationDetailsJson = new JSONObject();
+				String aDirectoryPathString) throws IOException {
+			System.out.println("210 " + aDirectoryPathString);
+			JSONObject itemDetailsJson = new JSONObject();
 			_1: {
-				System.out.println("211 " + deleteThis);
-				File aDirectory = new File(deleteThis);
-				System.out.println("212 " + deleteThis);
+				System.out.println("211 " + aDirectoryPathString);
+				File aDirectory = new File(aDirectoryPathString);
+				System.out.println("212 " + aDirectoryPathString);
 				JSONObject contentsJson = getContentsAsJson(aDirectory);
-				System.out.println("213 " + deleteThis);
-				itemsJson.put(deleteThis, contentsJson);
-				System.out.println("214 " + deleteThis);
+				System.out.println("213 " + aDirectoryPathString);
+				// TODO: Bad. This is mutable
+				itemsJson.put(aDirectoryPathString, contentsJson);
+				System.out.println("214 " + aDirectoryPathString);
 
 
 				_2: {
 					Collection<String> dirsWithBoundKey = addKeyBindings(
-							deleteThis,
-							locationDetailsJson);
-					addDirs(aDirectory, locationDetailsJson,
+							aDirectoryPathString,
+							itemDetailsJson);
+					addDirs(aDirectory, itemDetailsJson,
 							dirsWithBoundKey);
 				}
 			}
-			return locationDetailsJson;
+			return itemDetailsJson;
 		}
 		
-		private JSONObject createLocationDetailsJson(JSONObject deleteThis,
-				String aDirectoryPathString) throws IOException {
+		private JSONObject createLocationDetailsJson(String aDirectoryPathString) throws IOException {
 			JSONObject locationDetailsJson = new JSONObject();
 			_1: {
 				File aDirectory = new File(aDirectoryPathString);
