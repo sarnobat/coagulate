@@ -56,6 +56,13 @@ function createItemHtml(response, item, key, id)
 	// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
 	var width = "250px";
 	var height = "300px";
+	
+	{
+		var res = item.match(/.*\.txt/gi);
+		if (res !=null) {
+		}
+	}
+	
 	{
 		var toBeAppended = "";
 		var httpUrl = response.items[key][item].httpUrl;
@@ -162,9 +169,11 @@ function moveFileToParent(filePath, id) {
 
 Key bindings<br>
 <textarea id="locations">
+/Volumes/Unsorted/Videos/wwf/
 /media/sarnobat/Unsorted/Videos/Atletico
+/media/sarnobat/Unsorted/Videos/soccer
+/media/sarnobat/Unsorted/Videos/
 #/e/Sridhar/Photos/Courtesy of others/dad	
-#/sarnobat.garagebandbroken/Windows/usb/Photos/2014-05-13 Los Angeles/originals
 #/e/Sridhar/Photos/camera phone photos/iPhone/Sridhar
 #/e/Sridhar/Photos/camera phone photos/iPhone
 #/Volumes/Unsorted/images
