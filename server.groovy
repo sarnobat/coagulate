@@ -7,12 +7,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileTime;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 
@@ -42,28 +37,42 @@ public class Coagulate {
 		@GET
 		@javax.ws.rs.Path("moveToParent")
 		@Produces("application/json")
-		public Response moveToParent(@QueryParam("filePath") String filePath)
+		public Response moveToParent(@QueryParam("filePath") String sourceFilePathString)
 				throws JSONException {
 
-			if (filePath.endsWith("htm") || filePath.endsWith(".html")) {
+			if (sourceFilePathString.endsWith("htm") || sourceFilePathString.endsWith(".html")) {
 				throw new RuntimeException("Need to move the _files folder too");
 			}
 
-			Path sourceFile = Paths.get(filePath);
-			String filename = sourceFile.getFileName().toString();
-			Path parent = sourceFile.getParent().getParent().toAbsolutePath();
-			String parentPath = parent.toAbsolutePath().toString();
-			String destinationFilePath = parentPath + "/" + filename;
-			Path destinationFile = determineDestinationPathAvoidingExisting(destinationFilePath);
-			doMove(sourceFile, destinationFile);
+			doMoveToParent(sourceFilePathString);
+			
+			return Response.ok()
+					.header("Access-Control-Allow-Origin", "*")
+					.entity(new JSONObject().toString(4)).type("application/json")
+					.build();
+		}
+
+		private void doMoveToParent(String sourceFilePathString)
+				throws IllegalAccessError {
+			Path sourceFilePath = Paths.get(sourceFilePathString);
+			Path destinationFile = getDestinationFilePathAvoidingExisting(sourceFilePath);
+			doMove(sourceFilePath, destinationFile);
 			System.out.println("File now resides at "
 					+ destinationFile.toAbsolutePath().toString());
-			JSONObject response = new JSONObject();
-			Response build = Response.ok()
-					.header("Access-Control-Allow-Origin", "*")
-					.entity(response.toString(4)).type("application/json")
-					.build();
-			return build;
+		}
+
+		private Path getDestinationFilePathAvoidingExisting(Path sourceFile)
+				throws IllegalAccessError {
+			Path destinationFile;
+			_1: {
+				
+				String filename = sourceFile.getFileName().toString();
+				Path parent = sourceFile.getParent().getParent().toAbsolutePath();
+				String parentPath = parent.toAbsolutePath().toString();
+				String destinationFilePath = parentPath + "/" + filename;
+				destinationFile = determineDestinationPathAvoidingExisting(destinationFilePath);
+			}
+			return destinationFile;
 		}
 
 		@GET
@@ -84,42 +93,47 @@ public class Coagulate {
 				e.printStackTrace();
 				throw new RuntimeException(e);
 			}
-			JSONObject response = new JSONObject();
-			Response build = Response.ok()
+			return Response.ok()
 					.header("Access-Control-Allow-Origin", "*")
-					.entity(response.toString(4)).type("application/json")
+					.entity(new JSONObject().toString(4)).type("application/json")
 					.build();
-			return build;
 		}
 
 		private static void moveFileToSubfolder(String filePath,
-				String folderName) throws IllegalAccessError, IOException {
-			java.nio.file.Path path = Paths.get(filePath);
-			// File imageFile = path.toFile();
-			if (!Files.exists(path)) {
-				throw new RuntimeException("File doesn't exist");
+				String subfolderSimpleName) throws IllegalAccessError, IOException {
+			Path sourceFilePath = Paths.get(filePath);
+			if (!Files.exists(sourceFilePath)) {
+				throw new RuntimeException("No such source file");
 			}
 
-			// Already in right location
-			if (imagePathAlreadyContainsFolder(path, folderName)) {
-				System.out.println("Path already contains " + folderName);
-			}
-
-			// if the subfolder exists, do nothing
-			String parentDirPath = path.getParent().toAbsolutePath().toString();
-			String destinationFolderPath = parentDirPath + "/" + folderName;
-			if (folderName.equals(path.getParent().getFileName().toString())) {
+			if (fileAlreadyInDesiredSubdir(subfolderSimpleName, sourceFilePath)) {
 				System.out.println("Not moving to identical subfolder");
 				return;
 			}
-			java.nio.file.Path subfolder = getOrCreateDestinationFolder(destinationFolderPath);
-			java.nio.file.Path destinationFile = allocateFile(path, subfolder);
-			doMove(path, destinationFile);
+			doMove(sourceFilePath, getDestinationFilePath(subfolderSimpleName, sourceFilePath));
 
 		}
 
-		private static void doMove(java.nio.file.Path path,
-				java.nio.file.Path destinationFile) throws IllegalAccessError {
+		private static boolean fileAlreadyInDesiredSubdir(
+				String subfolderSimpleName, Path sourceFilePath) {
+			return subfolderSimpleName.equals(sourceFilePath.getParent().getFileName().toString());
+		}
+
+		private static Path getDestinationFilePath(String folderName, Path path)
+				throws IllegalAccessError, IOException {
+			Path destinationFile;
+			_1: {
+				String parentDirPath = path.getParent().toAbsolutePath()
+						.toString();
+				String destinationFolderPath = parentDirPath + "/" + folderName;
+				Path subfolder = getOrCreateDestinationFolder(destinationFolderPath);
+				destinationFile = allocateFile(path, subfolder);
+			}
+			return destinationFile;
+		}
+
+		private static void doMove(Path path, Path destinationFile)
+				throws IllegalAccessError {
 			try {
 				Files.move(path, destinationFile);// By default, it won't
 													// overwrite existing
@@ -135,7 +149,8 @@ public class Coagulate {
 				throws IllegalAccessError {
 			// if destination file exists, rename the file to be moved(while
 			// loop)
-			String destinationFilePath = subfolder.normalize().toAbsolutePath().toString() + "/" + imageFile.getFileName().toString();
+			String destinationFilePath = subfolder.normalize().toAbsolutePath()
+					.toString() + "/" + imageFile.getFileName().toString();
 
 			Path destinationFile = determineDestinationPathAvoidingExisting(destinationFilePath);
 			return destinationFile;
@@ -163,7 +178,6 @@ public class Coagulate {
 		private static java.nio.file.Path getOrCreateDestinationFolder(
 				String destinationFolderPath) throws IllegalAccessError,
 				IOException {
-			// File subfolder = new File(destinationFolderPath);
 			java.nio.file.Path subfolder = Paths.get(destinationFolderPath);
 			// if the subfolder does not exist, create it
 			if (!Files.exists(subfolder)) {
@@ -177,8 +191,8 @@ public class Coagulate {
 			return subfolder;
 		}
 
-		private static boolean imagePathAlreadyContainsFolder(
-				java.nio.file.Path imageFile, String folderName) {
+		private static boolean imagePathAlreadyContainsFolder(Path imageFile,
+				String folderName) {
 			if (imageFile == null) {
 				return false;
 			}
@@ -197,9 +211,7 @@ public class Coagulate {
 				throws JSONException, IOException {
 			String[] allDirectoryPathStrings = iDirectoryPathsString
 					.split("\\n");
-			JSONObject response = new JSONObject();
-			response.put("items", getItems(allDirectoryPathStrings));
-			response.put("locations", getLocationsJson(allDirectoryPathStrings));
+			JSONObject response = createListJson(allDirectoryPathStrings);
 
 			Response build = Response.ok()
 					.header("Access-Control-Allow-Origin", "*")
@@ -208,49 +220,114 @@ public class Coagulate {
 			return build;
 		}
 
-		private JSONObject getItems(String[] allDirectoryPathStrings)
+		private JSONObject createListJson(String[] allDirectoryPathStrings)
 				throws IOException {
+			JSONObject response = new JSONObject();
+			System.out.println("1");
+			response.put("items", createFilesJson(allDirectoryPathStrings));
+			System.out.println("100");
+			response.put("locations",
+					createLocationsJson(allDirectoryPathStrings));
+					
+			System.out.println("1000");
+			return response;
+		}
+
+		private JSONObject createFilesJson(String[] allDirectoryPathStrings)
+				throws IOException {
+			JSONObject deleteThis = new JSONObject();
 			JSONObject itemsJson = new JSONObject();
-			for (String aDirectoryPathString : allDirectoryPathStrings) {
-				if (!shouldGetContents(aDirectoryPathString)) {
-					continue;
+
+			_3: {
+				for (String aDirectoryPathString : allDirectoryPathStrings) {
+				
+					System.out.println("2 " + aDirectoryPathString);
+					if (!shouldGetContents(aDirectoryPathString)) {
+						System.out.println("20 " + aDirectoryPathString);
+						continue;
+					}
+					System.out.println("21 " + aDirectoryPathString);
+
+					createItemDetailsJson(itemsJson, aDirectoryPathString);
 				}
-				itemsJson.put(aDirectoryPathString, getContentsAsJson(new File(
-						aDirectoryPathString)));
 			}
+			System.out.println("200");
 			return itemsJson;
 		}
 
-		private JSONObject getLocationsJson(String[] allDirectoryPathStrings)
+		private JSONObject createLocationsJson(String[] allDirectoryPathStrings)
 				throws IOException {
 			JSONObject locationsJson = new JSONObject();
-			for (String aDirectoryPathString : allDirectoryPathStrings) {
-				if (!shouldGetContents(aDirectoryPathString)) {
-					continue;
-				}
+			JSONObject deleteThis = new JSONObject();
 
-				JSONObject locationDetailsJson = new JSONObject();
-				_4: {
-					locationsJson
-							.put(aDirectoryPathString, locationDetailsJson);
-					_5: {
-						Collection<String> dirsWithBoundKey = addKeyBindings(
-								aDirectoryPathString, locationDetailsJson);
-						File aDirectory2 = new File(aDirectoryPathString);
-						addDirs(aDirectory2, locationDetailsJson,
-								dirsWithBoundKey);
+			_3: {
+				for (String aDirectoryPathString : allDirectoryPathStrings) {
+					if (!shouldGetContents(aDirectoryPathString)) {
+						continue;
 					}
+					locationsJson.put(
+							aDirectoryPathString,
+							createLocationDetailsJson(deleteThis,
+									aDirectoryPathString));
 				}
 			}
-
 			return locationsJson;
 		}
 
+		private JSONObject createItemDetailsJson(JSONObject itemsJson,
+				String deleteThis) throws IOException {
+			System.out.println("210 " + deleteThis);
+			JSONObject locationDetailsJson = new JSONObject();
+			_1: {
+				System.out.println("211 " + deleteThis);
+				File aDirectory = new File(deleteThis);
+				System.out.println("212 " + deleteThis);
+				JSONObject contentsJson = getContentsAsJson(aDirectory);
+				System.out.println("213 " + deleteThis);
+				itemsJson.put(deleteThis, contentsJson);
+				System.out.println("214 " + deleteThis);
+
+
+				_2: {
+					Collection<String> dirsWithBoundKey = addKeyBindings(
+							deleteThis,
+							locationDetailsJson);
+					addDirs(aDirectory, locationDetailsJson,
+							dirsWithBoundKey);
+				}
+			}
+			return locationDetailsJson;
+		}
+		
+		private JSONObject createLocationDetailsJson(JSONObject deleteThis,
+				String aDirectoryPathString) throws IOException {
+			JSONObject locationDetailsJson = new JSONObject();
+			_1: {
+				File aDirectory = new File(aDirectoryPathString);
+				deleteThis.put(aDirectoryPathString,
+						getContentsAsJson(aDirectory));
+
+				_2: {
+					Collection<String> dirsWithBoundKey = addKeyBindings(
+							aDirectoryPathString,
+							locationDetailsJson);
+					addDirs(aDirectory, locationDetailsJson,
+							dirsWithBoundKey);
+				}
+			}
+			return locationDetailsJson;
+		}
+
 		private boolean shouldGetContents(String aDirectoryPathString) {
-			File aDirectory = new File(aDirectoryPathString);
+			System.out.println("3 " + aDirectoryPathString);
+
 			if (aDirectoryPathString.startsWith("#")) {
+				System.out.println("4 " + aDirectoryPathString);
 				return false;
 			}
+			System.out.println("5 " + aDirectoryPathString);
+
+			File aDirectory = new File(aDirectoryPathString);
 			if (!aDirectory.exists()) {
 				System.out.println(aDirectoryPathString + " doesn't exist.");
 				return false;
@@ -265,11 +342,13 @@ public class Coagulate {
 
 		private JSONObject getContentsAsJson(File aDirectory)
 				throws IOException {
-			// TODO: order the directory stream by date
-			List<Path> files = new ArrayList<>();
-
+			JSONObject filesInLocationJson = new JSONObject();
+			int fileCount = 0;
+			System.out.println("2120 " + aDirectory.getName());
 			for (Path aFilePath : getDirectoryStream(aDirectory)) {
+				System.out.println("2121 " + aFilePath.getFileName());
 				String filename = aFilePath.getFileName().toString();
+				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
 				if (filename.contains("DS_Store")) {
 					continue;
 				}
@@ -278,54 +357,53 @@ public class Coagulate {
 					System.out.println("Not supported yet: " + filename);
 					continue;
 				}
-				files.add(aFilePath);
-			}
-			
-			Collections.sort(files, new Comparator<Path>() {
-			    public int compare(Path o1, Path o2) {
-			        return o1.getFileName().compareTo(o1.getFileName());
-			    }
-			});
-
-			JSONObject filesInLocationJson = new JSONObject();
-			int fileCount = 0;
-			for (Path aFilePath : files) {
-				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
 				JSONObject fileEntryJson = createFileEntryJson(
 						aDirectory.getAbsolutePath(),
-						httpLinkFor(fileAbsolutePath),
-						Files.readAttributes(aFilePath, BasicFileAttributes.class).creationTime()
-						);
+						httpLinkFor(fileAbsolutePath));
+
 				filesInLocationJson.put(fileAbsolutePath, fileEntryJson);
 				++fileCount;
 				if (fileCount > LIMIT) {
 					break;
 				}
-				System.out.println(fileAbsolutePath);				
+				System.out.println(fileAbsolutePath);
+
 			}
+			System.out.println("2129 " + aDirectory.getName());
 			return filesInLocationJson;
 		}
 
 		private DirectoryStream<Path> getDirectoryStream(File aDirectory)
 				throws IOException {
+			System.out.println("21200 " + aDirectory.getName());
+			String absolutePath = aDirectory.getAbsolutePath();
+			System.out.println("21201 " + aDirectory.getName());
+			Path aDirectoryPath = Paths.get(absolutePath);
+			System.out.println("21202 " + aDirectoryPath.getFileName());
+			return getDirectoryStream(aDirectoryPath);
+		}
+
+		private DirectoryStream<Path> getDirectoryStream(Path aDirectoryPath)
+				throws IOException {
+			System.out.println("21203 " +  aDirectoryPath.toAbsolutePath());
 			DirectoryStream<Path> theDirectoryStream = Files
-					.newDirectoryStream(Paths.get(aDirectory.getAbsolutePath()),
+					.newDirectoryStream(aDirectoryPath,
 							new DirectoryStream.Filter<Path>() {
 								public boolean accept(Path entry)
 										throws IOException {
 									return !Files.isDirectory(entry);
-			
+
 								}
 							});
+			System.out.println("21209 " + aDirectoryPath.getFileName());
 			return theDirectoryStream;
 		}
 
 		private JSONObject createFileEntryJson(String iLocalFileSystemPath,
-				String iHttpUrl, FileTime fileTime) {
+				String iHttpUrl) {
 			JSONObject fileEntryJson = new JSONObject();
 			fileEntryJson.put("location", iLocalFileSystemPath);
 			fileEntryJson.put("httpUrl", iHttpUrl);
-			fileEntryJson.put("lastModified", fileTime.toString());
 			return fileEntryJson;
 		}
 
