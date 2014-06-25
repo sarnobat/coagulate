@@ -60,10 +60,14 @@ $(document).ready(function(){
 						{
 
 							var idstring = "i" + copyOfId;
-							var buttons = createButtonsPanel(item, response, key, idstring);
+
 							
 							{
-								var tile = "<tr id='" +idstring+"'><td><table><tr><td>"+toBeAppended + "<td><td>"+buttons+"</td></tr><tr><td colspan=2><textarea rows=4 style='width:"+width+"; word-wrap:break-word;'>" + decodeURIComponent(item)+"</textarea><br>"+lastModified+"</td></tr></table></td></tr>";
+								var tile;
+								{
+									var buttons = createButtonsPanel(item, response, key, idstring);
+									tile = "<tr id='" +idstring+"'><td><table><tr><td>"+toBeAppended + "<td><td>"+buttons+"</td></tr><tr><td colspan=2><textarea rows=4 style='width:"+width+"; word-wrap:break-word;'>" + decodeURIComponent(item)+"</textarea><br>"+lastModified+"</td></tr></table></td></tr>";
+								}
 								if (toBeAppended.length > 0) {
 									$('#items').append(tile);
 								}
