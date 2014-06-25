@@ -66,8 +66,6 @@ function createButtonsPanel(item, response, key, idstring) {
 	var buttons = "<table><tr><td>";							
 	{
 		var escaped = item.replace(/'/g, "&apos;");
-
-
 		buttons += "<button onclick='moveFileToParent(\"" + escaped + "\",\""+idstring+"\")'>Wrong Category</button><br>";
 		var subdirs = response.locations[key].dirs;
 		var subdirsArray = Object.keys(subdirs).sort(function(a, b) {
@@ -82,11 +80,8 @@ function createButtonsPanel(item, response, key, idstring) {
 				if (buttonsAdded%15 == 0) {
 					buttons += "</td><td>";
 				}
-				var dirName = subdirsArray[dir];
-				{
-					var color = getColorForDir(dirName);
-					buttons += "<button onclick='moveFile(\"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+color+"'>"+dirName+"</button><br>";
-				}
+				var dirName = subdirsArray[dir];				
+				buttons += "<button onclick='moveFile(\"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
 			}
 		}
 	}
