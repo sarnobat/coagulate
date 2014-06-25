@@ -305,10 +305,21 @@ public class Coagulate {
 					System.out.println("Not supported yet: " + filename);
 					continue;
 				}
-				JSONObject fileEntryJson = createFileEntryJson(
-						iDirectory.getAbsolutePath(),
-						httpLinkFor(fileAbsolutePath));
-
+				String thumbnailFileAbsolutePath;
+				_1: {
+					thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + filename + ".jpg"; 
+				}
+				JSONObject fileEntryJson ;
+				_2: {
+					JSONObject rFileEntryJson = new JSONObject();
+					rFileEntryJson
+							.put("location", iDirectory.getAbsolutePath());
+					rFileEntryJson
+							.put("fileSystem", fileAbsolutePath);
+					rFileEntryJson.put("httpUrl", httpLinkFor(fileAbsolutePath));
+					rFileEntryJson.put("thumbnailUrl", httpLinkFor(thumbnailFileAbsolutePath));
+				fileEntryJson = rFileEntryJson;
+				}
 				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
 				++fileCount;
 				// Do this on the client to save network roundtrips (though it is possible
@@ -343,13 +354,6 @@ public class Coagulate {
 			return rDirectoryStream;
 		}
 
-		private JSONObject createFileEntryJson(String iLocalFileSystemPath,
-				String iHttpUrl) {
-			JSONObject rFileEntryJson = new JSONObject();
-			rFileEntryJson.put("location", iLocalFileSystemPath);
-			rFileEntryJson.put("httpUrl", iHttpUrl);
-			return rFileEntryJson;
-		}
 
 		private String httpLinkFor(String iAbsolutePath) {
 			// Unsorted
@@ -366,6 +370,10 @@ public class Coagulate {
 
 			rHttpUrl = rHttpUrl.replaceFirst("^/e/Sridhar/Photos",
 					"http://netgear.rohidekar.com:8022/");
+
+			// Books
+			rHttpUrl = rHttpUrl.replaceFirst("^/e/Sridhar/Books", 
+					"http://netgear.rohidekar.com:8023/");
 
 			return rHttpUrl;
 		}

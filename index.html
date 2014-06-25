@@ -74,16 +74,19 @@ function createItemHtml(response, item, key, id)
 	var height = "300px";
 	
 	{
-		var res = item.match(/.*\.txt/gi);
+		var res = item.match(/.*\.((txt)|(lnk))/gi);
 		if (res !=null) {
+			return;
 		}
 	}
 	
+	var item2 = response.items[key][item];
 	{
 		var toBeAppended = "";
-		var httpUrl = response.items[key][item].httpUrl;
+		var httpUrl = item2.httpUrl;
+		var thumbnailUrl = item2.thumbnailUrl;
 		{
-			var lastModified = response.items[key][item].lastModified;
+			var lastModified = item2.lastModified;
 			{
 				var res = item.match(/.*\.((jpe?g)|(png))/gi);			
 				if (res !=null) {
@@ -92,20 +95,31 @@ function createItemHtml(response, item, key, id)
 			}
 		}
 		{
-			var matchesVideo = item.match(/.*((mp4)|(webm))/gi);
+			var matchesVideo = item.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv))/gi);
 			if (matchesVideo != null) {
-				toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="' +httpUrl+ '"/></video>';
+				//toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="' +httpUrl+ '"/></video>';
+				toBeAppended += '<img src=\"' +thumbnailUrl+'\">';
+			}
+		}
+		{
+			var matchesVideo = item.match(/.*((pdf))/gi);
+			if (matchesVideo != null) {
+				//toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="' +httpUrl+ '"/></video>';
+				toBeAppended += '<img src=\"' +thumbnailUrl+'\" width=200>';
 			}
 		}
 	}	
 	var idstring = "i" + id;
 	
+	var localLink = "<a href=\"file://" + item2.fileSystem.toString() +"\">" + "Local Link" + "</a>";
+	
+	console.debug(localLink);
 	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
 		+ toBeAppended + "<td><td>"+createButtonsPanel(item, response, key, idstring)
 		+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
 		+ decodeURIComponent(item)+"</textarea><br>"+lastModified + "</td>"
-		+ "<td><a href='" +httpUrl+"'>" + httpUrl + "</a><br>" +
-		+ "</td></tr></table></td></tr>";
+		+ "<td><a href='" +httpUrl+"'>" + httpUrl + "</a><br>" +localLink
+		+ "<br></td></tr></table></td></tr>";
 
 	return toBeAppended;
 }
@@ -146,12 +160,16 @@ function getColorForDir(dirName) {
 		color = 'pink';
 	} else if (dirName.match(/Atletico/i) || dirName == 'brst') {
 		color = 'red';
-	} else if (dirName == 'legs') {
+	}
+	else if (dirName.match(/Liverpool/i)) {
+		color = 'red';
+	}
+	 else if (dirName == 'legs') {
 		color = 'yellow';
 	}  else if (dirName == 'navel') {
 		color = 'purple';
 	}  else if (dirName == 'teen') {
-		color = 'white';
+		color = 'lavender';
 	} else if (dirName.match(/soccer/i)) {
 		color = 'green';
 	} else if (dirName == 'ind') {
@@ -187,9 +205,10 @@ function moveFileToParent(filePath, id) {
 Key bindings<br>
 <textarea id="locations" cols="100" rows="30" onblur="updateURL()">
 #/Volumes/Unsorted/Videos/wwf/
-/media/sarnobat/Unsorted/Videos/Atletico
-/media/sarnobat/Unsorted/Videos/soccer
+#/media/sarnobat/Unsorted/Videos/Atletico
+#/media/sarnobat/Unsorted/Videos/soccer
 /media/sarnobat/Unsorted/Videos/
+#/media/sarnobat/Unsorted/Videos/Other
 
 #/e/Sridhar/Photos/Courtesy of others/dad	
 #/e/Sridhar/Photos/camera phone photos/iPhone/Sridhar
