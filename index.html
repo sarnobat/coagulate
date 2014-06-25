@@ -74,8 +74,10 @@ $(document).ready(function(){
 									buttons += "</td><td>";
 								}
 								var dirName = dirsArray[dir];
-								var color = getColorForDir(dirName);
-								buttons += "<button onclick='moveFile(\"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+color+"'>"+dirName+"</button><br>";
+								{
+									var color = getColorForDir(dirName);
+									buttons += "<button onclick='moveFile(\"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+color+"'>"+dirName+"</button><br>";
+								}
 							}
 						}
 						buttons += "</td></tr></table>";
