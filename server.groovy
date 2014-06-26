@@ -91,14 +91,14 @@ public class Coagulate {
 				String subfolderSimpleName) throws IllegalAccessError, IOException {
 			Path sourceFilePath = Paths.get(filePath);
 			if (!Files.exists(sourceFilePath)) {
-				throw new RuntimeException("File doesn't exist");
+				throw new RuntimeException("No such source file");
 			}
 
 			if (fileAlreadyInDesiredSubdir(subfolderSimpleName, sourceFilePath)) {
 				System.out.println("Not moving to identical subfolder");
 				return;
 			}
-			doMove(sourceFilePath, getDestinationFile(subfolderSimpleName, sourceFilePath));
+			doMove(sourceFilePath, getDestinationFilePath(subfolderSimpleName, sourceFilePath));
 
 		}
 
@@ -107,7 +107,7 @@ public class Coagulate {
 			return subfolderSimpleName.equals(sourceFilePath.getParent().getFileName().toString());
 		}
 
-		private static Path getDestinationFile(String folderName, Path path)
+		private static Path getDestinationFilePath(String folderName, Path path)
 				throws IllegalAccessError, IOException {
 			Path destinationFile;
 			{
@@ -204,39 +204,65 @@ public class Coagulate {
 			// TODO: do we need this?
 			response.put("locations", new JSONObject());
 			_2: {
-				JSONObject itemsJson = new JSONObject();
-				JSONObject locationsJson = new JSONObject();
-				_3: {
-					for (String aDirectoryPathString : allDirectoryPathStrings) {
-						if (shouldNotGetContents(aDirectoryPathString)) {
-							continue;
-						}
+				{
+					JSONObject locationsJson = new JSONObject();
+					JSONObject itemsJson = new JSONObject();
 
-						File aDirectory = new File(aDirectoryPathString);
-						itemsJson.put(aDirectoryPathString,
-								getContentsAsJson(aDirectory));
-						JSONObject locationDetailsJson = new JSONObject();
-						{
-							locationsJson.put(aDirectoryPathString,
-									locationDetailsJson);
-							{
-								Collection<String> dirsWithBoundKey = addKeyBindings(
-										aDirectoryPathString,
-										locationDetailsJson);
-								addDirs(aDirectory, locationDetailsJson,
-										dirsWithBoundKey);
+					_3: {
+						for (String aDirectoryPathString : allDirectoryPathStrings) {
+							if (shouldNotGetContents(aDirectoryPathString)) {
+								continue;
 							}
+							locationsJson.put(
+									aDirectoryPathString,
+									createLocationDetailsJson(itemsJson,
+											aDirectoryPathString));
 						}
 					}
+					response.put("items", itemsJson);
 				}
-				response.put("items", itemsJson);
-				response.put("locations", locationsJson);
+				{
+					JSONObject locationsJson = new JSONObject();
+					JSONObject itemsJson = new JSONObject();
+
+					_3: {
+						for (String aDirectoryPathString : allDirectoryPathStrings) {
+							if (shouldNotGetContents(aDirectoryPathString)) {
+								continue;
+							}
+							locationsJson.put(
+									aDirectoryPathString,
+									createLocationDetailsJson(itemsJson,
+											aDirectoryPathString));
+						}
+					}
+					response.put("locations", locationsJson);
+				}
 			}
 			Response build = Response.ok()
 					.header("Access-Control-Allow-Origin", "*")
 					.entity(response.toString(4)).type("application/json")
 					.build();
 			return build;
+		}
+
+		private JSONObject createLocationDetailsJson(JSONObject itemsJson,
+				String aDirectoryPathString) throws IOException {
+			JSONObject locationDetailsJson = new JSONObject();
+			{
+				File aDirectory = new File(aDirectoryPathString);
+				itemsJson.put(aDirectoryPathString,
+						getContentsAsJson(aDirectory));
+
+				{
+					Collection<String> dirsWithBoundKey = addKeyBindings(
+							aDirectoryPathString,
+							locationDetailsJson);
+					addDirs(aDirectory, locationDetailsJson,
+							dirsWithBoundKey);
+				}
+			}
+			return locationDetailsJson;
 		}
 
 		private boolean shouldNotGetContents(String aDirectoryPathString) {
