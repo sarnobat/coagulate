@@ -215,7 +215,7 @@ public class Coagulate {
 							}
 							locationsJson.put(
 									aDirectoryPathString,
-									createLocationDetailsJson(itemsJson,
+									createItemDetailsJson(itemsJson,
 											aDirectoryPathString));
 						}
 					}
@@ -246,12 +246,31 @@ public class Coagulate {
 			return build;
 		}
 
-		private JSONObject createLocationDetailsJson(JSONObject itemsJson,
+		private JSONObject createItemDetailsJson(JSONObject itemsJson,
+				String deleteThis) throws IOException {
+			JSONObject locationDetailsJson = new JSONObject();
+			{
+				File aDirectory = new File(deleteThis);
+				itemsJson.put(deleteThis,
+						getContentsAsJson(aDirectory));
+
+				{
+					Collection<String> dirsWithBoundKey = addKeyBindings(
+							deleteThis,
+							locationDetailsJson);
+					addDirs(aDirectory, locationDetailsJson,
+							dirsWithBoundKey);
+				}
+			}
+			return locationDetailsJson;
+		}
+		
+		private JSONObject createLocationDetailsJson(JSONObject deleteThis,
 				String aDirectoryPathString) throws IOException {
 			JSONObject locationDetailsJson = new JSONObject();
 			{
 				File aDirectory = new File(aDirectoryPathString);
-				itemsJson.put(aDirectoryPathString,
+				deleteThis.put(aDirectoryPathString,
 						getContentsAsJson(aDirectory));
 
 				{
