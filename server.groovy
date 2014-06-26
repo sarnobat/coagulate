@@ -200,50 +200,60 @@ public class Coagulate {
 				throws JSONException, IOException {
 			String[] allDirectoryPathStrings = iDirectoryPathsString
 					.split("\\n");
-			JSONObject response = new JSONObject();
-			// TODO: do we need this?
-			response.put("locations", new JSONObject());
-			_2: {
-				{
-					JSONObject locationsJson = new JSONObject();
-					JSONObject itemsJson = new JSONObject();
+			JSONObject response = createListJson(allDirectoryPathStrings);
 
-					_3: {
-						for (String aDirectoryPathString : allDirectoryPathStrings) {
-							if (shouldNotGetContents(aDirectoryPathString)) {
-								continue;
-							}
-							locationsJson.put(
-									aDirectoryPathString,
-									createItemDetailsJson(itemsJson,
-											aDirectoryPathString));
-						}
-					}
-					response.put("items", itemsJson);
-				}
-				{
-					JSONObject locationsJson = new JSONObject();
-					JSONObject itemsJson = new JSONObject();
-
-					_3: {
-						for (String aDirectoryPathString : allDirectoryPathStrings) {
-							if (shouldNotGetContents(aDirectoryPathString)) {
-								continue;
-							}
-							locationsJson.put(
-									aDirectoryPathString,
-									createLocationDetailsJson(itemsJson,
-											aDirectoryPathString));
-						}
-					}
-					response.put("locations", locationsJson);
-				}
-			}
 			Response build = Response.ok()
 					.header("Access-Control-Allow-Origin", "*")
 					.entity(response.toString(4)).type("application/json")
 					.build();
 			return build;
+		}
+
+		private JSONObject createListJson(String[] allDirectoryPathStrings)
+				throws IOException {
+			JSONObject response = new JSONObject();
+			response.put("items", createFilesJson(allDirectoryPathStrings));
+			response.put("locations",
+					createLocationsJson(allDirectoryPathStrings));
+			return response;
+		}
+
+		private JSONObject createFilesJson(String[] allDirectoryPathStrings)
+				throws IOException {
+			JSONObject deleteThis = new JSONObject();
+			JSONObject itemsJson = new JSONObject();
+
+			_3: {
+				for (String aDirectoryPathString : allDirectoryPathStrings) {
+					if (shouldNotGetContents(aDirectoryPathString)) {
+						continue;
+					}
+					deleteThis.put(
+							aDirectoryPathString,
+							createItemDetailsJson(itemsJson,
+									aDirectoryPathString));
+				}
+			}
+			return itemsJson;
+		}
+
+		private JSONObject createLocationsJson(String[] allDirectoryPathStrings)
+				throws IOException {
+			JSONObject locationsJson = new JSONObject();
+			JSONObject deleteThis = new JSONObject();
+
+			_3: {
+				for (String aDirectoryPathString : allDirectoryPathStrings) {
+					if (shouldNotGetContents(aDirectoryPathString)) {
+						continue;
+					}
+					locationsJson.put(
+							aDirectoryPathString,
+							createLocationDetailsJson(deleteThis,
+									aDirectoryPathString));
+				}
+			}
+			return locationsJson;
 		}
 
 		private JSONObject createItemDetailsJson(JSONObject itemsJson,
