@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<title>Coagulate (Content Management System)</title>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 <script type="text/javascript" src="http://netgear.rohidekar.com/yurl/jquery/purl.js"></script>
 <script src="http://www.webtoolkit.info/djs/webtoolkit.md5.js"></script>
@@ -84,13 +85,17 @@ function createItemHtml(response, item, key, id)
 	{
 		var toBeAppended = "";
 		var httpUrl = item2.httpUrl;
+		console.debug(item2);
 		var thumbnailUrl = item2.thumbnailUrl;
 		{
 			var lastModified = item2.lastModified;
 			{
-				var res = item.match(/.*\.((jpe?g)|(png))/gi);			
+				var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp)|(tiff?))/gi);
 				if (res !=null) {
-					toBeAppended = '<img width="'+width+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + httpUrl + '"/>';
+					toBeAppended += '<a href="' + httpUrl + '" target="_blank">';
+					//toBeAppended += '<img width="'+width+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + httpUrl + '"/>';
+					toBeAppended += '<img width="'+width+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) + '"/>';
+					toBeAppended += '</a>';
 				}
 			}
 		}
@@ -140,7 +145,7 @@ function createButtonsPanel(item, response, key, idstring) {
 					buttons += "</td><td>";
 				}
 				var dirName = subdirsArray[dir];				
-				buttons += "<button onclick='moveFile(\"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
+				buttons += "<button onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
 			}
 		}
 	}
@@ -184,7 +189,8 @@ function addslashes( str ) {
 }
 
 
-function moveFile(filePath, destinationDirSimpleName,id) {
+function moveFile(button, filePath, destinationDirSimpleName,id) {
+	button.style.cssText = "background-color : orange";
 	$.getJSON(urlBase + "/move?filePath="+encodeURIComponent(filePath) + "&destinationDirSimpleName=" + destinationDirSimpleName,function(response){
 		$("#" + id).remove();
 	});
@@ -204,31 +210,37 @@ function moveFileToParent(filePath, id) {
 
 Key bindings<br>
 <textarea id="locations" cols="100" rows="30" onblur="updateURL()">
-#/Volumes/Unsorted/Videos/wwf/
+/media/sarnobat/Unsorted/Videos/
+/e/new
+/media/sarnobat/Large/Videos
+/media/sarnobat/e/new/screenshots
+#/e/Drive J/pictures/Other (new)/pictures/misc_sync_master
+#/media/sarnobat/Unsorted/images
+
+
+#/media/sarnobat/Unsorted/Videos/wwf/
 #/media/sarnobat/Unsorted/Videos/Atletico
 #/media/sarnobat/Unsorted/Videos/soccer
-/media/sarnobat/Unsorted/Videos/
 #/media/sarnobat/Unsorted/Videos/Other
+
+#/Users/sarnobat/Desktop
+
+#/e/new/pdf
 
 #/e/Sridhar/Photos/Courtesy of others/dad	
 #/e/Sridhar/Photos/camera phone photos/iPhone/Sridhar
 #/e/Sridhar/Photos/camera phone photos/iPhone
-#/Volumes/Unsorted/images
 
-#/Users/sarnobat/Desktop
-#/Volumes/Large/Videos
-#/Volumes/Unsorted/Videos
+#/media/sarnobat/Unsorted/Videos
 
 
 #/Users/sarnobat/Windows/misc/ind
-
 #/Users/sarnobat/Windows/misc/favorites
-
-#/Volumes/Large/Videos/wwf
-
-#/Volumes/Unsorted/Videos/Atletico
-#/Volumes/Unsorted/Videos/wwf
-
+#/media/sarnobat/Large/Videos/wwf
+#/media/sarnobat/Unsorted/Videos/Atletico
+#/media/sarnobat/Unsorted/Videos/wwf
+#/media/sarnobat/Record/Record to DVD (non-videos)/books
+#/media/sarnobat/e/new/Starred_photos
 </textarea>
 <br><br>
 <button>get urls</button>

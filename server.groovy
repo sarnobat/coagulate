@@ -362,18 +362,33 @@ public class Coagulate {
 			rHttpUrl = rHttpUrl.replaceFirst("/media/sarnobat/Unsorted/",
 					"http://netgear.rohidekar.com:8020/");
 
+			// Record
+                        rHttpUrl = rHttpUrl.replaceFirst("/media/sarnobat/Record/",
+                                        "http://netgear.rohidekar.com:8024/");
+                        rHttpUrl = rHttpUrl.replaceFirst("/Volumes/Record/",
+                                        "http://netgear.rohidekar.com:8024/");
+                        rHttpUrl = rHttpUrl.replaceFirst("/Record/",
+                                        "http://netgear.rohidekar.com:8024/");
+
 			// Large
 			rHttpUrl = rHttpUrl.replaceFirst("/media/sarnobat/Large/",
 					"http://netgear.rohidekar.com:8021/");
 			rHttpUrl = rHttpUrl.replaceFirst("/Volumes/Large/",
 					"http://netgear.rohidekar.com:8021/");
 
-			rHttpUrl = rHttpUrl.replaceFirst("^/e/Sridhar/Photos",
+			rHttpUrl = rHttpUrl.replaceFirst(".*/e/Sridhar/Photos",
 					"http://netgear.rohidekar.com:8022/");
 
 			// Books
-			rHttpUrl = rHttpUrl.replaceFirst("^/e/Sridhar/Books", 
+			rHttpUrl = rHttpUrl.replaceFirst(".*/e/Sridhar/Books", 
 					"http://netgear.rohidekar.com:8023/");
+
+                        rHttpUrl = rHttpUrl.replaceFirst(".*/e/new",
+                                        "http://netgear.rohidekar.com:8025/");
+
+   			rHttpUrl = rHttpUrl.replaceFirst(".*/e/Drive J",
+                                        "http://netgear.rohidekar.com:8026/");
+
 
 			return rHttpUrl;
 		}
