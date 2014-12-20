@@ -39,7 +39,7 @@ public class Coagulate {
 		@Produces("application/json")
 		public Response moveToParent(@QueryParam("filePath") String sourceFilePathString)
 				throws JSONException {
-
+			System.out.println('moveToParent() - begin - ' + sourceFilePathString);
 			if (sourceFilePathString.endsWith("htm") || sourceFilePathString.endsWith(".html")) {
 				throw new RuntimeException("Need to move the _files folder too");
 			}

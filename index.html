@@ -2,6 +2,7 @@
 <html>
 <head>
 <title>Coagulate (Content Management System)</title>
+<link rel="shortcut icon" href="http://netgear.rohidekar.com/static/icons/Orb_Icons_001.png" type="image/x-icon" />
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 <script type="text/javascript" src="http://netgear.rohidekar.com/yurl/jquery/purl.js"></script>
 <script src="http://www.webtoolkit.info/djs/webtoolkit.md5.js"></script>
@@ -10,6 +11,7 @@
 
 
 var urlBase = "http://netgear.rohidekar.com:4451/cmsfs/";
+var limit;
 
 function updateURLIfEmpty() {
 	var locations = $.url().param('locations');
@@ -18,12 +20,16 @@ function updateURLIfEmpty() {
 	} else {
 		$("#locations").val(decodeURIComponent(locations));
 	}
+
+  	limit = $.url().param('limit');
+                if (limit == null) {
+                        window.history.pushState("object or string", "Title", document.URL + "&limit=" + 60);
+                }
 }
 
 function updateURL() {
 	history.pushState(null, null, '/coagulate?locations=' + encodeURIComponent($("#locations").val())); // HTML5
 }
-
 // TODO: This code is nice and simple thanks to the functional refactorings. What would 
 // be even better is if we could replace the loops with recursion.
 $(document).ready(function(){
@@ -38,10 +44,11 @@ $(document).ready(function(){
 			if (filesInDir.length < 1) {
 				continue;
 			}
-			var filesInDirSortedMap = Object.keys(filesInDir).sort();
+			//var filesInDirSortedMap = Object.keys(filesInDir).sort();
+			var filesInDirSortedMap = shuffle(Object.keys(filesInDir));
 			for (var sortedIndex in filesInDirSortedMap) {				
 				++id;
-				if (id > 160) {
+				if (id > limit) {
 					break;
 				}
 				$('#items').append(createItemHtml(response, filesInDirSortedMap[sortedIndex], dirIndex, id));
@@ -202,10 +209,28 @@ function moveFileToParent(filePath, id) {
 	});
 }
 
+function shuffle(array) {
+  var currentIndex = array.length, temporaryValue, randomIndex ;
+
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+
+    // And swap it with the current element.
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
+}
 
 </script>
 </head>
-<body>
+<body style="background-color : #FF9999">
 <table id="items"></table>
 
 Key bindings<br>
@@ -217,7 +242,7 @@ Key bindings<br>
 #/e/Drive J/pictures/Other (new)/pictures/misc_sync_master
 #/media/sarnobat/Unsorted/images
 
-
+/e/Sridhar/Photos/2003 and before - Pre Digital Camera/scans - unsorted
 #/media/sarnobat/Unsorted/Videos/wwf/
 #/media/sarnobat/Unsorted/Videos/Atletico
 #/media/sarnobat/Unsorted/Videos/soccer
@@ -241,6 +266,9 @@ Key bindings<br>
 #/media/sarnobat/Unsorted/Videos/wwf
 #/media/sarnobat/Record/Record to DVD (non-videos)/books
 #/media/sarnobat/e/new/Starred_photos
+
+/media/sarnobat/e/Sridhar/Photos/2014-10-11 Santa Cruz with Murali
+#/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/teen/primejailbat.com
 </textarea>
 <br><br>
 <button>get urls</button>
