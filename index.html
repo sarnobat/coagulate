@@ -38,7 +38,7 @@ $(document).ready(function(){
 
 	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response){
 		var id = 0;
-		console.log(response.items);
+		//console.log(response.items);
 		for(var dirIndex in response.items) { 
 			var filesInDir = response.items[dirIndex];
 			if (filesInDir.length < 1) {
@@ -46,7 +46,12 @@ $(document).ready(function(){
 			}
 			//var filesInDirSortedMap = Object.keys(filesInDir).sort();
 			var filesInDirSortedMap = shuffle(Object.keys(filesInDir));
-			for (var sortedIndex in filesInDirSortedMap) {				
+			for (var sortedIndex in filesInDirSortedMap) {
+				var filepath = filesInDirSortedMap[sortedIndex];
+				if (filepath.match(/.*(nohup.out$|Thumbs.db|Picasa.ini)/)) {
+					console.log('Skipping: ' + filepath);
+					continue;
+				}	
 				++id;
 				if (id > limit) {
 					break;
@@ -92,7 +97,7 @@ function createItemHtml(response, item, key, id)
 	{
 		var toBeAppended = "";
 		var httpUrl = item2.httpUrl;
-		console.debug(item2);
+		//console.debug(item2);
 		var thumbnailUrl = item2.thumbnailUrl;
 		{
 			var lastModified = item2.lastModified;
@@ -125,7 +130,7 @@ function createItemHtml(response, item, key, id)
 	
 	var localLink = "<a href=\"file://" + item2.fileSystem.toString() +"\">" + "Local Link" + "</a>";
 	
-	console.debug(localLink);
+	//console.debug(localLink);
 	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
 		+ toBeAppended + "<td><td>"+createButtonsPanel(item, response, key, idstring)
 		+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
@@ -230,7 +235,8 @@ function shuffle(array) {
 
 </script>
 </head>
-<body style="background-color : #FF9999">
+<body style="background-color : #FFE6EA">
+<a href="http://netgear.rohidekar.com/coagulate">Reset Locations</a><br>
 <table id="items"></table>
 
 Key bindings<br>
@@ -269,6 +275,7 @@ Key bindings<br>
 
 /media/sarnobat/e/Sridhar/Photos/2014-10-11 Santa Cruz with Murali
 #/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/teen/primejailbat.com
+#/media/sarnobat/e/Sridhar/Audio - THIS IS NOT THE MASTER COPY, SO ITS POINTLESS
 </textarea>
 <br><br>
 <button>get urls</button>
