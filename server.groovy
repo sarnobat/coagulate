@@ -28,8 +28,6 @@ public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
 	public static class MyResource { // Must be public
 
-		private static final int LIMIT = 60;
-
 		//
 		// mutators
 		//
@@ -39,7 +37,7 @@ public class Coagulate {
 		@Produces("application/json")
 		public Response moveToParent(@QueryParam("filePath") String sourceFilePathString)
 				throws JSONException {
-			System.out.println('moveToParent() - begin - ' + sourceFilePathString);
+			System.out.println("moveToParent() - begin - " + sourceFilePathString);
 			if (sourceFilePathString.endsWith("htm") || sourceFilePathString.endsWith(".html")) {
 				throw new RuntimeException("Need to move the _files folder too");
 			}
@@ -65,7 +63,6 @@ public class Coagulate {
 				throws IllegalAccessError {
 			Path destinationFile;
 			_1: {
-				
 				String filename = sourceFile.getFileName().toString();
 				Path parent = sourceFile.getParent().getParent().toAbsolutePath();
 				String parentPath = parent.toAbsolutePath().toString();
@@ -210,14 +207,40 @@ public class Coagulate {
 			rResponse.put("items", createFilesJson(iDirectoryPathStrings));
 			rResponse.put("locations",
 					createLocationsJson(iDirectoryPathStrings));
+			rResponse.put("subdirectories",
+					createSubdirectoriesJson(iDirectoryPathStrings));
+			
 			return rResponse;
+		}
+
+		private JSONObject createSubdirectoriesJson(
+				String[] iDirectoryPathStrings) {
+			JSONObject rItemsJson = new JSONObject();
+			_3: {
+				for (String aDirectoryPathString : iDirectoryPathStrings) {
+					if (!shouldGetContents(aDirectoryPathString)) {
+						continue;
+					}
+					try {
+						rItemsJson.put(aDirectoryPathString,
+								createSubdirDetailsJson(aDirectoryPathString));
+					} catch (JSONException e) {
+						e.printStackTrace();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+			return rItemsJson;
+		}
+
+		private JSONObject createSubdirDetailsJson(String iDirectoryPathString) throws IOException {
+			return getSubdirsAsJson(new File(iDirectoryPathString));
 		}
 
 		private JSONObject createFilesJson(String[] iDirectoryPathStrings)
 				throws IOException {
-			
 			JSONObject rItemsJson = new JSONObject();
-
 			_3: {
 				for (String aDirectoryPathString : iDirectoryPathStrings) {
 					if (!shouldGetContents(aDirectoryPathString)) {
@@ -233,7 +256,6 @@ public class Coagulate {
 		private JSONObject createLocationsJson(String[] iDirectoryPathStrings)
 				throws IOException {
 			JSONObject rLocationsJson = new JSONObject();
-
 			_3: {
 				for (String aDirectoryPathString : iDirectoryPathStrings) {
 					if (!shouldGetContents(aDirectoryPathString)) {
@@ -256,7 +278,6 @@ public class Coagulate {
 			JSONObject rLocationDetailsJson = new JSONObject();
 			_1: {
 				File aDirectory = new File(iDirectoryPathString);
-
 				_2: {
 					Collection<String> dirsWithBoundKey = addKeyBindings(
 							iDirectoryPathString,
@@ -270,7 +291,6 @@ public class Coagulate {
 
 		private boolean shouldGetContents(String iDirectoryPathString) {
 			System.out.println("3 " + iDirectoryPathString);
-
 			if (iDirectoryPathString.startsWith("#")) {
 				System.out.println("4 " + iDirectoryPathString);
 				return false;
@@ -290,10 +310,44 @@ public class Coagulate {
 			return true;
 		}
 
+		private JSONObject getSubdirsAsJson(File iDirectory)
+				throws IOException {
+			JSONObject rFilesInLocationJson = new JSONObject();
+			for (Path aFilePath : getSubdirectoryStream(iDirectory)) {
+				String filename = aFilePath.getFileName().toString();
+				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
+				if (filename.contains("DS_Store")) {
+					continue;
+				}
+				if (filename.endsWith(".html") || filename.endsWith(".htm")
+						|| iDirectory.getName().endsWith("_files")) {
+					System.out.println("Not supported yet: " + filename);
+					continue;
+				}
+				String thumbnailFileAbsolutePath;
+				_1: {
+					thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + filename + ".jpg"; 
+				}
+				JSONObject fileEntryJson ;
+				_2: {
+					JSONObject rFileEntryJson = new JSONObject();
+					rFileEntryJson
+							.put("location", iDirectory.getAbsolutePath());
+					rFileEntryJson
+							.put("fileSystem", fileAbsolutePath);
+					rFileEntryJson.put("httpUrl", httpLinkFor(fileAbsolutePath));
+					rFileEntryJson.put("thumbnailUrl", httpLinkFor(thumbnailFileAbsolutePath));
+				fileEntryJson = rFileEntryJson;
+				}
+				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
+				System.out.println(fileAbsolutePath);
+			}
+			return rFilesInLocationJson;
+		}
+		
 		private JSONObject getContentsAsJson(File iDirectory)
 				throws IOException {
 			JSONObject rFilesInLocationJson = new JSONObject();
-			int fileCount = 0;
 			for (Path aFilePath : getDirectoryStream(iDirectory)) {
 				String filename = aFilePath.getFileName().toString();
 				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
@@ -321,18 +375,19 @@ public class Coagulate {
 				fileEntryJson = rFileEntryJson;
 				}
 				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
-				++fileCount;
-				// Do this on the client to save network roundtrips (though it is possible
-				// for hackers to abuse).
-				//if (fileCount > LIMIT) {
-				//	break;
-				//}
 				System.out.println(fileAbsolutePath);
-
 			}
 			return rFilesInLocationJson;
 		}
+		
+		private DirectoryStream<Path> getSubdirectoryStream(File aDirectory)
+				throws IOException {
+			String absolutePath = aDirectory.getAbsolutePath();
+			Path aDirectoryPath = Paths.get(absolutePath);
+			return getSubdirectoryStream(aDirectoryPath);
+		}
 
+		
 		private DirectoryStream<Path> getDirectoryStream(File aDirectory)
 				throws IOException {
 			String absolutePath = aDirectory.getAbsolutePath();
@@ -340,10 +395,24 @@ public class Coagulate {
 			return getDirectoryStream(aDirectoryPath);
 		}
 
-		private DirectoryStream<Path> getDirectoryStream(Path aDirectoryPath)
+		private DirectoryStream<Path> getSubdirectoryStream(Path iDirectoryPath)
 				throws IOException {
 			DirectoryStream<Path> rDirectoryStream = Files
-					.newDirectoryStream(aDirectoryPath,
+					.newDirectoryStream(iDirectoryPath,
+							new DirectoryStream.Filter<Path>() {
+								public boolean accept(Path entry)
+										throws IOException {
+									return Files.isDirectory(entry);
+
+								}
+							});
+			return rDirectoryStream;
+		}
+		
+		private DirectoryStream<Path> getDirectoryStream(Path iDirectoryPath)
+				throws IOException {
+			DirectoryStream<Path> rDirectoryStream = Files
+					.newDirectoryStream(iDirectoryPath,
 							new DirectoryStream.Filter<Path>() {
 								public boolean accept(Path entry)
 										throws IOException {
@@ -490,8 +559,12 @@ public class Coagulate {
 	}
 
 	public static void main(String[] args) throws URISyntaxException {
-		JdkHttpServerFactory.createHttpServer(
-				new URI("http://localhost:4451/"), new ResourceConfig(
-						MyResource.class));
+		try {
+			JdkHttpServerFactory.createHttpServer(new URI(
+					"http://localhost:4451/"), new ResourceConfig(
+					MyResource.class));
+		} catch (Exception e) {
+			System.out.println("Port already listened on.");
+		}
 	}
 }

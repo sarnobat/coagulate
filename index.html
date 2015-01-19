@@ -36,31 +36,48 @@ $(document).ready(function(){
 
 	updateURLIfEmpty();
 
-	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response){
-		var id = 0;
-		//console.log(response.items);
-		for(var dirIndex in response.items) { 
-			var filesInDir = response.items[dirIndex];
-			if (filesInDir.length < 1) {
-				continue;
-			}
-			//var filesInDirSortedMap = Object.keys(filesInDir).sort();
-			var filesInDirSortedMap = shuffle(Object.keys(filesInDir));
-			for (var sortedIndex in filesInDirSortedMap) {
-				var filepath = filesInDirSortedMap[sortedIndex];
-				if (filepath.match(/.*(nohup.out$|Thumbs.db|Picasa.ini)/)) {
-					console.log('Skipping: ' + filepath);
+	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response) {
+
+		{
+			for(var dirIndex in response.subdirectories) { 
+				var filesInDir = response.subdirectories[dirIndex];
+
+				if (filesInDir.length < 1) {
 					continue;
-				}	
-				++id;
-				if (id > limit) {
-					break;
 				}
-				$('#items').append(createItemHtml(response, filesInDirSortedMap[sortedIndex], dirIndex, id));
+				for (var sortedIndex in filesInDir) {
+					var filepath = filesInDir[sortedIndex];
+					console.debug(filepath.fileSystem);
+					$('#subdirs').append("<tr><td><a href='/coagulate/?locations=" +encodeURIComponent(filepath.fileSystem)+ "'>"+filepath.fileSystem+"</a></td></tr>");
+				}
 			}
-		}
+		}	
+		{
+			var id = 0;
+			//console.log(response.items);
+			for(var dirIndex in response.items) { 
+				var filesInDir = response.items[dirIndex];
+				if (filesInDir.length < 1) {
+					continue;
+				}
+				//var filesInDirSortedMap = Object.keys(filesInDir).sort();
+				var filesInDirSortedMap = shuffle(Object.keys(filesInDir));
+				for (var sortedIndex in filesInDirSortedMap) {
+					var filepath = filesInDirSortedMap[sortedIndex];
+					if (filepath.match(/.*(nohup.out$|Thumbs.db|Picasa.ini)/)) {
+						console.log('Skipping: ' + filepath);
+						continue;
+					}	
+					++id;
+					if (id > limit) {
+						break;
+					}
+					$('#items').append(createItemHtml(response, filesInDirSortedMap[sortedIndex], dirIndex, id));
+				}
+			}
 		
-		loadImagesSequentially(0);
+			loadImagesSequentially(0);
+		}
 	});
 });
 
@@ -277,6 +294,7 @@ Key bindings<br>
 #/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/teen/primejailbat.com
 #/media/sarnobat/e/Sridhar/Audio - THIS IS NOT THE MASTER COPY, SO ITS POINTLESS
 </textarea>
+<table id="subdirs"></table>
 <br><br>
 <button>get urls</button>
 
