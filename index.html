@@ -23,7 +23,7 @@ function updateURLIfEmpty() {
 
   	limit = $.url().param('limit');
                 if (limit == null) {
-                        window.history.pushState("object or string", "Title", document.URL + "&limit=" + 60);
+                        window.history.pushState("object or string", "Title", document.URL + "&limit=" + 20);
                 }
 }
 
@@ -64,7 +64,7 @@ $(document).ready(function(){
 				var filesInDirSortedMap = shuffle(Object.keys(filesInDir));
 				for (var sortedIndex in filesInDirSortedMap) {
 					var filepath = filesInDirSortedMap[sortedIndex];
-					if (filepath.match(/.*(nohup.out$|Thumbs.db|Picasa.ini)/)) {
+					if (filepath.match(/.*(nohup.out$|Thumbs.db|[pP]icasa.ini)/)) {
 						console.log('Skipping: ' + filepath);
 						continue;
 					}	
@@ -119,7 +119,7 @@ function createItemHtml(response, item, key, id)
 		{
 			var lastModified = item2.lastModified;
 			{
-				var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp)|(tiff?))/gi);
+				var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
 				if (res !=null) {
 					toBeAppended += '<a href="' + httpUrl + '" target="_blank">';
 					//toBeAppended += '<img width="'+width+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + httpUrl + '"/>';
@@ -129,14 +129,14 @@ function createItemHtml(response, item, key, id)
 			}
 		}
 		{
-			var matchesVideo = item.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv))/gi);
+			var matchesVideo = item.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi))/gi);
 			if (matchesVideo != null) {
 				//toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="' +httpUrl+ '"/></video>';
 				toBeAppended += '<img src=\"' +thumbnailUrl+'\">';
 			}
 		}
 		{
-			var matchesVideo = item.match(/.*((pdf))/gi);
+			var matchesVideo = item.match(/.*((pdf)|(tif))/gi);
 			if (matchesVideo != null) {
 				//toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="' +httpUrl+ '"/></video>';
 				toBeAppended += '<img src=\"' +thumbnailUrl+'\" width=200>';
@@ -174,7 +174,7 @@ function createButtonsPanel(item, response, key, idstring) {
 					buttons += "</td><td>";
 				}
 				var dirName = subdirsArray[dir];				
-				buttons += "<button onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
+				buttons += "<button onmousedown='button.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
 			}
 		}
 	}
@@ -219,7 +219,6 @@ function addslashes( str ) {
 
 
 function moveFile(button, filePath, destinationDirSimpleName,id) {
-	button.style.cssText = "background-color : orange";
 	$.getJSON(urlBase + "/move?filePath="+encodeURIComponent(filePath) + "&destinationDirSimpleName=" + destinationDirSimpleName,function(response){
 		$("#" + id).remove();
 	});
@@ -253,48 +252,75 @@ function shuffle(array) {
 </script>
 </head>
 <body style="background-color : #FFE6EA">
+
+
+<script> 
+    $(function(){
+      $("#menubar").load("http://netgear.rohidekar.com/index.html"); 
+    });
+</script>
+<div id="menubar"></div>
+
+Todo: Create a tab for simply viewing the images in a directory (no sorting). e.g. for "favorites". Otherwise you have to manually add links to yurl
+<br>
 <a href="http://netgear.rohidekar.com/coagulate">Reset Locations</a><br>
 <table id="items"></table>
 
+<table id="subdirs"></table>
+
 Key bindings<br>
 <textarea id="locations" cols="100" rows="30" onblur="updateURL()">
-/media/sarnobat/Unsorted/Videos/
+## Miscellaneous
 /e/new
-/media/sarnobat/Large/Videos
-/media/sarnobat/e/new/screenshots
+#/Users/sarnobat/Desktop
+
+##
+## Other
+##
+
 #/e/Drive J/pictures/Other (new)/pictures/misc_sync_master
 #/media/sarnobat/Unsorted/images
+#/Users/sarnobat/Windows/misc/ind
+#/Users/sarnobat/Windows/misc/favorites
+#/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/teen/primejailbat.com
 
-/e/Sridhar/Photos/2003 and before - Pre Digital Camera/scans - unsorted
+##
+## Videos
+##
+
+/media/sarnobat/Unsorted/Videos/
+/media/sarnobat/Large/Videos
 #/media/sarnobat/Unsorted/Videos/wwf/
 #/media/sarnobat/Unsorted/Videos/Atletico
 #/media/sarnobat/Unsorted/Videos/soccer
 #/media/sarnobat/Unsorted/Videos/Other
 
-#/Users/sarnobat/Desktop
+##
+## Images
+##
 
-#/e/new/pdf
-
+/e/Sridhar/Photos/2003 and before - Pre Digital Camera/scans - unsorted
+/media/sarnobat/e/new/screenshots
 #/e/Sridhar/Photos/Courtesy of others/dad	
 #/e/Sridhar/Photos/camera phone photos/iPhone/Sridhar
 #/e/Sridhar/Photos/camera phone photos/iPhone
-
-#/media/sarnobat/Unsorted/Videos
-
-
-#/Users/sarnobat/Windows/misc/ind
-#/Users/sarnobat/Windows/misc/favorites
-#/media/sarnobat/Large/Videos/wwf
-#/media/sarnobat/Unsorted/Videos/Atletico
-#/media/sarnobat/Unsorted/Videos/wwf
-#/media/sarnobat/Record/Record to DVD (non-videos)/books
 #/media/sarnobat/e/new/Starred_photos
+#/media/sarnobat/e/Sridhar/Photos/2014-10-11 Santa Cruz with Murali
 
-/media/sarnobat/e/Sridhar/Photos/2014-10-11 Santa Cruz with Murali
-#/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/teen/primejailbat.com
+##
+## Pdf
+##
+
+#/media/sarnobat/Record/Record to DVD (non-videos)/books
+#/e/new/pdf
+
+##
+## Audio
+##
+
 #/media/sarnobat/e/Sridhar/Audio - THIS IS NOT THE MASTER COPY, SO ITS POINTLESS
 </textarea>
-<table id="subdirs"></table>
+
 <br><br>
 <button>get urls</button>
 
