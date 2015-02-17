@@ -73,6 +73,45 @@ public class Coagulate {
 		}
 
 		@GET
+		@javax.ws.rs.Path("copy")
+		@Produces("application/json")
+		public Response copy(
+				@QueryParam("filePath") String iFilePath,
+				@QueryParam("destinationDirSimpleName") String iDestinationDirSimpleName)
+				throws JSONException, IOException {
+
+			if (iFilePath.endsWith("htm") || iFilePath.endsWith(".html")) {
+				throw new RuntimeException("Need to move the _files folder too");
+			}
+
+			try {
+				moveFileToSubfolder(iFilePath, iDestinationDirSimpleName);
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new RuntimeException(e);
+			}
+			return Response.ok()
+					.header("Access-Control-Allow-Origin", "*")
+					.entity(new JSONObject().toString(4)).type("application/json")
+					.build();
+		}
+
+		private static void copyFileToFolder(String filePath,
+				String iSubfolderSimpleName) throws IllegalAccessError, IOException {
+			Path sourceFilePath = Paths.get(filePath);
+			if (!Files.exists(sourceFilePath)) {
+				throw new RuntimeException("No such source file");
+			}
+
+			if (fileAlreadyInDesiredSubdir(iSubfolderSimpleName, sourceFilePath)) {
+				System.out.println("Not moving to identical subfolder");
+				return;
+			}
+			doMove(sourceFilePath, getDestinationFilePath(iSubfolderSimpleName, sourceFilePath));
+
+		}
+
+		@GET
 		@javax.ws.rs.Path("move")
 		@Produces("application/json")
 		public Response move(
