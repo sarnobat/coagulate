@@ -73,11 +73,11 @@ public class Coagulate {
 		}
 
 		@GET
-		@javax.ws.rs.Path("copy")
+		@javax.ws.rs.Path("copyToFolder")
 		@Produces("application/json")
 		public Response copy(
 				@QueryParam("filePath") String iFilePath,
-				@QueryParam("destinationDirSimpleName") String iDestinationDirSimpleName)
+				@QueryParam("destinationDirPath") String iDestinationDirPath)
 				throws JSONException, IOException {
 
 			if (iFilePath.endsWith("htm") || iFilePath.endsWith(".html")) {
@@ -85,7 +85,7 @@ public class Coagulate {
 			}
 
 			try {
-				moveFileToSubfolder(iFilePath, iDestinationDirSimpleName);
+				copyFileToFolder(iFilePath, iDestinationDirPath);
 			} catch (Exception e) {
 				e.printStackTrace();
 				throw new RuntimeException(e);
@@ -97,18 +97,21 @@ public class Coagulate {
 		}
 
 		private static void copyFileToFolder(String filePath,
-				String iSubfolderSimpleName) throws IllegalAccessError, IOException {
+				String iDestinationDirPath) throws IllegalAccessError, IOException {
 			Path sourceFilePath = Paths.get(filePath);
+			System.out.println(filePath);
 			if (!Files.exists(sourceFilePath)) {
 				throw new RuntimeException("No such source file");
 			}
+			String string = sourceFilePath.getFileName().toString();
+			System.out.println(iDestinationDirPath);
+			Path destinationDir = Paths.get(iDestinationDirPath);
+			doCopy(sourceFilePath, getUnconflictedDestinationFilePath(destinationDir, string));
+		}
 
-			if (fileAlreadyInDesiredSubdir(iSubfolderSimpleName, sourceFilePath)) {
-				System.out.println("Not moving to identical subfolder");
-				return;
-			}
-			doMove(sourceFilePath, getDestinationFilePath(iSubfolderSimpleName, sourceFilePath));
-
+		private static Path getUnconflictedDestinationFilePath (Path destinationDir, String sourceFileSimpleName) {
+			Path rDestinationFile = allocateFile(destinationDir, sourceFileSimpleName);
+			return rDestinationFile;
 		}
 
 		@GET
@@ -146,7 +149,7 @@ public class Coagulate {
 				System.out.println("Not moving to identical subfolder");
 				return;
 			}
-			doMove(sourceFilePath, getDestinationFilePath(iSubfolderSimpleName, sourceFilePath));
+			doMove(sourceFilePath, getUnconflictedDestinationFilePath(iSubfolderSimpleName, sourceFilePath));
 
 		}
 
@@ -155,7 +158,7 @@ public class Coagulate {
 			return subfolderSimpleName.equals(sourceFilePath.getParent().getFileName().toString());
 		}
 
-		private static Path getDestinationFilePath(String folderName, Path path)
+		private static Path getUnconflictedDestinationFilePath(String folderName, Path path)
 				throws IllegalAccessError, IOException {
 			Path rDestinationFile;
 			_1: {
@@ -179,6 +182,29 @@ public class Coagulate {
 				e.printStackTrace();
 				throw new IllegalAccessError("Moving did not work");
 			}
+		}
+
+		private static void doCopy(Path sourceFilePath, Path destinationFilePath) {
+			try {
+				Files.copy(sourceFilePath, destinationFilePath);// By default, it won't
+													// overwrite existing
+				System.out.println("Success: copied file now at "
+						+ destinationFilePath.toAbsolutePath());
+			} catch (IOException e) {
+				e.printStackTrace();
+				throw new IllegalAccessError("Copying did not work");
+			}
+		}
+
+		private static Path allocateFile(Path folder, String fileSimpleName)
+				throws IllegalAccessError {
+			// if destination file exists, rename the file to be moved(while
+			// loop)
+			String destinationFilePath = folder.normalize().toAbsolutePath()
+					.toString() + "/" + fileSimpleName;
+
+			Path rDestinationFile = determineDestinationPathAvoidingExisting(destinationFilePath);
+			return rDestinationFile;
 		}
 
 		private static Path allocateFile(Path imageFile, Path subfolder)

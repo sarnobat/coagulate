@@ -178,6 +178,8 @@ function createButtonsPanel(item, response, key, idstring) {
 			}
 		}
 	}
+	buttons += "<br>";
+	buttons += "<button onclick='copyFileToFolder(\"" + escaped + "\", \"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/favorites\",\""+idstring+"\", this)'>COPY TO favorites</button><br>";
 	buttons += "</td></tr></table>";
 	return buttons;
 }
@@ -227,6 +229,14 @@ function moveFile(button, filePath, destinationDirSimpleName,id) {
 function moveFileToParent(filePath, id) {
 	$.getJSON(urlBase + "/moveToParent?filePath="+encodeURIComponent(filePath), function(response){
 		$("#" + id).remove();
+	});
+}
+
+function copyFileToFolder(filePath, destinationDirPath, id, button) {
+	$.getJSON(urlBase + "/copyToFolder?filePath="+encodeURIComponent(filePath) + "&destinationDirPath=" + encodeURIComponent(destinationDirPath), function(response){
+//		$("#" + id).css('background-color','green');
+		$(button).css('background-color','green');
+		$("#" + id).css('color','white');
 	});
 }
 
@@ -299,6 +309,7 @@ Key bindings<br>
 ## Images
 ##
 
+#/media/sarnobat/Unsorted/images
 /e/Sridhar/Photos/2003 and before - Pre Digital Camera/scans - unsorted
 /media/sarnobat/e/new/screenshots
 #/e/Sridhar/Photos/Courtesy of others/dad	
