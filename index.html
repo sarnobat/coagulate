@@ -183,9 +183,23 @@ function createButtonsPanel(item, response, key, idstring) {
 		}
 	}
 	buttons += "<br>";
+	buttons += "<button onclick='moveToNonExistingFolder(this,\"" +escaped+"\",\""+dirName+"\",\""+idstring+"\")'>MOVE to custom</button><br>";
+	buttons += "<br>";
 	buttons += "<button onclick='copyFileToFolder(\"" + escaped + "\", \"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/favorites\",\""+idstring+"\", this)'>COPY TO favorites</button><br>";
 	buttons += "</td></tr></table>";
 	return buttons;
+}
+
+function moveToNonExistingFolder(elem, fileToMove, parentDir, idstring) {
+	var newCategorySimpleName = prompt("Category name:");
+	var newDir = parentDir + '/' + newCategorySimpleName;
+	moveFile(elem, fileToMove, newCategorySimpleName, idstring);
+}
+
+function moveFile(button, filePath, destinationDirSimpleName,id) {
+	$.getJSON(urlBase + "/move?filePath="+encodeURIComponent(filePath) + "&destinationDirSimpleName=" + destinationDirSimpleName,function(response){
+		$("#" + id).remove();
+	});
 }
 
 function sortFunction(a, b) {
@@ -221,13 +235,6 @@ function getColorForDir(dirName) {
 
 function addslashes( str ) {
     return (str + '').replace(/[\\"']/g, '\\$&').replace(/\u0000/g, '\\0');
-}
-
-
-function moveFile(button, filePath, destinationDirSimpleName,id) {
-	$.getJSON(urlBase + "/move?filePath="+encodeURIComponent(filePath) + "&destinationDirSimpleName=" + destinationDirSimpleName,function(response){
-		$("#" + id).remove();
-	});
 }
 
 function moveFileToParent(filePath, id) {

@@ -144,7 +144,13 @@ public class Coagulate {
 			if (!Files.exists(sourceFilePath)) {
 				throw new RuntimeException("No such source file");
 			}
-
+			Path targetDir = Paths.get(sourceFilePath.getParent().toString()
+					+ "/" + iSubfolderSimpleName);
+			if (!Files.exists(targetDir)) {
+				Files.createDirectory(targetDir);
+			} else if (!Files.isDirectory(targetDir)) {
+				throw new RuntimeException("Target is an existing file");
+			}
 			if (fileAlreadyInDesiredSubdir(iSubfolderSimpleName, sourceFilePath)) {
 				System.out.println("Not moving to identical subfolder");
 				return;
