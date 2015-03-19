@@ -529,6 +529,11 @@ public class Coagulate {
    			rHttpUrl = rHttpUrl.replaceFirst(".*/e/Drive J",
                                         "http://netgear.rohidekar.com:8026/");
 
+			// 3TB
+			rHttpUrl = rHttpUrl.replaceFirst("/media/sarnobat/3TB/",
+					"http://netgear.rohidekar.com:8027/");
+			rHttpUrl = rHttpUrl.replaceFirst("/Volumes/3TB/",
+					"http://netgear.rohidekar.com:8027/");
 
 			return rHttpUrl;
 		}

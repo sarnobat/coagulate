@@ -3,7 +3,11 @@
 <head>
 <title>Coagulate (Content Management System)</title>
 <link rel="shortcut icon" href="http://netgear.rohidekar.com/static/icons/Orb_Icons_001.png" type="image/x-icon" />
+
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.11.0/themes/smoothness/jquery-ui.css">
+<link rel="stylesheet" href="http://jqueryui.com/jquery-wp-content/themes/jqueryui.com/style.css">
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script src="http://netgear.rohidekar.com/yurl/jquery/jquery-ui.js"></script>
 <script type="text/javascript" src="http://netgear.rohidekar.com/yurl/jquery/purl.js"></script>
 <script src="http://www.webtoolkit.info/djs/webtoolkit.md5.js"></script>
 </script>
@@ -12,6 +16,11 @@
 
 var urlBase = "http://netgear.rohidekar.com:4451/cmsfs/";
 var limit;
+
+
+$(function() {
+	$( "#tabs" ).tabs();
+});
 
 function updateURLIfEmpty() {
 	var locations = $.url().param('locations');
@@ -271,6 +280,17 @@ function shuffle(array) {
 }
 
 </script>
+<style type="text/css">
+
+.ui-widget {
+	/* Reduces JQUery's default font size */
+    font-size: 70%;
+}
+
+.ui-tabs .ui-tabs-panel {
+	background-color : #FFE6EA;
+}
+</style>
 </head>
 <body style="background-color : #FFE6EA">
 
@@ -285,7 +305,22 @@ function shuffle(array) {
 Todo: Create a tab for simply viewing the images in a directory (no sorting). e.g. for "favorites". Otherwise you have to manually add links to yurl
 <br>
 <a href="http://netgear.rohidekar.com/coagulate">Reset Locations</a><br>
-<table id="items"></table>
+
+<div id="tabs">
+  <ul>
+    <li><a href="#sorttab">Sort</a></li>
+    <li><a href="#thumbnailtab">Thumbnails</a></li>
+    <li><a href="#hoisttab">Hoist</a></li>
+  </ul>
+  <div id="sorttab">
+    <table id="items"></table>
+  </div>
+  <div id="thumbnailtab">
+  </div>
+  <div id="hoisttab">
+  </div>
+</div>
+
 
 <table id="subdirs"></table>
 
@@ -323,6 +358,7 @@ Key bindings<br>
 /e/Sridhar/Photos/camera phone photos/iPhone/2015-03-08
 /e/Sridhar/Photos/2003 and before - Pre Digital Camera/scans - unsorted
 /e/new/screenshots
+#/e/new/photos_iphone_white/20150313-203901
 #/e/Sridhar/Photos/Courtesy of others/dad	
 #/e/Sridhar/Photos/camera phone photos/iPhone/Sridhar
 #/e/Sridhar/Photos/camera phone photos/iPhone
