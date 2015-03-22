@@ -21,6 +21,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -274,8 +275,10 @@ public class Coagulate {
 
 		private JSONObject createListJson(String[] iDirectoryPathStrings)
 				throws IOException {
+			System.out.println("createListJson() - begin");
 			JSONObject rResponse = new JSONObject();
 			rResponse.put("items", createFilesJson(iDirectoryPathStrings));
+			rResponse.put("itemsRecursive", createFilesJsonRecursive(iDirectoryPathStrings));
 			rResponse.put("locations",
 					createLocationsJson(iDirectoryPathStrings));
 			rResponse.put("subdirectories",
@@ -307,6 +310,22 @@ public class Coagulate {
 
 		private JSONObject createSubdirDetailsJson(String iDirectoryPathString) throws IOException {
 			return getSubdirsAsJson(new File(iDirectoryPathString));
+		}
+
+		private JSONObject createFilesJsonRecursive(String[] iDirectoryPathStrings)
+				throws IOException {
+			System.out.println("createFilesJsonRecursive() - begin");
+			JSONObject rItemsJson = new JSONObject();
+			_3: {
+				for (String aDirectoryPathString : iDirectoryPathStrings) {
+					if (!shouldGetContents(aDirectoryPathString)) {
+						continue;
+					}
+					rItemsJson.put(aDirectoryPathString,
+							createItemDetailsJsonRecursive(aDirectoryPathString));
+				}
+			}
+			return rItemsJson;
 		}
 
 		private JSONObject createFilesJson(String[] iDirectoryPathStrings)
@@ -343,6 +362,11 @@ public class Coagulate {
 		private JSONObject createItemDetailsJson(String iDirectoryPathString)
 				throws IOException {
 			return getContentsAsJson(new File(iDirectoryPathString));
+		}
+		
+		private JSONObject createItemDetailsJsonRecursive(String iDirectoryPathString)
+				throws IOException {
+			return getContentsAsJsonRecursive(new File(iDirectoryPathString),1);
 		}
 		
 		private JSONObject createLocationDetailsJson(String iDirectoryPathString) throws IOException {
@@ -451,11 +475,77 @@ public class Coagulate {
 			return rFilesInLocationJson;
 		}
 		
+
+		private JSONObject getContentsAsJsonRecursive(File iDirectory, int levelToRecurse)
+				throws IOException {
+			System.out.println("getContentsAsJsonRecursive() - begin");
+			JSONObject rFilesInLocationJson = new JSONObject();
+			JSONObject dirsJson = new JSONObject();
+			if (levelToRecurse > 0) {
+				for (Path aFilePath : getDirectoryStreamRecursive(iDirectory)) {
+					System.out
+							.println("getContentsAsJsonRecursive() - dir loop - "
+									+ aFilePath);
+					if (!Files.isDirectory(aFilePath)) {
+						continue;
+					}
+					System.out
+							.println("getContentsAsJsonRecursive() - dir loop - recursing into "
+									+ aFilePath);
+					dirsJson.put(aFilePath.toAbsolutePath().toString(),getContentsAsJsonRecursive(
+							aFilePath.toFile(), --levelToRecurse));
+				}
+			}
+			System.out.println("getContentsAsJsonRecursive() - aFilePath - finished recursing");
+			rFilesInLocationJson.put("dirs", dirsJson);
+			for (Path aFilePath : getSubdirectoryStream(iDirectory)) {
+				String filename = aFilePath.getFileName().toString();
+				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
+				System.out.println("getContentsAsJsonRecursive() file loop: " + fileAbsolutePath);
+				if (Files.isDirectory(aFilePath)) {
+					continue;
+				} 
+				if (filename.contains("DS_Store")) {
+					continue;
+				}
+				if (filename.endsWith(".html") || filename.endsWith(".htm")
+						|| iDirectory.getName().endsWith("_files")) {
+					System.out.println("Not supported yet: " + filename);
+					continue;
+				}
+				System.out.println("getContentsAsJsonRecursive() file loop; not a dir: " + fileAbsolutePath);
+				System.out.println("getContentsAsJsonRecursive() file loop; parent dir: " + iDirectory.getAbsolutePath());
+				String thumbnailFileAbsolutePath;
+				_1: {
+					thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + filename + ".jpg";
+				}
+				System.out.println("getContentsAsJsonRecursive() file loop; got thumbnail path for " + fileAbsolutePath);
+				JSONObject fileEntryJson;
+				_2: {
+					JSONObject rFileEntryJson = new JSONObject();
+					rFileEntryJson
+							.put("location", iDirectory.getAbsolutePath());
+					System.out.println("getContentsAsJsonRecursive() file loop; setting file path path for " + fileAbsolutePath);
+					rFileEntryJson.put("fileSystem", fileAbsolutePath);
+					System.out.println("getContentsAsJsonRecursive() file loop; getting http url: " + fileAbsolutePath);
+					rFileEntryJson
+							.put("httpUrl", httpLinkFor(fileAbsolutePath));
+					rFileEntryJson.put("thumbnailUrl",
+							httpLinkFor(thumbnailFileAbsolutePath));
+					fileEntryJson = rFileEntryJson;
+				}
+				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
+				
+			}
+			System.out.println("getContentsAsJsonRecursive() - finished file loop");
+			return rFilesInLocationJson;
+		}
+		
 		private DirectoryStream<Path> getSubdirectoryStream(File aDirectory)
 				throws IOException {
 			String absolutePath = aDirectory.getAbsolutePath();
 			Path aDirectoryPath = Paths.get(absolutePath);
-			return getSubdirectoryStream(aDirectoryPath);
+			return getDirectoryStream(aDirectoryPath);
 		}
 
 		
@@ -465,7 +555,31 @@ public class Coagulate {
 			Path aDirectoryPath = Paths.get(absolutePath);
 			return getDirectoryStream(aDirectoryPath);
 		}
+		
+		private DirectoryStream<Path> getDirectoryStreamRecursive(File aDirectory)
+				throws IOException {
+			String absolutePath = aDirectory.getAbsolutePath();
+			Path aDirectoryPath = Paths.get(absolutePath);
+			return getSubdirectoryStreamRecursive(aDirectoryPath);
+		}
 
+		private DirectoryStream<Path> getSubdirectoryStreamRecursive(Path iDirectoryPath)
+				throws IOException {
+			DirectoryStream<Path> rDirectoryStream = Files
+					.newDirectoryStream(iDirectoryPath,
+							new DirectoryStream.Filter<Path>() {
+								public boolean accept(Path entry)
+										throws IOException {
+									if (entry.endsWith("_thumbnails")) {
+										return false;
+									}
+									return Files.isDirectory(entry);
+
+								}
+							});
+			return rDirectoryStream;
+		}
+		
 		private DirectoryStream<Path> getSubdirectoryStream(Path iDirectoryPath)
 				throws IOException {
 			DirectoryStream<Path> rDirectoryStream = Files
@@ -488,7 +602,6 @@ public class Coagulate {
 								public boolean accept(Path entry)
 										throws IOException {
 									return !Files.isDirectory(entry);
-
 								}
 							});
 			return rDirectoryStream;

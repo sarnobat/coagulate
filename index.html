@@ -66,8 +66,9 @@ $(document).ready(function(){
 					}	
 					++id;
 					if (id > limit) {
-						break;
+						continue;
 					}
+					$('#thumbnailItems').append(createThumbnailItemHtml(response, filesInDirSortedMap[sortedIndex], dirIndex, id));
 					$('#items').append(createItemHtml(response, filesInDirSortedMap[sortedIndex], dirIndex, id));
 				}
 			}
@@ -108,6 +109,69 @@ function loadImagesSequentially(i) {
 	$(images[i]).load(a(i));
 
 }
+
+function createThumbnailItemHtml(response, item, key, id)				
+{	
+// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
+	var width = "250px";
+	var height = "100px";
+	
+	{
+		var res = item.match(/.*\.((txt)|(lnk))/gi);
+		if (res !=null) {
+			return;
+		}
+	}
+	
+	var item2 = response.items[key][item];
+	{
+		var toBeAppended = "";
+		var httpUrl = item2.httpUrl;
+		//console.debug(item2);
+		var thumbnailUrl = item2.thumbnailUrl;
+		{
+			var lastModified = item2.lastModified;
+			{
+				var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
+				if (res !=null) {
+					toBeAppended += '<a href="' + httpUrl + '" target="_blank">';
+					//toBeAppended += '<img width="'+width+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + httpUrl + '"/>';
+					toBeAppended += '<img height="'+height+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) + '"/>';
+					toBeAppended += '</a>';
+				}
+			}
+		}
+		{
+			var matchesVideo = item.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi))/gi);
+			if (matchesVideo != null) {
+				//toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="' +httpUrl+ '"/></video>';
+				toBeAppended += '<img src=\"' +thumbnailUrl+'\">';
+			}
+		}
+		{
+			var matchesVideo = item.match(/.*((pdf)|(tif))/gi);
+			if (matchesVideo != null) {
+				//toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="' +httpUrl+ '"/></video>';
+				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height='+height+'>';
+			}
+		}
+	}	
+	var idstring = "i" + id;
+	toBeAppended = "<a href='" +httpUrl+"'>" + toBeAppended + "</a>";
+	toBeAppended += "&nbsp;";
+	/*
+	var localLink = "<a href=\"file://" + item2.fileSystem.toString() +"\">" + "Local Link" + "</a>";
+	
+	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
+		+ toBeAppended + "<td><td>"+createButtonsPanel(item, response, key, idstring)
+		+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
+		+ decodeURIComponent(item)+"</textarea><br>"+lastModified + "</td>"
+		+ "<td><a href='" +httpUrl+"'>" + httpUrl + "</a><br>" +localLink
+		+ "<br></td></tr></table></td></tr>";
+*/
+	return toBeAppended;
+}
+
 
 function createItemHtml(response, item, key, id)				
 {	
@@ -315,6 +379,7 @@ Todo: Create a tab for simply viewing the images in a directory (no sorting). e.
     <table id="items"></table>
   </div>
   <div id="thumbnailtab">
+      <table id="thumbnailItems"></table>
   </div>
   <div id="hoisttab">
   </div>
