@@ -64,7 +64,7 @@ $(document).ready(function(){
 					for (var sortedIndex in filesInDirSortedMap) {
 						var filepath = filesInDirSortedMap[sortedIndex];
 						if (filepath.match(/.*(nohup.out$|Thumbs.db|[pP]icasa.ini)/)) {
-							console.log('Skipping: ' + filepath);
+							//console.log('Skipping: ' + filepath);
 							continue;
 						}	
 						++id;
@@ -134,7 +134,7 @@ function addSubdirLinks(response) {
 			}
 			for (var sortedIndex in filesInDir) {
 				var filepath = filesInDir[sortedIndex];
-				console.debug(filepath.fileSystem);
+				//console.debug(filepath.fileSystem);
 				$('#subdirs').append("<tr><td><a href='/coagulate/?locations=" +encodeURIComponent(filepath.fileSystem)+ "'>"+filepath.fileSystem+"</a></td></tr>");
 			}
 		}
@@ -156,28 +156,16 @@ function loadImagesSequentially(i) {
 
 }
 
-function createThumbnailItemHtml(response, item, key, id, itemDetails)				
-{	
-// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
+function createThumbnailItemHtml(response, item, key, id, itemDetails) {	
+	// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
 	var width = "250px";
 	var height = "100px";
 	
-	{
-		var res = item.match(/.*\.((txt)|(lnk))/gi);
-		if (res !=null) {
-			return;
-		}
+	var res = item.match(/.*\.((txt)|(lnk))/gi);
+	if (res !=null) {
+		return;
 	}
 	
-	if (itemDetails == null) {
-		debugger;
-	}
-	if (response.items == null) {
-		debugger;
-	}
-	if (response.items[key] == null) {
-		debugger;
-	}
 	var item2 = itemDetails;//response.items[key][item];
 	{
 		var toBeAppended = "";
@@ -224,7 +212,7 @@ function createThumbnailItemHtml(response, item, key, id, itemDetails)
 		+ "<td><a href='" +httpUrl+"'>" + httpUrl + "</a><br>" +localLink
 		+ "<br></td></tr></table></td></tr>";
 */
-	console.debug(toBeAppended);
+//	console.debug(toBeAppended);
 	return toBeAppended;
 }
 
