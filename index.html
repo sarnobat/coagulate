@@ -107,7 +107,7 @@ function printDirsRecursive(dirItems, response, idIn) {
 		for (var sortedIndex in filesInDirSortedMap) {
 			var filepath = filesInDirSortedMap[sortedIndex];
 			if (filepath.match(/.*(nohup.out$|Thumbs.db|[pP]icasa.ini)/)) {
-				console.log('Skipping: ' + filepath);
+				//console.log('Skipping: ' + filepath);
 				continue;
 			}
 			if (filepath == 'dirs') {
@@ -118,7 +118,7 @@ function printDirsRecursive(dirItems, response, idIn) {
 				if (id > limit) {
 					continue;
 				}
-				html += createThumbnailItemHtml(response, filesInDirSortedMap[sortedIndex], dirIndex, idIn + "-" + id, filesInDir[filepath]);
+				html += createThumbnailItemHtml(response, filepath, dirIndex, idIn + "-" + id, filesInDir[filepath]);
 			}
 		}
 	}
