@@ -75,13 +75,13 @@ $(document).ready(function(){
 					}
 				}
 				$('#items').append(html);
-				loadImagesSequentially(0);
 			}
 			{
 				var html = printDirsRecursive(response.itemsRecursive, response);
 				$('#thumbnailItems').append(html);
 					
 			}
+			loadImagesSequentially(0);
 		}
 	});
 });
