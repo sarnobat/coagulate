@@ -49,35 +49,83 @@ $(document).ready(function(){
 	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response) {
 		addSubdirLinks(response);
 		{
-			var id = 0;
-			// For each directory
-			for(var dirIndex in response.items) { 
-				var filesInDir = response.items[dirIndex];
-				if (filesInDir.length < 1) {
-					continue;
-				}
-				var filesInDirSortedMap = shuffle(Object.keys(filesInDir));
-				// For each file in the directory
-				for (var sortedIndex in filesInDirSortedMap) {
-					var filepath = filesInDirSortedMap[sortedIndex];
-					if (filepath.match(/.*(nohup.out$|Thumbs.db|[pP]icasa.ini)/)) {
-						console.log('Skipping: ' + filepath);
-						continue;
-					}	
-					++id;
-					if (id > limit) {
+			var items = response.items;
+			{
+				var html = "";
+				var id = 0;
+				// For each directory
+				for(var dirIndex in items) { 
+					var filesInDir = items[dirIndex];
+					if (filesInDir.length < 1) {
 						continue;
 					}
-					$('#thumbnailItems').append(createThumbnailItemHtml(response, filesInDirSortedMap[sortedIndex], dirIndex, id));
-					$('#items').append(createItemHtml(response, filesInDirSortedMap[sortedIndex], dirIndex, id));
+					var filesInDirSortedMap = shuffle(Object.keys(filesInDir));
+					// For each file in the directory
+					for (var sortedIndex in filesInDirSortedMap) {
+						var filepath = filesInDirSortedMap[sortedIndex];
+						if (filepath.match(/.*(nohup.out$|Thumbs.db|[pP]icasa.ini)/)) {
+							console.log('Skipping: ' + filepath);
+							continue;
+						}	
+						++id;
+						if (id > limit) {
+							continue;
+						}
+						html += createItemHtml(response, filesInDirSortedMap[sortedIndex], dirIndex, id);
+					}
 				}
+				$('#items').append(html);
+				loadImagesSequentially(0);
 			}
-		
-			loadImagesSequentially(0);
+			{
+				var html = printDirsRecursive(response.itemsRecursive, response);
+				$('#thumbnailItems').append(html);
+					
+			}
 		}
 	});
 });
 
+function printDirsRecursive(items, response, idIn, categoryName) {
+	var html = "";
+	html += "<h3>" + categoryName + "</h3>";
+	var id = 0;
+	// For each directory
+	for(var dirIndex in items) { 
+		var filesInDir = items[dirIndex];
+		if (filesInDir.length < 1) {
+			continue;
+		}
+		var filesInDirSortedMap = shuffle(Object.keys(filesInDir));
+		// For each file in the directory
+		for (var sortedIndex in filesInDirSortedMap) {
+			var filepath = filesInDirSortedMap[sortedIndex];
+			if (filepath.match(/.*(nohup.out$|Thumbs.db|[pP]icasa.ini)/)) {
+				console.log('Skipping: ' + filepath);
+				continue;
+			}
+			if (filepath == 'dirs') {
+				var categoryName1 = "";
+				if (Object.keys(items)[sortedIndex]) {
+					if (Object.keys(items)[sortedIndex].split('/')) {
+						categoryName1 = Object.keys(items)[sortedIndex].split('/').pop();
+					}
+				} else {
+					debugger;
+				}
+				
+				html += printDirsRecursive(filesInDir['dirs'], response, idIn + "-" + id, categoryName1);
+			} else {
+				++id;
+				if (id > limit) {
+					continue;
+				}
+				html += createThumbnailItemHtml(response, filesInDirSortedMap[sortedIndex], dirIndex, idIn + "-" + id, filesInDir[filepath]);
+			}
+		}
+	}
+	return html;
+}
 function addSubdirLinks(response) {
 	{
 		for(var dirIndex in response.subdirectories) { 
@@ -110,7 +158,7 @@ function loadImagesSequentially(i) {
 
 }
 
-function createThumbnailItemHtml(response, item, key, id)				
+function createThumbnailItemHtml(response, item, key, id, itemDetails)				
 {	
 // height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
 	var width = "250px";
@@ -123,7 +171,16 @@ function createThumbnailItemHtml(response, item, key, id)
 		}
 	}
 	
-	var item2 = response.items[key][item];
+	if (itemDetails == null) {
+		debugger;
+	}
+	if (response.items == null) {
+		debugger;
+	}
+	if (response.items[key] == null) {
+		debugger;
+	}
+	var item2 = itemDetails;//response.items[key][item];
 	{
 		var toBeAppended = "";
 		var httpUrl = item2.httpUrl;
@@ -169,6 +226,7 @@ function createThumbnailItemHtml(response, item, key, id)
 		+ "<td><a href='" +httpUrl+"'>" + httpUrl + "</a><br>" +localLink
 		+ "<br></td></tr></table></td></tr>";
 */
+	console.debug(toBeAppended);
 	return toBeAppended;
 }
 
