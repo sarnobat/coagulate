@@ -86,7 +86,7 @@ $(document).ready(function(){
 	});
 });
 
-function printDirsRecursive(dirItems, response, idIn, unused) {
+function printDirsRecursive(dirItems, response, idIn) {
 	var html = "";
 	var items = dirItems;
 
@@ -96,14 +96,7 @@ function printDirsRecursive(dirItems, response, idIn, unused) {
 	for(var dirIndex in sortedItems) { 
 		var dirPath = sortedItems[dirIndex];
 		var categoryName1 = "";
-		if (Object.keys(items)[sortedIndex]) {
-			if (dirPath.split('/')) {
-				categoryName1 = dirPath.split('/').pop();
-				debugger;
-			}
-		} else {
-			debugger;
-		}
+		categoryName1 = dirPath.split('/').pop();
 		html += "<h3>" + categoryName1 + "</h3>";
 		var filesInDir = items[dirPath];
 		if (filesInDir.length < 1) {
@@ -119,7 +112,7 @@ function printDirsRecursive(dirItems, response, idIn, unused) {
 			}
 			if (filepath == 'dirs') {
 				var subdirItems = filesInDir['dirs'];
-				html += printDirsRecursive(subdirItems, response, idIn + "-" + id, "unused");
+				html += printDirsRecursive(subdirItems, response, idIn + "-" + id);
 			} else {
 				++id;
 				if (id > limit) {
