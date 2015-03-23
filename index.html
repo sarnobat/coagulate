@@ -124,21 +124,20 @@ function printDirsRecursive(dirItems, response, idIn) {
 	}
 	return html;
 }
-function addSubdirLinks(response) {
-	{
-		for(var dirIndex in response.subdirectories) { 
-			var filesInDir = response.subdirectories[dirIndex];
 
-			if (filesInDir.length < 1) {
-				continue;
-			}
-			for (var sortedIndex in filesInDir) {
-				var filepath = filesInDir[sortedIndex];
-				//console.debug(filepath.fileSystem);
-				$('#subdirs').append("<tr><td><a href='/coagulate/?locations=" +encodeURIComponent(filepath.fileSystem)+ "'>"+filepath.fileSystem+"</a></td></tr>");
-			}
+function addSubdirLinks(response) {
+	for(var dirIndex in response.subdirectories) { 
+		var filesInDir = response.subdirectories[dirIndex];
+
+		if (filesInDir.length < 1) {
+			continue;
 		}
-	}	
+		for (var sortedIndex in filesInDir) {
+			var filepath = filesInDir[sortedIndex];
+			//console.debug(filepath.fileSystem);
+			$('#subdirs').append("<tr><td><a href='/coagulate/?locations=" +encodeURIComponent(filepath.fileSystem)+ "'>"+filepath.fileSystem+"</a></td></tr>");
+		}
+	}
 }
 function loadImagesSequentially(i) {
 	var images = $('.myimage');

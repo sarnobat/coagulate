@@ -297,7 +297,7 @@ public class Coagulate {
 					}
 					try {
 						rItemsJson.put(aDirectoryPathString,
-								createSubdirDetailsJson(aDirectoryPathString));
+								createSubdirDetailsJson2(aDirectoryPathString));
 					} catch (JSONException e) {
 						e.printStackTrace();
 					} catch (IOException e) {
@@ -306,6 +306,10 @@ public class Coagulate {
 				}
 			}
 			return rItemsJson;
+		}
+
+		private JSONObject createSubdirDetailsJson2(String iDirectoryPathString) throws IOException {
+			return getSubdirsAsJson2(new File(iDirectoryPathString));
 		}
 
 		private JSONObject createSubdirDetailsJson(String iDirectoryPathString) throws IOException {
@@ -405,10 +409,44 @@ public class Coagulate {
 			return true;
 		}
 
+		private JSONObject getSubdirsAsJson2(File iDirectory)
+				throws IOException {
+			JSONObject rFilesInLocationJson = new JSONObject();
+			for (Path aFilePath : getSubdirectoryStream2(iDirectory)) {
+				String filename = aFilePath.getFileName().toString();
+				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
+				if (filename.contains("DS_Store")) {
+					continue;
+				}
+				if (filename.endsWith(".html") || filename.endsWith(".htm")
+						|| iDirectory.getName().endsWith("_files")) {
+					System.out.println("Not supported yet: " + filename);
+					continue;
+				}
+				String thumbnailFileAbsolutePath;
+				_1: {
+					thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + filename + ".jpg"; 
+				}
+				JSONObject fileEntryJson ;
+				_2: {
+					JSONObject rFileEntryJson = new JSONObject();
+					rFileEntryJson
+							.put("location", iDirectory.getAbsolutePath());
+					rFileEntryJson
+							.put("fileSystem", fileAbsolutePath);
+					rFileEntryJson.put("httpUrl", httpLinkFor(fileAbsolutePath));
+					rFileEntryJson.put("thumbnailUrl", httpLinkFor(thumbnailFileAbsolutePath));
+				fileEntryJson = rFileEntryJson;
+				}
+				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
+				System.out.println(fileAbsolutePath);
+			}
+			return rFilesInLocationJson;
+		}
 		private JSONObject getSubdirsAsJson(File iDirectory)
 				throws IOException {
 			JSONObject rFilesInLocationJson = new JSONObject();
-			for (Path aFilePath : getSubdirectoryStream(iDirectory)) {
+			for (Path aFilePath : getSubdirectoryStream2(iDirectory)) {
 				String filename = aFilePath.getFileName().toString();
 				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
 				if (filename.contains("DS_Store")) {
@@ -541,6 +579,14 @@ public class Coagulate {
 			return rFilesInLocationJson;
 		}
 		
+		private DirectoryStream<Path> getSubdirectoryStream2(File aDirectory)
+				throws IOException {
+			String absolutePath = aDirectory.getAbsolutePath();
+			Path aDirectoryPath = Paths.get(absolutePath);
+			return getDirectoryStream2(aDirectoryPath);
+		}
+
+		
 		private DirectoryStream<Path> getSubdirectoryStream(File aDirectory)
 				throws IOException {
 			String absolutePath = aDirectory.getAbsolutePath();
@@ -593,6 +639,20 @@ public class Coagulate {
 							});
 			return rDirectoryStream;
 		}
+		
+		private DirectoryStream<Path> getDirectoryStream2(Path iDirectoryPath)
+				throws IOException {
+			DirectoryStream<Path> rDirectoryStream = Files
+					.newDirectoryStream(iDirectoryPath,
+							new DirectoryStream.Filter<Path>() {
+								public boolean accept(Path entry)
+										throws IOException {
+									return Files.isDirectory(entry);
+								}
+							});
+			return rDirectoryStream;
+		}
+
 		
 		private DirectoryStream<Path> getDirectoryStream(Path iDirectoryPath)
 				throws IOException {
