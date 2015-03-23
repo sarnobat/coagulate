@@ -86,15 +86,25 @@ $(document).ready(function(){
 	});
 });
 
-function printDirsRecursive(dirItems, response, idIn, categoryName) {
+function printDirsRecursive(dirItems, response, idIn, unused) {
 	var html = "";
 	var items = dirItems;
-	html += "<h3>" + categoryName + "</h3>";
+
 	var id = 0;
 	// For each directory
 	var sortedItems = Object.keys(dirItems).sort();
 	for(var dirIndex in sortedItems) { 
 		var dirPath = sortedItems[dirIndex];
+		var categoryName1 = "";
+		if (Object.keys(items)[sortedIndex]) {
+			if (dirPath.split('/')) {
+				categoryName1 = dirPath.split('/').pop();
+				debugger;
+			}
+		} else {
+			debugger;
+		}
+		html += "<h3>" + categoryName1 + "</h3>";
 		var filesInDir = items[dirPath];
 		if (filesInDir.length < 1) {
 			continue;
@@ -108,16 +118,8 @@ function printDirsRecursive(dirItems, response, idIn, categoryName) {
 				continue;
 			}
 			if (filepath == 'dirs') {
-				var categoryName1 = "";
-				if (Object.keys(items)[sortedIndex]) {
-					if (Object.keys(items)[sortedIndex].split('/')) {
-						categoryName1 = Object.keys(items)[sortedIndex].split('/').pop();
-					}
-				} else {
-					debugger;
-				}
-				
-				html += printDirsRecursive(filesInDir['dirs'], response, idIn + "-" + id, categoryName1);
+				var subdirItems = filesInDir['dirs'];
+				html += printDirsRecursive(subdirItems, response, idIn + "-" + id, "unused");
 			} else {
 				++id;
 				if (id > limit) {
