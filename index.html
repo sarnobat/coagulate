@@ -86,13 +86,16 @@ $(document).ready(function(){
 	});
 });
 
-function printDirsRecursive(items, response, idIn, categoryName) {
+function printDirsRecursive(dirItems, response, idIn, categoryName) {
 	var html = "";
+	var items = dirItems;
 	html += "<h3>" + categoryName + "</h3>";
 	var id = 0;
 	// For each directory
-	for(var dirIndex in items) { 
-		var filesInDir = items[dirIndex];
+	var sortedItems = Object.keys(dirItems).sort();
+	for(var dirIndex in sortedItems) { 
+		var dirPath = sortedItems[dirIndex];
+		var filesInDir = items[dirPath];
 		if (filesInDir.length < 1) {
 			continue;
 		}
