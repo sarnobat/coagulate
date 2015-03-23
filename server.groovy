@@ -705,6 +705,8 @@ public class Coagulate {
 			// 3TB
 			rHttpUrl = rHttpUrl.replaceFirst("/media/sarnobat/3TB/",
 					"http://netgear.rohidekar.com:8027/");
+			rHttpUrl = rHttpUrl.replaceFirst("/3TB/",
+					"http://netgear.rohidekar.com:8027/");
 			rHttpUrl = rHttpUrl.replaceFirst("/Volumes/3TB/",
 					"http://netgear.rohidekar.com:8027/");
 
