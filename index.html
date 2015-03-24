@@ -187,7 +187,7 @@ function createThumbnailItemHtml(response, item, key, id, itemDetails) {
 			var matchesVideo = item.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi))/gi);
 			if (matchesVideo != null) {
 				//toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="' +httpUrl+ '"/></video>';
-				toBeAppended += '<img src=\"' +thumbnailUrl+'\">';
+				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height="'+height+'" alt="'+item2.httpUrl+'">';
 			}
 		}
 		{
