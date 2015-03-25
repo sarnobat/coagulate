@@ -38,7 +38,7 @@ public class Coagulate {
 		@Produces("application/json")
 		public Response moveToParent(@QueryParam("filePath") String sourceFilePathString)
 				throws JSONException {
-			System.out.println("moveToParent() - begin - " + sourceFilePathString);
+//			System.out.println("moveToParent() - begin - " + sourceFilePathString);
 			if (sourceFilePathString.endsWith("htm") || sourceFilePathString.endsWith(".html")) {
 				throw new RuntimeException("Need to move the _files folder too");
 			}
@@ -56,8 +56,8 @@ public class Coagulate {
 			Path sourceFilePath = Paths.get(sourceFilePathString);
 			Path destinationFile = getDestinationFilePathAvoidingExisting(sourceFilePath);
 			doMove(sourceFilePath, destinationFile);
-			System.out.println("File now resides at "
-					+ destinationFile.toAbsolutePath().toString());
+//			System.out.println("File now resides at "
+//					+ destinationFile.toAbsolutePath().toString());
 		}
 
 		private Path getDestinationFilePathAvoidingExisting(Path sourceFile)
@@ -100,12 +100,12 @@ public class Coagulate {
 		private static void copyFileToFolder(String filePath,
 				String iDestinationDirPath) throws IllegalAccessError, IOException {
 			Path sourceFilePath = Paths.get(filePath);
-			System.out.println(filePath);
+//			System.out.println(filePath);
 			if (!Files.exists(sourceFilePath)) {
 				throw new RuntimeException("No such source file");
 			}
 			String string = sourceFilePath.getFileName().toString();
-			System.out.println(iDestinationDirPath);
+//			System.out.println(iDestinationDirPath);
 			Path destinationDir = Paths.get(iDestinationDirPath);
 			doCopy(sourceFilePath, getUnconflictedDestinationFilePath(destinationDir, string));
 		}
@@ -153,7 +153,7 @@ public class Coagulate {
 				throw new RuntimeException("Target is an existing file");
 			}
 			if (fileAlreadyInDesiredSubdir(iSubfolderSimpleName, sourceFilePath)) {
-				System.out.println("Not moving to identical subfolder");
+//				System.out.println("Not moving to identical subfolder");
 				return;
 			}
 			doMove(sourceFilePath, getUnconflictedDestinationFilePath(iSubfolderSimpleName, sourceFilePath));
@@ -183,8 +183,8 @@ public class Coagulate {
 			try {
 				Files.move(path, destinationFile);// By default, it won't
 													// overwrite existing
-				System.out.println("Success: file now at "
-						+ destinationFile.toAbsolutePath());
+//				System.out.println("Success: file now at "
+//						+ destinationFile.toAbsolutePath());
 			} catch (IOException e) {
 				e.printStackTrace();
 				throw new IllegalAccessError("Moving did not work");
@@ -195,8 +195,8 @@ public class Coagulate {
 			try {
 				Files.copy(sourceFilePath, destinationFilePath);// By default, it won't
 													// overwrite existing
-				System.out.println("Success: copied file now at "
-						+ destinationFilePath.toAbsolutePath());
+//				System.out.println("Success: copied file now at "
+//						+ destinationFilePath.toAbsolutePath());
 			} catch (IOException e) {
 				e.printStackTrace();
 				throw new IllegalAccessError("Copying did not work");
@@ -275,7 +275,7 @@ public class Coagulate {
 
 		private JSONObject createListJson(String[] iDirectoryPathStrings)
 				throws IOException {
-			System.out.println("createListJson() - begin");
+//			System.out.println("createListJson() - begin");
 			JSONObject rResponse = new JSONObject();
 			rResponse.put("items", createFilesJson(iDirectoryPathStrings));
 			rResponse.put("itemsRecursive", createFilesJsonRecursive(iDirectoryPathStrings));
@@ -318,7 +318,7 @@ public class Coagulate {
 
 		private JSONObject createFilesJsonRecursive(String[] iDirectoryPathStrings)
 				throws IOException {
-			System.out.println("createFilesJsonRecursive() - begin");
+//			System.out.println("createFilesJsonRecursive() - begin");
 			JSONObject rItemsJson = new JSONObject();
 			_3: {
 				for (String aDirectoryPathString : iDirectoryPathStrings) {
@@ -389,21 +389,21 @@ public class Coagulate {
 		}
 
 		private boolean shouldGetContents(String iDirectoryPathString) {
-			System.out.println("3 " + iDirectoryPathString);
+//			System.out.println("3 " + iDirectoryPathString);
 			if (iDirectoryPathString.startsWith("#")) {
-				System.out.println("4 " + iDirectoryPathString);
+//				System.out.println("4 " + iDirectoryPathString);
 				return false;
 			}
-			System.out.println("5 " + iDirectoryPathString);
+//			System.out.println("5 " + iDirectoryPathString);
 
 			File aDirectory = new File(iDirectoryPathString);
 			if (!aDirectory.exists()) {
-				System.out.println(iDirectoryPathString + " doesn't exist.");
+//				System.out.println(iDirectoryPathString + " doesn't exist.");
 				return false;
 			}
 			if (!aDirectory.isDirectory()) {
-				System.out
-						.println(iDirectoryPathString + " is not a directory");
+//				System.out
+//						.println(iDirectoryPathString + " is not a directory");
 				return false;
 			}
 			return true;
@@ -420,7 +420,7 @@ public class Coagulate {
 				}
 				if (filename.endsWith(".html") || filename.endsWith(".htm")
 						|| iDirectory.getName().endsWith("_files")) {
-					System.out.println("Not supported yet: " + filename);
+//					System.out.println("Not supported yet: " + filename);
 					continue;
 				}
 				String thumbnailFileAbsolutePath;
@@ -439,7 +439,7 @@ public class Coagulate {
 				fileEntryJson = rFileEntryJson;
 				}
 				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
-				System.out.println(fileAbsolutePath);
+//				System.out.println(fileAbsolutePath);
 			}
 			return rFilesInLocationJson;
 		}
@@ -454,7 +454,7 @@ public class Coagulate {
 				}
 				if (filename.endsWith(".html") || filename.endsWith(".htm")
 						|| iDirectory.getName().endsWith("_files")) {
-					System.out.println("Not supported yet: " + filename);
+//					System.out.println("Not supported yet: " + filename);
 					continue;
 				}
 				String thumbnailFileAbsolutePath;
@@ -473,7 +473,7 @@ public class Coagulate {
 				fileEntryJson = rFileEntryJson;
 				}
 				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
-				System.out.println(fileAbsolutePath);
+//				System.out.println(fileAbsolutePath);
 			}
 			return rFilesInLocationJson;
 		}
@@ -489,7 +489,7 @@ public class Coagulate {
 				}
 				if (filename.endsWith(".html") || filename.endsWith(".htm")
 						|| iDirectory.getName().endsWith("_files")) {
-					System.out.println("Not supported yet: " + filename);
+//					System.out.println("Not supported yet: " + filename);
 					continue;
 				}
 				String thumbnailFileAbsolutePath;
@@ -508,7 +508,7 @@ public class Coagulate {
 				fileEntryJson = rFileEntryJson;
 				}
 				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
-				System.out.println(fileAbsolutePath);
+//				System.out.println(fileAbsolutePath);
 			}
 			return rFilesInLocationJson;
 		}
@@ -516,30 +516,30 @@ public class Coagulate {
 
 		private JSONObject getContentsAsJsonRecursive(File iDirectory, int levelToRecurse)
 				throws IOException {
-			System.out.println("getContentsAsJsonRecursive() - begin");
+//			System.out.println("getContentsAsJsonRecursive() - begin");
 			JSONObject rFilesInLocationJson = new JSONObject();
 			JSONObject dirsJson = new JSONObject();
 			if (levelToRecurse > 0) {
 				for (Path aFilePath : getDirectoryStreamRecursive(iDirectory)) {
-					System.out
-							.println("getContentsAsJsonRecursive() - dir loop - "
-									+ aFilePath);
+//					System.out
+//							.println("getContentsAsJsonRecursive() - dir loop - "
+//									+ aFilePath);
 					if (!Files.isDirectory(aFilePath)) {
 						continue;
 					}
-					System.out
-							.println("getContentsAsJsonRecursive() - dir loop - recursing into "
-									+ aFilePath);
+//					System.out
+//							.println("getContentsAsJsonRecursive() - dir loop - recursing into "
+//									+ aFilePath);
 					dirsJson.put(aFilePath.toAbsolutePath().toString(),getContentsAsJsonRecursive(
 							aFilePath.toFile(), --levelToRecurse));
 				}
 			}
-			System.out.println("getContentsAsJsonRecursive() - aFilePath - finished recursing");
+//			System.out.println("getContentsAsJsonRecursive() - aFilePath - finished recursing");
 			rFilesInLocationJson.put("dirs", dirsJson);
 			for (Path aFilePath : getSubdirectoryStream(iDirectory)) {
 				String filename = aFilePath.getFileName().toString();
 				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
-				System.out.println("getContentsAsJsonRecursive() file loop: " + fileAbsolutePath);
+//				System.out.println("getContentsAsJsonRecursive() file loop: " + fileAbsolutePath);
 				if (Files.isDirectory(aFilePath)) {
 					continue;
 				} 
@@ -548,24 +548,24 @@ public class Coagulate {
 				}
 				if (filename.endsWith(".html") || filename.endsWith(".htm")
 						|| iDirectory.getName().endsWith("_files")) {
-					System.out.println("Not supported yet: " + filename);
+//					System.out.println("Not supported yet: " + filename);
 					continue;
 				}
-				System.out.println("getContentsAsJsonRecursive() file loop; not a dir: " + fileAbsolutePath);
-				System.out.println("getContentsAsJsonRecursive() file loop; parent dir: " + iDirectory.getAbsolutePath());
+//				System.out.println("getContentsAsJsonRecursive() file loop; not a dir: " + fileAbsolutePath);
+//				System.out.println("getContentsAsJsonRecursive() file loop; parent dir: " + iDirectory.getAbsolutePath());
 				String thumbnailFileAbsolutePath;
 				_1: {
 					thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + filename + ".jpg";
 				}
-				System.out.println("getContentsAsJsonRecursive() file loop; got thumbnail path for " + fileAbsolutePath);
+//				System.out.println("getContentsAsJsonRecursive() file loop; got thumbnail path for " + fileAbsolutePath);
 				JSONObject fileEntryJson;
 				_2: {
 					JSONObject rFileEntryJson = new JSONObject();
 					rFileEntryJson
 							.put("location", iDirectory.getAbsolutePath());
-					System.out.println("getContentsAsJsonRecursive() file loop; setting file path path for " + fileAbsolutePath);
+//					System.out.println("getContentsAsJsonRecursive() file loop; setting file path path for " + fileAbsolutePath);
 					rFileEntryJson.put("fileSystem", fileAbsolutePath);
-					System.out.println("getContentsAsJsonRecursive() file loop; getting http url: " + fileAbsolutePath);
+//					System.out.println("getContentsAsJsonRecursive() file loop; getting http url: " + fileAbsolutePath);
 					rFileEntryJson
 							.put("httpUrl", httpLinkFor(fileAbsolutePath));
 					rFileEntryJson.put("thumbnailUrl",
@@ -575,7 +575,7 @@ public class Coagulate {
 				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
 				
 			}
-			System.out.println("getContentsAsJsonRecursive() - finished file loop");
+//			System.out.println("getContentsAsJsonRecursive() - finished file loop");
 			return rFilesInLocationJson;
 		}
 		
