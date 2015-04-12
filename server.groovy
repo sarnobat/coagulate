@@ -264,6 +264,7 @@ public class Coagulate {
 		@Produces("application/json")
 		public Response list(@QueryParam("dirs") String iDirectoryPathsString)
 				throws JSONException, IOException {
+			System.out.println("list() - begin");
 			JSONObject response = createListJson(iDirectoryPathsString
 					.split("\\n"));
 
@@ -669,46 +670,48 @@ public class Coagulate {
 
 
 		private String httpLinkFor(String iAbsolutePath) {
+			//String domain = "http://netgear.rohidekar.com";
+			String domain = "http://192.168.1.2";
 			// Unsorted
 			String rHttpUrl = iAbsolutePath.replaceFirst("/Volumes/Unsorted/",
-					"http://netgear.rohidekar.com:8020/");
+					domain + ":8020/");
 			rHttpUrl = rHttpUrl.replaceFirst("/media/sarnobat/Unsorted/",
-					"http://netgear.rohidekar.com:8020/");
+					domain + ":8020/");
 
 			// Record
                         rHttpUrl = rHttpUrl.replaceFirst("/media/sarnobat/Record/",
-                                        "http://netgear.rohidekar.com:8024/");
+                                        domain + ":8024/");
                         rHttpUrl = rHttpUrl.replaceFirst("/Volumes/Record/",
-                                        "http://netgear.rohidekar.com:8024/");
+                                        domain + ":8024/");
                         rHttpUrl = rHttpUrl.replaceFirst("/Record/",
-                                        "http://netgear.rohidekar.com:8024/");
+                                        domain + ":8024/");
 
 			// Large
 			rHttpUrl = rHttpUrl.replaceFirst("/media/sarnobat/Large/",
-					"http://netgear.rohidekar.com:8021/");
+					domain + ":8021/");
 			rHttpUrl = rHttpUrl.replaceFirst("/Volumes/Large/",
-					"http://netgear.rohidekar.com:8021/");
+					domain + ":8021/");
 
 			rHttpUrl = rHttpUrl.replaceFirst(".*/e/Sridhar/Photos",
-					"http://netgear.rohidekar.com:8022/");
+					domain + ":8022/");
 
 			// Books
 			rHttpUrl = rHttpUrl.replaceFirst(".*/e/Sridhar/Books", 
-					"http://netgear.rohidekar.com:8023/");
+					domain + ":8023/");
 
                         rHttpUrl = rHttpUrl.replaceFirst(".*/e/new",
-                                        "http://netgear.rohidekar.com:8025/");
+                                        domain + ":8025/");
 
    			rHttpUrl = rHttpUrl.replaceFirst(".*/e/Drive J",
-                                        "http://netgear.rohidekar.com:8026/");
+                                        domain + ":8026/");
 
 			// 3TB
 			rHttpUrl = rHttpUrl.replaceFirst("/media/sarnobat/3TB/",
-					"http://netgear.rohidekar.com:8027/");
+					domain + ":8027/");
 			rHttpUrl = rHttpUrl.replaceFirst("/3TB/",
-					"http://netgear.rohidekar.com:8027/");
+					domain + ":8027/");
 			rHttpUrl = rHttpUrl.replaceFirst("/Volumes/3TB/",
-					"http://netgear.rohidekar.com:8027/");
+					domain + ":8027/");
 
 			return rHttpUrl;
 		}

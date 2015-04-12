@@ -169,6 +169,7 @@ function createThumbnailItemHtml(response, item, key, id, itemDetails) {
 	{
 		var toBeAppended = "";
 		var httpUrl = item2.httpUrl;
+		var simpleName = item2.httpUrl.split('/').pop();;
 		//console.debug(item2);
 		var thumbnailUrl = item2.thumbnailUrl;
 		{
@@ -187,7 +188,7 @@ function createThumbnailItemHtml(response, item, key, id, itemDetails) {
 			var matchesVideo = item.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi))/gi);
 			if (matchesVideo != null) {
 				//toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="' +httpUrl+ '"/></video>';
-				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height="'+height+'" alt="'+item2.httpUrl+'">';
+				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height="'+height+'" title="'+ simpleName +'">';
 			}
 		}
 		{
@@ -414,15 +415,15 @@ Todo: Create a tab for simply viewing the images in a directory (no sorting). e.
 
 <div id="tabs">
   <ul>
-    <li><a href="#sorttab">Sort</a></li>
     <li><a href="#thumbnailtab">Thumbnails</a></li>
+    <li><a href="#sorttab">Sort</a></li>
     <li><a href="#hoisttab">Hoist</a></li>
   </ul>
-  <div id="sorttab">
-    <table id="items"></table>
-  </div>
   <div id="thumbnailtab">
       <table id="thumbnailItems"></table>
+  </div>
+  <div id="sorttab">
+    <table id="items"></table>
   </div>
   <div id="hoisttab">
   </div>
