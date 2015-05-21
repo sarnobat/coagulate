@@ -11,6 +11,7 @@
 <script type="text/javascript" src="http://netgear.rohidekar.com/yurl/jquery/purl.js"></script>
 <script src="http://www.webtoolkit.info/djs/webtoolkit.md5.js"></script>
 </script>
+<script src="http://netgear.rohidekar.com/yurl/js/imagezoom.ssarnobat.js"></script>
 <script>
 
 
@@ -179,7 +180,7 @@ function createThumbnailItemHtml(response, item, key, id, itemDetails) {
 				if (res !=null) {
 					toBeAppended += '<a href="' + httpUrl + '" target="_blank">';
 					//toBeAppended += '<img width="'+width+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + httpUrl + '"/>';
-					toBeAppended += '<img height="'+height+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) + '"/>';
+					toBeAppended += '<img height="'+height+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) + '" onmouseenter="zoom(this)"/>';
 					toBeAppended += '</a>';
 				}
 			}
@@ -454,6 +455,13 @@ Key bindings<br>
 
 /media/sarnobat/Unsorted/Videos/
 /media/sarnobat/Large/Videos
+/e/new/video
+/e/Videos
+/d/Videos
+/media/sarnobat/c/Documents and Settings/Sridhar.SRIDHAR-E5FA83A/Desktop/videos/
+#/d/Flashget
+#/d/Flashget/Done
+#/e/Flashget
 #/media/sarnobat/Unsorted/Videos/wwf/
 #/media/sarnobat/Unsorted/Videos/Atletico
 #/media/sarnobat/Unsorted/Videos/soccer
@@ -463,6 +471,8 @@ Key bindings<br>
 ## Images
 ##
 
+/e/Sridhar/Photos/camera phone photos/iPhone/2015-04-28
+/e/Sridhar/Photos/camera phone photos/iPhone/2015-04-13/20150413-233008
 /e/Sridhar/Photos/camera phone photos/iPhone/2015-03-08
 /e/Sridhar/Photos/2003 and before - Pre Digital Camera/scans - unsorted
 /e/new/screenshots
