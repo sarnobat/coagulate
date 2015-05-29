@@ -9,7 +9,7 @@
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 <script src="http://netgear.rohidekar.com/yurl/jquery/jquery-ui.js"></script>
 <script type="text/javascript" src="http://netgear.rohidekar.com/yurl/jquery/purl.js"></script>
-<script src="http://www.webtoolkit.info/djs/webtoolkit.md5.js"></script>
+<script src="http://netgear.rohidekar.com/yurl/js/webtoolkit.md5.js"></script>
 </script>
 <script src="http://netgear.rohidekar.com/yurl/js/imagezoom.ssarnobat.js"></script>
 <script>
@@ -180,7 +180,7 @@ function createThumbnailItemHtml(response, item, key, id, itemDetails) {
 				if (res !=null) {
 					toBeAppended += '<a href="' + httpUrl + '" target="_blank">';
 					//toBeAppended += '<img width="'+width+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + httpUrl + '"/>';
-					toBeAppended += '<img height="'+height+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) + '" onmouseenter="zoom(this)"/>';
+					toBeAppended += '<img height="'+height+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) + '" onmouseenter="zoom(this)" />';
 					toBeAppended += '</a>';
 				}
 			}
@@ -244,7 +244,7 @@ function createItemHtml(response, item, key, id)
 				if (res !=null) {
 					toBeAppended += '<a href="' + httpUrl + '" target="_blank">';
 					//toBeAppended += '<img width="'+width+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + httpUrl + '"/>';
-					toBeAppended += '<img width="'+width+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) + '"/>';
+					toBeAppended += '<img width="'+width+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) + '" style="transform: rotate(180deg)"/>';
 					toBeAppended += '</a>';
 				}
 			}
@@ -488,6 +488,10 @@ Key bindings<br>
 ##
 
 #/media/sarnobat/Record/Record to DVD (non-videos)/books
+#/media/sarnobat/3TB/Computer Knowledge MegaCollection v1.0
+#/media/sarnobat/e/new/books
+#/media/sarnobat/e/Sridhar/Books
+#/media/sarnobat/d/Record these/Books
 #/e/new/pdf
 
 ##

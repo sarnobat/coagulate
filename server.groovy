@@ -109,13 +109,16 @@ public class CoagulateEmbedded {
 		@javax.ws.rs.Path("static/{absolutePath : .+}")
 		@Produces("application/json")
 		public Response getFile(@PathParam("absolutePath") String absolutePath, @Context HttpHeaders header){
-			System.out.println("getFile() - begin");
+			System.out.println("getFile() - begin\t" + absolutePath);
 			Object entity = "{ 'foo' : 'bar' }";
 			String mimeType = "application/json";
 			final String absolutePath2 = "/" +absolutePath;
 			final List<String> whitelisted = ImmutableList
-					.of("/media/sarnobat/Unsorted/images/",
-							"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/");
+					.of("/media/sarnobat/Large/Videos/",
+							"/media/sarnobat/Unsorted/images/",
+							"/media/sarnobat/Unsorted/Videos/",
+							"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/",
+							"/e/new/");
 			Predicate<String> IS_UNDER = new Predicate<String>() {
 				@Override
 				public boolean apply(@Nullable String permittedDirectory) {
@@ -136,9 +139,9 @@ public class CoagulateEmbedded {
 					CoagulateEmbedded.FileServerGroovy.Response r = FileServerGroovy
 							.serveFile(absolutePath, new Properties(),
 									Paths.get("/").toFile(), true);
-					System.out.println(r.mimeType);
+					//System.out.println(r.mimeType);
 					mimeType = r.mimeType;
-					System.out.println(header);
+					//System.out.println(header);
 					entity = r.data;
 				} catch (Exception e) {
 					e.printStackTrace();
