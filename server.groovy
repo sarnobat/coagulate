@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
@@ -44,6 +45,15 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.imaging.ImageReadException;
+import org.apache.commons.imaging.Imaging;
+import org.apache.commons.imaging.common.IImageMetadata;
+import org.apache.commons.imaging.formats.jpeg.JpegImageMetadata;
+import org.apache.commons.imaging.formats.tiff.TiffField;
+import org.apache.commons.imaging.formats.tiff.constants.GpsTagConstants;
+import org.apache.commons.imaging.formats.tiff.constants.TiffTagConstants;
+import org.apache.commons.imaging.formats.tiff.taginfos.TagInfo;
+import org.apache.commons.imaging.formats.tiff.taginfos.TagInfoRational;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
@@ -52,10 +62,12 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.google.api.client.util.Maps;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
@@ -109,7 +121,7 @@ public class Coagulate {
 		@javax.ws.rs.Path("static/{absolutePath : .+}")
 		@Produces("application/json")
 		public Response getFile(@PathParam("absolutePath") String absolutePath, @Context HttpHeaders header){
-			System.out.println("getFile() - begin\t" + absolutePath);
+//			System.out.println("getFile() - begin\t" + absolutePath);
 			Object entity = "{ 'foo' : 'bar' }";
 			String mimeType = "application/json";
 			final String absolutePath2 = "/" +absolutePath;
@@ -651,11 +663,65 @@ public class Coagulate {
 							httpLinkFor(thumbnailFileAbsolutePath));
 					fileEntryJson = rFileEntryJson;
 				}
+				if (filename.endsWith("jpg")) {
+					JSONObject exifJson = getExifData(aFilePath);
+					fileEntryJson.put("exif", exifJson);
+				}
 				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
-				
 			}
 //			System.out.println("getContentsAsJsonRecursive() - finished file loop");
 			return rFilesInLocationJson;
+		}
+
+		private JSONObject getExifData(Path aFilePath) throws IOException {
+			JSONObject exifJson = new JSONObject();
+			exifJson.put("datetime",
+					getTag(aFilePath, TiffTagConstants.TIFF_TAG_DATE_TIME));
+			exifJson.put("orientation",
+					getTag(aFilePath, TiffTagConstants.TIFF_TAG_ORIENTATION));
+			exifJson.put("latitude_ref",
+					getTag(aFilePath, GpsTagConstants.GPS_TAG_GPS_LATITUDE_REF));
+			exifJson.put("latitude",
+					getTag(aFilePath, GpsTagConstants.GPS_TAG_GPS_LATITUDE));
+			exifJson.put(
+					"longitude_ref",
+					getTag(aFilePath, GpsTagConstants.GPS_TAG_GPS_LONGITUDE_REF));
+			exifJson.put("longitude",
+					getTag(aFilePath, GpsTagConstants.GPS_TAG_GPS_LONGITUDE));
+			return exifJson;
+		}
+
+		private String getTag(Path aFilePath,
+				TagInfo tagInfo) {
+			String ret = "";
+			try {
+				IImageMetadata metadata = Imaging.getMetadata(aFilePath.toFile());
+
+				if (metadata instanceof JpegImageMetadata) {
+					JpegImageMetadata jpegMetadata = (JpegImageMetadata) metadata;
+					
+					TiffField field = jpegMetadata.findEXIFValueWithExactMatch(tagInfo);
+					if (field == null) {
+					} else {
+						Map<String, String> m = getPair(jpegMetadata, tagInfo);
+						String firstkey = m.keySet().toArray(new String[0])[0];
+						ret = m.get(firstkey);
+					}
+				}
+			} catch (ImageReadException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return ret;
+		}
+
+		private Map<String, String> getPair(JpegImageMetadata jpegMetadata,
+				TagInfo tagInfo2) {
+			String name = tagInfo2.name;
+			String value = jpegMetadata.findEXIFValueWithExactMatch(tagInfo2).getValueDescription();
+			Map<String, String> m = ImmutableMap.of(name,value);
+			return m;
 		}
 		
 		private DirectoryStream<Path> getSubdirectoryStream2(File aDirectory)
