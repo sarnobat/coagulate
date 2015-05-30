@@ -57,7 +57,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 
-public class CoagulateEmbedded {
+public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
 	public static class MyResource { // Must be public
 
@@ -136,7 +136,7 @@ public class CoagulateEmbedded {
 			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(IS_UNDER)){
 				try {
 	
-					CoagulateEmbedded.FileServerGroovy.Response r = FileServerGroovy
+					Coagulate.FileServerGroovy.Response r = FileServerGroovy
 							.serveFile(absolutePath, new Properties(),
 									Paths.get("/").toFile(), true);
 					//System.out.println(r.mimeType);
