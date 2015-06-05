@@ -15,7 +15,7 @@
 <script>
 
 
-var urlBase = "http://netgear.rohidekar.com:4451/cmsfs/";
+var urlBase = "http://192.168.1.2:4451/cmsfs/";
 var limit;
 
 
@@ -41,6 +41,30 @@ function updateURLIfEmpty() {
 function updateURL() {
 	history.pushState(null, null, '/coagulate?locations=' + encodeURIComponent($("#locations").val())); // HTML5
 }
+
+function dirToFilesInDirParameterized(dirContents) {
+	return function dirToFilesInDir(dir) {
+		return { 
+			"dir" : dir,
+			"filesInDir" : dirContents[dir] ,
+			"subdirs" : dirContents[dir].dirs
+		};
+	};
+}
+
+function toPairs(obj) {
+	var ret = [];
+	var keys = Object.keys(obj);
+	for (var i = 0; i < keys.length; i++) {
+		var key = keys[i];
+		var val = obj[key];
+		var out = {};
+		out[key] = val;
+		ret.push(out);
+	}
+	return ret;
+}
+
 // TODO: This code is nice and simple thanks to the functional refactorings. What would 
 // be even better is if we could replace the loops with recursion.
 $(document).ready(function(){
@@ -48,13 +72,23 @@ $(document).ready(function(){
 	updateURLIfEmpty();
 
 	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response) {
+		$('#items').empty();
 		addSubdirLinks(response);
+		// Map-reduce for cards view (for sorting)
 		{
+			$('#itemsNew').empty();
+			var html = "";
+			var pairs = toPairs(response.itemsRecursive);
+			html += pairs.map(dirToHtmlCards).join('');
+			$('#itemsNew').append(html);
+		}
+		{
+			// Cards (for sorting)
 			var items = response.items;
-			{
+			/*{
 				var html = "";
 				var id = 0;
-				// For each directory
+				// For each directory in the list specified by the user (do not recurse)
 				for(var dirIndex in items) { 
 					var filesInDir = items[dirIndex];
 					if (filesInDir.length < 1) {
@@ -72,11 +106,14 @@ $(document).ready(function(){
 						if (id > limit) {
 							continue;
 						}
-						html += createItemHtml(response, filesInDirSortedMap[sortedIndex], dirIndex, id);
+						var dirs = response.locations[dirIndex].dirs;
+						var fileObj = response.items[dirIndex][filepath];
+						html += createItemHtml(response, filesInDirSortedMap[sortedIndex], dirIndex, id, fileObj, dirs);
 					}
 				}
-				$('#items').append(html);
-			}
+				//$('#items').append(html);
+			}*/
+			// Thumbnails
 			{
 				var html = printDirsRecursive(response.itemsRecursive, response);
 				$('#thumbnailItems').append(html);
@@ -84,9 +121,25 @@ $(document).ready(function(){
 			}
 			loadImagesSequentially(0);
 		}
+	})
+	.fail(function() {
+		console.debug( "error" );
+		$('#items').append("Error");
 	});
+	$('#items').append("This might take a while...");
 });
 
+
+
+
+function filesOnly(anObj) {
+	if (anObj.dirs == null) {
+		return true;
+	}
+	return false;
+}
+
+// For thumbnails
 function printDirsRecursive(dirItems, response, idIn) {
 	var html = "";
 	var items = dirItems;
@@ -156,7 +209,9 @@ function loadImagesSequentially(i) {
 
 }
 
-function createThumbnailItemHtml(response, item, key, id, itemDetails) {	
+// item = filepath
+// key = directorypath
+function createThumbnailItemHtml(responseNotUsed, item, key, id, itemDetails) {	
 	// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
 	var width = "250px";
 	var height = "100px";
@@ -222,12 +277,73 @@ function createThumbnailItemHtml(response, item, key, id, itemDetails) {
 }
 
 
-function createItemHtml(response, item, key, id)				
+// item = filepath
+// key = dirpath
+// item2 = fileObj
+// 
+function createItemHtml(response, item, key, unused, fileObj, subDirs)
 {	
-	// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
+	var item2 = fileObj;//response.items[key][item];
+//	var subDirs2 = response.locations[key].dirs;
+
+	var image = fileObjToHtml(item2);
+
 	var width = "250px";
 	var height = "300px";
 	
+	var localLink = "<a href=\"file://" + item2.fileSystem.toString() +"\">" + "Local Link" + "</a>";
+
+
+	var idstring = "i" + id;	
+	id += 1;
+	//console.debug(localLink);
+	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
+		+ image + "<td><td>"+createButtonsPanel(item, subDirs, key, idstring)
+		+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
+		+ decodeURIComponent(item)+"</textarea><br>"+item2.thumbnailUrl + "</td>"
+		+ "<td><a href='" +item2.httpUrl+"'>" + item2.httpUrl + "</a><br>" +localLink
+		+ "<br></td></tr></table></td></tr>";
+
+	return toBeAppended;
+}
+
+// item = filepath
+// key = dirpath
+function createButtonsPanel(item, subdirs, key, idstring) {
+
+	var buttons = "<table><tr><td>";							
+	{
+		var escaped = item.replace(/'/g, "&apos;");
+		buttons += "<button onclick='moveFileToParent(\"" + escaped + "\",\""+idstring+"\")'>Wrong Category</button><br>";
+		//var subdirs = response.locations[key].dirs;
+		var subdirsArray = Object.keys(subdirs).sort(sortFunction);
+		{
+			var buttonsAdded = 0;
+			for (var dir in subdirsArray) {
+				buttonsAdded++;
+				if (buttonsAdded%15 == 0) {
+					buttons += "</td><td>";
+				}
+				var dirPath = subdirsArray[dir];				
+				var dirName = dirPath.substr(dirPath.lastIndexOf('/') + 1);
+				buttons += "<button onmousedown='button.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
+			}
+		}
+	}
+	buttons += "<br>";
+	buttons += "<button onclick='moveToNonExistingFolder(this,\"" +escaped+"\",\""+dirName+"\",\""+idstring+"\")'>MOVE to custom</button><br>";
+	buttons += "<br>";
+	buttons += "<button onclick='copyFileToFolder(\"" + escaped + "\", \"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/favorites\",\""+idstring+"\", this)'>COPY TO favorites</button><br>";
+	buttons += "</td></tr></table>";
+	return buttons;
+}
+
+function fileObjToHtml(fileObj) {
+	var item2 = fileObj;
+// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
+	var width = "250px";
+	var height = "300px";
+	var item = fileObj.fileSystem;
 	{
 		var res = item.match(/.*\.((txt)|(lnk))/gi);
 		if (res !=null) {
@@ -235,7 +351,7 @@ function createItemHtml(response, item, key, id)
 		}
 	}
 	
-	var item2 = response.items[key][item];
+
 	{
 		var toBeAppended = "";
 		var httpUrl = item2.httpUrl;
@@ -272,48 +388,49 @@ function createItemHtml(response, item, key, id)
 			}
 		}
 	}	
-	var idstring = "i" + id;
-	
-	var localLink = "<a href=\"file://" + item2.fileSystem.toString() +"\">" + "Local Link" + "</a>";
-	
-	//console.debug(localLink);
-	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
-		+ toBeAppended + "<td><td>"+createButtonsPanel(item, response, key, idstring)
-		+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
-		+ decodeURIComponent(item)+"</textarea><br>"+lastModified + "</td>"
-		+ "<td><a href='" +httpUrl+"'>" + httpUrl + "</a><br>" +localLink
-		+ "<br></td></tr></table></td></tr>";
-
 	return toBeAppended;
 }
 
-function createButtonsPanel(item, response, key, idstring) {
 
-	var buttons = "<table><tr><td>";							
-	{
-		var escaped = item.replace(/'/g, "&apos;");
-		buttons += "<button onclick='moveFileToParent(\"" + escaped + "\",\""+idstring+"\")'>Wrong Category</button><br>";
-		var subdirs = response.locations[key].dirs;
-		var subdirsArray = Object.keys(subdirs).sort(sortFunction);
-		{
-			var buttonsAdded = 0;
-			for (var dir in subdirsArray) {
-				buttonsAdded++;
-				if (buttonsAdded%15 == 0) {
-					buttons += "</td><td>";
-				}
-				var dirName = subdirsArray[dir];				
-				buttons += "<button onmousedown='button.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
-			}
-		}
-	}
-	buttons += "<br>";
-	buttons += "<button onclick='moveToNonExistingFolder(this,\"" +escaped+"\",\""+dirName+"\",\""+idstring+"\")'>MOVE to custom</button><br>";
-	buttons += "<br>";
-	buttons += "<button onclick='copyFileToFolder(\"" + escaped + "\", \"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/favorites\",\""+idstring+"\", this)'>COPY TO favorites</button><br>";
-	buttons += "</td></tr></table>";
-	return buttons;
+function dirToHtmlCards(dirObj) {
+	var html = "";
+	console.debug(dirObj);
+	var dir = Object.keys(dirObj);
+	var files = toPairs(dirObj[dir]).filter(filesOnly);
+	var subdirs = dirObj[dir].dirs;
+	html += files.map(fileToHtmlParameterized(subdirs)).join('');
+//	(dirObj.dirs).join('');
+	return html;
 }
+
+var id = 0;
+
+function fileToHtmlParameterized(subdirs) {
+	return function fileToHtml(filePair) {
+		var ret = "";
+		var filePath = Object.keys(filePair)[0];
+		var fileObj = filePair[filePath];
+	
+	
+		if (fileObj.fileSystem.match(/.*(nohup.out$|Thumbs.db|[pP]icasa.ini)/)) {
+			ret += "";
+		} else {
+			var dirPath = filePath.substring(0, filePath.lastIndexOf("/"));
+			ret += createItemHtml(null, filePath, dirPath, null, fileObj, subdirs);
+			ret += fileObjToHtml(fileObj);
+		}
+		return ret;
+	};
+}
+
+
+
+// item = filepath
+// key = dirpath
+// item2 = fileObj
+// 
+//function createItemHtml(response, item, key, id, fileObj, subDirs)
+
 
 function moveToNonExistingFolder(elem, fileToMove, parentDir, idstring) {
 	var newCategorySimpleName = prompt("Category name:");
@@ -432,6 +549,7 @@ Todo: Create a tab for simply viewing the images in a directory (no sorting). e.
       <table id="thumbnailItems"></table>
   </div>
   <div id="sorttab">
+	<table id="itemsNew"></table>
     <table id="items"></table>
   </div>
   <div id="hoisttab">

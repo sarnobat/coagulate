@@ -277,8 +277,7 @@ public class Coagulate {
 			try {
 				Files.move(path, destinationFile);// By default, it won't
 													// overwrite existing
-//				System.out.println("Success: file now at "
-//						+ destinationFile.toAbsolutePath());
+				System.out.println("Success: file now at " + destinationFile.toAbsolutePath());
 			} catch (IOException e) {
 				e.printStackTrace();
 				throw new IllegalAccessError("Moving did not work");
@@ -289,8 +288,7 @@ public class Coagulate {
 			try {
 				Files.copy(sourceFilePath, destinationFilePath);// By default, it won't
 													// overwrite existing
-//				System.out.println("Success: copied file now at "
-//						+ destinationFilePath.toAbsolutePath());
+				System.out.println("Success: copied file now at " + destinationFilePath.toAbsolutePath());
 			} catch (IOException e) {
 				e.printStackTrace();
 				throw new IllegalAccessError("Copying did not work");
@@ -359,9 +357,18 @@ public class Coagulate {
 		public Response list(@QueryParam("dirs") String iDirectoryPathsString)
 				throws JSONException, IOException {
 			System.out.println("list() - begin");
-			JSONObject response = createListJson(iDirectoryPathsString
-					.split("\\n"));
-
+			JSONObject response;
+			try {
+				response = createListJson(iDirectoryPathsString
+						.split("\\n"));
+			} catch (Exception e) {
+				e.printStackTrace();
+				return Response.serverError()
+						.header("Access-Control-Allow-Origin", "*")
+						.entity("{ 'foo' : " + e.getMessage() + " }").type("application/json")
+						.build();
+			}
+			System.out.println("list() - end");
 			return Response.ok()
 					.header("Access-Control-Allow-Origin", "*")
 					.entity(response.toString(4)).type("application/json")
@@ -378,7 +385,7 @@ public class Coagulate {
 					createLocationsJson(iDirectoryPathStrings));
 			rResponse.put("subdirectories",
 					createSubdirectoriesJson(iDirectoryPathStrings));
-			
+			System.out.println("createListJson() - end");
 			return rResponse;
 		}
 
@@ -409,7 +416,7 @@ public class Coagulate {
 
 		private JSONObject createFilesJsonRecursive(String[] iDirectoryPathStrings)
 				throws IOException {
-//			System.out.println("createFilesJsonRecursive() - begin");
+			System.out.println("createFilesJsonRecursive() - begin");
 			JSONObject rItemsJson = new JSONObject();
 			_3: {
 				for (String aDirectoryPathString : iDirectoryPathStrings) {
@@ -420,11 +427,13 @@ public class Coagulate {
 							createItemDetailsJsonRecursive(aDirectoryPathString));
 				}
 			}
+			System.out.println("createFilesJsonRecursive() - end");
 			return rItemsJson;
 		}
 
 		private JSONObject createFilesJson(String[] iDirectoryPathStrings)
 				throws IOException {
+			System.out.println("createFilesJson() - begin");
 			JSONObject rItemsJson = new JSONObject();
 			_3: {
 				for (String aDirectoryPathString : iDirectoryPathStrings) {
@@ -435,6 +444,7 @@ public class Coagulate {
 							createItemDetailsJson(aDirectoryPathString));
 				}
 			}
+			System.out.println("createFilesJson() - end");
 			return rItemsJson;
 		}
 
@@ -571,6 +581,7 @@ public class Coagulate {
 		
 		private JSONObject getContentsAsJson(File iDirectory)
 				throws IOException {
+			System.out.println("getContentsAsJson() - begin");
 			JSONObject rFilesInLocationJson = new JSONObject();
 			for (Path aFilePath : getDirectoryStream(iDirectory)) {
 				String filename = aFilePath.getFileName().toString();
@@ -601,6 +612,7 @@ public class Coagulate {
 				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
 //				System.out.println(fileAbsolutePath);
 			}
+			System.out.println("getContentsAsJson() - end");
 			return rFilesInLocationJson;
 		}
 		
@@ -610,8 +622,11 @@ public class Coagulate {
 //			System.out.println("getContentsAsJsonRecursive() - begin");
 			JSONObject rFilesInLocationJson = new JSONObject();
 			JSONObject dirsJson = new JSONObject();
+			System.out.println();
 			if (levelToRecurse > 0) {
+				System.out.println("getContentsAsJsonRecursive() - " + iDirectory.toString());
 				for (Path aFilePath : getDirectoryStreamRecursive(iDirectory)) {
+					System.out.print(".");
 //					System.out
 //							.println("getContentsAsJsonRecursive() - dir loop - "
 //									+ aFilePath);
@@ -626,8 +641,10 @@ public class Coagulate {
 				}
 			}
 //			System.out.println("getContentsAsJsonRecursive() - aFilePath - finished recursing");
+			System.out.println("getContentsAsJsonRecursive() - " + iDirectory.toString());
 			rFilesInLocationJson.put("dirs", dirsJson);
 			for (Path aFilePath : getSubdirectoryStream(iDirectory)) {
+				System.out.print(",");
 				String filename = aFilePath.getFileName().toString();
 				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
 //				System.out.println("getContentsAsJsonRecursive() file loop: " + fileAbsolutePath);
@@ -691,6 +708,9 @@ public class Coagulate {
 			return exifJson;
 		}
 
+		// TODO: I think this is slow.
+		// See if you can predetermine cases where you will get an Exception
+		// We may have to limit the depth (or breadth) which I'd rather not do.
 		private String getTag(Path aFilePath,
 				TagInfo tagInfo) {
 			String ret = "";
@@ -709,9 +729,11 @@ public class Coagulate {
 					}
 				}
 			} catch (ImageReadException e) {
-				e.printStackTrace();
+				System.out.print("!");
+				//e.printStackTrace();
 			} catch (IOException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
+				System.out.println(e);
 			}
 			return ret;
 		}
