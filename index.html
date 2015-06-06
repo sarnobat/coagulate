@@ -74,58 +74,29 @@ $(document).ready(function(){
 	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response) {
 		$('#items').empty();
 		addSubdirLinks(response);
+		var pairs = toPairs(response.itemsRecursive);
 		// Hoist
 		{
 			var html = "";
+			console.debug(html);
 			
+			html += pairs.map(rootFolderOnly).reduce(dirToHtml);
+			$('#hoist').append(html);
 		}
 		// Map-reduce for cards view (for sorting)
 		{
 			$('#itemsNew').empty();
 			var html = "";
-			var pairs = toPairs(response.itemsRecursive);
 			html += pairs.map(dirToHtmlCards).join('');
 			$('#itemsNew').append(html);
 		}
+		// Thumbnails
 		{
-			// Cards (for sorting)
-			var items = response.items;
-			/*{
-				var html = "";
-				var id = 0;
-				// For each directory in the list specified by the user (do not recurse)
-				for(var dirIndex in items) { 
-					var filesInDir = items[dirIndex];
-					if (filesInDir.length < 1) {
-						continue;
-					}
-					var filesInDirSortedMap = shuffle(Object.keys(filesInDir));
-					// For each file in the directory
-					for (var sortedIndex in filesInDirSortedMap) {
-						var filepath = filesInDirSortedMap[sortedIndex];
-						if (filepath.match(/.*(nohup.out$|Thumbs.db|[pP]icasa.ini)/)) {
-							//console.log('Skipping: ' + filepath);
-							continue;
-						}	
-						++id;
-						if (id > limit) {
-							continue;
-						}
-						var dirs = response.locations[dirIndex].dirs;
-						var fileObj = response.items[dirIndex][filepath];
-						html += createItemHtml(response, filesInDirSortedMap[sortedIndex], dirIndex, id, fileObj, dirs);
-					}
-				}
-				//$('#items').append(html);
-			}*/
-			// Thumbnails
-			{
-				var html = printDirsRecursive(response.itemsRecursive, response);
-				$('#thumbnailItems').append(html);
-					
-			}
-			loadImagesSequentially(0);
+			var html = printDirsRecursive(response.itemsRecursive, response);
+			$('#thumbnailItems').append(html);
+				
 		}
+		loadImagesSequentially(0);
 	})
 	.fail(function() {
 		console.debug( "error" );
@@ -134,8 +105,75 @@ $(document).ready(function(){
 	$('#items').append("This might take a while...");
 });
 
+function dirToHtml(dirPair) {
 
+	var key = Object.keys(dirPair)[0];
+	var val = dirPair[key];
+	
+	return dirObjToHtml(val, key);
+}
 
+function dirObjToHtml(val, dir) {
+	var html = "";
+	// recurse pre-order
+	if (val.dirs) {
+		var dirnames = Object.keys(val.dirs);
+		for (var i = 0; i < dirnames.length; i++) {
+			var dirname =  dirnames[i];
+			if (lastPartOf(dirname).lastIndexOf('_+',0) == 0) {
+				var dirObj = val.dirs[dirname];
+				html +=  dirObjToHtml(dirObj, dirname);
+			}
+		}
+	}
+	html += "<h3>" + dir + "</h3>" ;
+	var pairs = toPairs(val);
+	for (var i = 0; i < pairs.length; i++) {
+		var pair = pairs[i];
+		var filename = Object.keys(pair)[0];
+		if (filename == 'dirs') {
+			continue;
+		}
+		var fileObj = pair[filename];
+		html += fileObjToHtmlThumbnail(fileObj);
+	}
+	
+	for (var i = 0; i < dirnames.length; i++) {
+			var dirname =  dirnames[i];
+			if (lastPartOf(dirname).lastIndexOf('_-',0) == 0) {
+				var dirObj = val.dirs[dirname];
+				html += dirObjToHtml(dirObj, dirname);
+			}
+		}
+	return html;
+}
+
+// also retains ranking dirs
+function rootFolderOnly(dirPair) {
+	var ret = {};
+	var key = Object.keys(dirPair)[0];
+	// Assumption : the right hand side is deep copied.
+	ret[key] = dirPair[key];
+	val = ret[key];
+	if (val.dirs) {
+		var subDirs = Object.keys(val.dirs);
+		for (var i = 0; i < subDirs.length; i++) {
+			var subDir = subDirs[i];
+			var dirName = subDir.substr(subDir.lastIndexOf('/') + 1);
+			if (dirName.lastIndexOf('_', 0) == 0) {
+				// retain it
+				console.debug(dirName);
+			} else {
+				delete val.dirs[dirName];
+			}
+		}
+	}
+	return ret;
+}
+
+function lastPartOf(str) {
+	return str.substr(str.lastIndexOf('/') + 1);
+}
 
 function filesOnly(anObj) {
 	if (anObj.dirs == null) {
@@ -177,7 +215,7 @@ function printDirsRecursive(dirItems, response, idIn) {
 				if (id > limit) {
 					continue;
 				}
-				html += createThumbnailItemHtml(response, filepath, dirIndex, idIn + "-" + id, filesInDir[filepath]);
+				html += createThumbnailItemHtml(filesInDir[filepath]);
 			}
 		}
 	}
@@ -216,10 +254,12 @@ function loadImagesSequentially(i) {
 
 // item = filepath
 // key = directorypath
-function createThumbnailItemHtml(responseNotUsed, item, key, id, itemDetails) {	
+function createThumbnailItemHtml(itemDetails) {	
 	// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
 	var width = "250px";
 	var height = "100px";
+	
+	var item = itemDetails.fileSystem;
 	
 	var res = item.match(/.*\.((txt)|(lnk))/gi);
 	if (res !=null) {
@@ -264,7 +304,7 @@ function createThumbnailItemHtml(responseNotUsed, item, key, id, itemDetails) {
 			}
 		}
 	}	
-	var idstring = "i" + id;
+	//var idstring = "i" + id;
 	toBeAppended = "<a href='" +httpUrl+"'>" + toBeAppended + "</a>";
 	toBeAppended += "&nbsp;";
 	/*
@@ -341,6 +381,10 @@ function createButtonsPanel(item, subdirs, key, idstring) {
 	buttons += "<button onclick='copyFileToFolder(\"" + escaped + "\", \"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/favorites\",\""+idstring+"\", this)'>COPY TO favorites</button><br>";
 	buttons += "</td></tr></table>";
 	return buttons;
+}
+
+function fileObjToHtmlThumbnail(fileObj) {
+	return createThumbnailItemHtml(fileObj);
 }
 
 function fileObjToHtml(fileObj) {
@@ -557,7 +601,8 @@ Todo: Create a tab for simply viewing the images in a directory (no sorting). e.
 	<table id="itemsNew"></table>
     <table id="items"></table>
   </div>
-  <div id="hoisttab">
+  <div id="hoisttab">  
+		<table id="hoist"></table>
   </div>
 </div>
 

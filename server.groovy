@@ -130,7 +130,8 @@ public class Coagulate {
 							"/media/sarnobat/Unsorted/images/",
 							"/media/sarnobat/Unsorted/Videos/",
 							"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/",
-							"/e/new/");
+							"/e/new/",
+							"/media/sarnobat/e/Drive J/");
 			Predicate<String> IS_UNDER = new Predicate<String>() {
 				@Override
 				public boolean apply(@Nullable String permittedDirectory) {
