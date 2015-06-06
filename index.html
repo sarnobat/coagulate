@@ -74,6 +74,11 @@ $(document).ready(function(){
 	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response) {
 		$('#items').empty();
 		addSubdirLinks(response);
+		// Hoist
+		{
+			var html = "";
+			
+		}
 		// Map-reduce for cards view (for sorting)
 		{
 			$('#itemsNew').empty();
