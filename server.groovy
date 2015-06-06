@@ -491,7 +491,7 @@ public class Coagulate {
 		}
 
 		private boolean shouldGetContents(String iDirectoryPathString) {
-//			System.out.println("3 " + iDirectoryPathString);
+			System.out.println("3 " + iDirectoryPathString);
 			if (iDirectoryPathString.startsWith("#")) {
 //				System.out.println("4 " + iDirectoryPathString);
 				return false;
@@ -624,7 +624,6 @@ public class Coagulate {
 			JSONObject rFilesInLocationJson = new JSONObject();
 			JSONObject dirsJson = new JSONObject();
 			System.out.println();
-			if (levelToRecurse > 0) {
 				System.out.println("getContentsAsJsonRecursive() - " + iDirectory.toString());
 				for (Path aFilePath : getDirectoryStreamRecursive(iDirectory)) {
 					System.out.print(".");
@@ -637,10 +636,13 @@ public class Coagulate {
 //					System.out
 //							.println("getContentsAsJsonRecursive() - dir loop - recursing into "
 //									+ aFilePath);
-					dirsJson.put(aFilePath.toAbsolutePath().toString(),getContentsAsJsonRecursive(
-							aFilePath.toFile(), --levelToRecurse));
+					if (levelToRecurse > 0 || aFilePath.getFileName().toString().startsWith("_")) {
+						dirsJson.put(
+								aFilePath.toAbsolutePath().toString(),
+								getContentsAsJsonRecursive(aFilePath.toFile(),
+										--levelToRecurse));
+					}
 				}
-			}
 //			System.out.println("getContentsAsJsonRecursive() - aFilePath - finished recursing");
 			System.out.println("getContentsAsJsonRecursive() - " + iDirectory.toString());
 			rFilesInLocationJson.put("dirs", dirsJson);

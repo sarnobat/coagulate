@@ -17,6 +17,7 @@
 
 var urlBase = "http://192.168.1.2:4451/cmsfs/";
 var limit;
+var preDirLimit = 10;
 
 
 $(function() {
@@ -80,7 +81,7 @@ $(document).ready(function(){
 			var html = "";
 			console.debug(html);
 			
-			html += pairs.map(rootFolderOnly).reduce(dirToHtml);
+			html += pairs.map(rootFolderOnly).reduce(dirToHtml, "");
 			$('#hoist').append(html);
 		}
 		// Map-reduce for cards view (for sorting)
@@ -105,12 +106,12 @@ $(document).ready(function(){
 	$('#items').append("This might take a while...");
 });
 
-function dirToHtml(dirPair) {
+function dirToHtml(accumulator, dirPair) {
 
 	var key = Object.keys(dirPair)[0];
 	var val = dirPair[key];
 	
-	return dirObjToHtml(val, key);
+	return accumulator + "<h2>" + lastPartOf(key) +"</h2>" + dirObjToHtml(val, key);
 }
 
 function dirObjToHtml(val, dir) {
@@ -118,16 +119,22 @@ function dirObjToHtml(val, dir) {
 	// recurse pre-order
 	if (val.dirs) {
 		var dirnames = Object.keys(val.dirs);
+		var files = preDirLimit;
 		for (var i = 0; i < dirnames.length; i++) {
 			var dirname =  dirnames[i];
 			if (lastPartOf(dirname).lastIndexOf('_+',0) == 0) {
 				var dirObj = val.dirs[dirname];
 				html +=  dirObjToHtml(dirObj, dirname);
 			}
+			--files;
+			if (files < 1) {
+				break;
+			}
 		}
 	}
-	html += "<h3>" + dir + "</h3>" ;
+	html += "<h3>" + lastPartOf(dir) + "</h3>" ;
 	var pairs = toPairs(val);
+	var files2 = preDirLimit;
 	for (var i = 0; i < pairs.length; i++) {
 		var pair = pairs[i];
 		var filename = Object.keys(pair)[0];
@@ -136,15 +143,24 @@ function dirObjToHtml(val, dir) {
 		}
 		var fileObj = pair[filename];
 		html += fileObjToHtmlThumbnail(fileObj);
-	}
-	
-	for (var i = 0; i < dirnames.length; i++) {
-			var dirname =  dirnames[i];
-			if (lastPartOf(dirname).lastIndexOf('_-',0) == 0) {
-				var dirObj = val.dirs[dirname];
-				html += dirObjToHtml(dirObj, dirname);
-			}
+		--files2;
+		if (files2 < 1) {
+			break;
 		}
+	}
+
+	var files3 = preDirLimit;	
+	for (var i = 0; i < dirnames.length; i++) {
+		var dirname =  dirnames[i];
+		if (lastPartOf(dirname).lastIndexOf('_-',0) == 0) {
+			var dirObj = val.dirs[dirname];
+			html += dirObjToHtml(dirObj, dirname);
+		}
+		--files3;
+		if (files3 < 1) {
+			break;
+		}
+	}
 	return html;
 }
 
@@ -162,9 +178,14 @@ function rootFolderOnly(dirPair) {
 			var dirName = subDir.substr(subDir.lastIndexOf('/') + 1);
 			if (dirName.lastIndexOf('_', 0) == 0) {
 				// retain it
-				console.debug(dirName);
+				console.debug('to be retained:' + dirName);
 			} else {
-				delete val.dirs[dirName];
+				
+				console.debug('to be deleted:' + dirName);
+				console.debug('before:' + Object.keys(val.dirs).length);
+				delete val.dirs[subDir];
+				//$(val.dirs).removeProp(dirName);
+				console.debug('after:' + Object.keys(val.dirs).length);
 			}
 		}
 	}
