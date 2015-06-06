@@ -114,25 +114,25 @@ function dirToHtml(accumulator, dirPair) {
 	return accumulator + "<h2>" + lastPartOf(key) +"</h2>" + dirObjToHtml(val, key);
 }
 
+function startsWith(str, prefix) {
+	return (str.lastIndexOf(prefix,0) == 0);
+}
+
 function dirObjToHtml(val, dir) {
 	var html = "";
 	// recurse pre-order
 	if (val.dirs) {
 		var dirnames = Object.keys(val.dirs);
-		var files = preDirLimit;
 		for (var i = 0; i < dirnames.length; i++) {
 			var dirname =  dirnames[i];
 			if (lastPartOf(dirname).lastIndexOf('_+',0) == 0) {
 				var dirObj = val.dirs[dirname];
 				html +=  dirObjToHtml(dirObj, dirname);
 			}
-			--files;
-			if (files < 1) {
-				break;
-			}
 		}
 	}
-	html += "<h3>" + lastPartOf(dir) + "</h3>" ;
+	var dirName = lastPartOf(dir);
+	html += "<h3>" + dirName + "</h3><textarea>" + dir + "</textarea><br>";
 	var pairs = toPairs(val);
 	var files2 = preDirLimit;
 	for (var i = 0; i < pairs.length; i++) {
@@ -144,7 +144,7 @@ function dirObjToHtml(val, dir) {
 		var fileObj = pair[filename];
 		html += fileObjToHtmlThumbnail(fileObj);
 		--files2;
-		if (files2 < 1) {
+		if (files2 < 1 && !startsWith(dirName, '_+')) {
 			break;
 		}
 	}
@@ -155,10 +155,6 @@ function dirObjToHtml(val, dir) {
 		if (lastPartOf(dirname).lastIndexOf('_-',0) == 0) {
 			var dirObj = val.dirs[dirname];
 			html += dirObjToHtml(dirObj, dirname);
-		}
-		--files3;
-		if (files3 < 1) {
-			break;
 		}
 	}
 	return html;
