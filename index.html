@@ -76,6 +76,20 @@ $(document).ready(function(){
 		$('#items').empty();
 		addSubdirLinks(response);
 		var pairs = toPairs(response.itemsRecursive);
+		
+		// Map-reduce for cards view (for sorting)
+		{
+			$('#itemsNew').empty();
+			var html = "";
+			html += pairs.map(dirToHtmlCards).join('');
+			$('#itemsNew').append(html);
+		}
+		// Thumbnails
+/*		{
+			var html = printDirsRecursive(response.itemsRecursive, response);
+			$('#thumbnailItems').append(html);
+				
+		}
 		// Hoist
 		{
 			var html = "";
@@ -92,20 +106,7 @@ $(document).ready(function(){
 			html += pairs.map(rootFolderOnly).reduce(dirToHtmlWithButtons, "");
 			$('#hoist_with_buttons').append(html);
 		}
-		// Map-reduce for cards view (for sorting)
-		{
-			$('#itemsNew').empty();
-			var html = "";
-			html += pairs.map(dirToHtmlCards).join('');
-			$('#itemsNew').append(html);
-		}
-		// Thumbnails
-		{
-			var html = printDirsRecursive(response.itemsRecursive, response);
-			$('#thumbnailItems').append(html);
-				
-		}
-		loadImagesSequentially(0);
+*/		loadImagesSequentially(0);
 	})
 	.fail(function() {
 		console.debug( "error" );
@@ -576,7 +577,7 @@ function fileToHtmlParameterized(subdirs) {
 		} else {
 			var dirPath = filePath.substring(0, filePath.lastIndexOf("/"));
 			ret += createItemHtml(null, filePath, dirPath, null, fileObj, subdirs);
-			ret += fileObjToHtml(fileObj);
+//			ret += fileObjToHtml(fileObj);
 		}
 		return ret;
 	};

@@ -472,7 +472,7 @@ public class Coagulate {
 		
 		private JSONObject createItemDetailsJsonRecursive(String iDirectoryPathString)
 				throws IOException {
-			return getContentsAsJsonRecursive(new File(iDirectoryPathString),1);
+			return getContentsAsJsonRecursive(new File(iDirectoryPathString),2);
 		}
 		
 		private JSONObject createLocationDetailsJson(String iDirectoryPathString) throws IOException {
@@ -618,31 +618,32 @@ public class Coagulate {
 		}
 		
 
-		private JSONObject getContentsAsJsonRecursive(File iDirectory, int levelToRecurse)
+		private JSONObject getContentsAsJsonRecursive(File iDirectory, int iLevelToRecurse)
 				throws IOException {
 //			System.out.println("getContentsAsJsonRecursive() - begin");
+			int levelToRecurse = iLevelToRecurse - 1;
 			JSONObject rFilesInLocationJson = new JSONObject();
 			JSONObject dirsJson = new JSONObject();
 			System.out.println();
-				System.out.println("getContentsAsJsonRecursive() - " + iDirectory.toString());
-				for (Path aFilePath : getDirectoryStreamRecursive(iDirectory)) {
-					System.out.print(".");
+			System.out.println("getContentsAsJsonRecursive() - " + iDirectory.toString());
+			for (Path aFilePath : getDirectoryStreamRecursive(iDirectory)) {
+				System.out.print(".");
 //					System.out
 //							.println("getContentsAsJsonRecursive() - dir loop - "
 //									+ aFilePath);
-					if (!Files.isDirectory(aFilePath)) {
-						continue;
-					}
+				if (!Files.isDirectory(aFilePath)) {
+					continue;
+				}
 //					System.out
 //							.println("getContentsAsJsonRecursive() - dir loop - recursing into "
 //									+ aFilePath);
-					if (levelToRecurse > 0 || aFilePath.getFileName().toString().startsWith("_")) {
-						dirsJson.put(
-								aFilePath.toAbsolutePath().toString(),
-								getContentsAsJsonRecursive(aFilePath.toFile(),
-										--levelToRecurse));
-					}
+				if (levelToRecurse > 0 || aFilePath.getFileName().toString().startsWith("_")) {
+					dirsJson.put(
+							aFilePath.toAbsolutePath().toString(),
+							getContentsAsJsonRecursive(aFilePath.toFile(),
+									levelToRecurse));
 				}
+			}
 //			System.out.println("getContentsAsJsonRecursive() - aFilePath - finished recursing");
 			System.out.println("getContentsAsJsonRecursive() - " + iDirectory.toString());
 			rFilesInLocationJson.put("dirs", dirsJson);
