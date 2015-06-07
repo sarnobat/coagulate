@@ -84,6 +84,14 @@ $(document).ready(function(){
 			html += pairs.map(rootFolderOnly).reduce(dirToHtml, "");
 			$('#hoist').append(html);
 		}
+		// Hoist (no buttons)
+		{
+			var html = "";
+			console.debug(html);
+			
+			html += pairs.map(rootFolderOnly).reduce(dirToHtmlWithButtons, "");
+			$('#hoist_with_buttons').append(html);
+		}
 		// Map-reduce for cards view (for sorting)
 		{
 			$('#itemsNew').empty();
@@ -106,6 +114,14 @@ $(document).ready(function(){
 	$('#items').append("This might take a while...");
 });
 
+function dirToHtmlWithButtons(accumulator, dirPair) {
+
+	var key = Object.keys(dirPair)[0];
+	var val = dirPair[key];
+	
+	return accumulator + "<tr><td><h2>" + lastPartOf(key) +"</h2></td></tr>" + dirObjToHtmlWithButtons(val, key);
+}
+
 function dirToHtml(accumulator, dirPair) {
 
 	var key = Object.keys(dirPair)[0];
@@ -116,6 +132,83 @@ function dirToHtml(accumulator, dirPair) {
 
 function startsWith(str, prefix) {
 	return (str.lastIndexOf(prefix,0) == 0);
+}
+
+var hoistButtonId = 0;
+var level = 1000; // This is just a unique number, not semantically significant
+function dirObjToHtmlWithButtons(val, dir) {
+	var html = "";
+	// recurse pre-order
+	if (val.dirs) {
+		var dirnames = Object.keys(val.dirs);
+		for (var i = 0; i < dirnames.length; i++) {
+			var dirname =  dirnames[i];
+			if (lastPartOf(dirname).lastIndexOf('_+',0) == 0) {
+				var dirObj = val.dirs[dirname];
+				html +=  dirObjToHtmlWithButtons(dirObj, dirname);
+			}
+		}
+	}
+	var dirName = lastPartOf(dir);
+	--level;
+	html += "<tr><td><span id='level-" + level +"'>";
+
+	html += "<h3>" + dirName + "</h3>";
+//	html += "<br>";
+	html += "<textarea>" + dir + "</textarea>";
+	html += "<br>";
+	var pairs = toPairs(val);
+	var files2 = preDirLimit;
+	for (var i = 0; i < pairs.length; i++) {
+		var pair = pairs[i];
+		var filename = Object.keys(pair)[0];
+		if (filename == 'dirs') {
+			continue;
+		}
+		var fileObj = pair[filename];
+		var id = "hoistwithbuttons-" + hoistButtonId;
+		++hoistButtonId;
+		html += "<span id='"+id+"' style='float : left' align='left'>";
+		html += fileObjToHtmlThumbnail(fileObj);
+		html += "<br>";
+		html += "<button onclick='up(\""+filename +"\",\""+id+"\", "+level+")'>+</button>";
+		html += "<button onclick='down(\""+filename +"\",\""+id+"\", "+level+")'>-</button>";
+		html += "</span>";
+		--files2;
+		if (files2 < 1 && !startsWith(dirName, '_+')) {
+			break;
+		}
+	}
+	html += "</span></td></tr>";
+		
+	var files3 = preDirLimit;	
+	for (var i = 0; i < dirnames.length; i++) {
+		var dirname =  dirnames[i];
+		if (lastPartOf(dirname).lastIndexOf('_-',0) == 0) {
+			var dirObj = val.dirs[dirname];
+			html += dirObjToHtmlWithButtons(dirObj, dirname);
+		}
+	}
+	return html;
+}
+
+
+function up(field,id, currentLevelId) {
+	$.getJSON("http://netgear.rohidekar.com:4463/helloworld/moveUp?path=" + encodeURIComponent(field),function(result){
+		var targetLevel = currentLevelId + 1;
+		// TODO: handle the case where target level doesn't exist
+		var elem = $("#"+id).remove();
+		$("#level-" + targetLevel).append(elem);
+	});
+}
+
+function down(field,id, currentLevelId) {
+	$.getJSON("http://netgear.rohidekar.com:4463/helloworld/moveDown?path=" + encodeURIComponent(field),function(result){
+		var targetLevel = currentLevelId - 1;
+		// TODO: handle the case where target level doesn't exist
+		var elem = $("#"+id).remove();
+		$("#level-" + targetLevel).append(elem);
+    });
 }
 
 function dirObjToHtml(val, dir) {
@@ -609,7 +702,8 @@ Todo: Create a tab for simply viewing the images in a directory (no sorting). e.
   <ul>
     <li><a href="#thumbnailtab">Thumbnails</a></li>
     <li><a href="#sorttab">Sort</a></li>
-    <li><a href="#hoisttab">Hoist</a></li>
+    <li><a href="#hoist_with_buttons_tab">Hoist</a></li>
+    <li><a href="#hoisttab">Hoist (read only)</a></li>
   </ul>
   <div id="thumbnailtab">
       <table id="thumbnailItems"></table>
@@ -617,6 +711,9 @@ Todo: Create a tab for simply viewing the images in a directory (no sorting). e.
   <div id="sorttab">
 	<table id="itemsNew"></table>
     <table id="items"></table>
+  </div>
+  <div id="hoist_with_buttons_tab">  
+		<table id="hoist_with_buttons"></table>
   </div>
   <div id="hoisttab">  
 		<table id="hoist"></table>
