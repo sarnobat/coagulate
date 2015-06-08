@@ -85,7 +85,7 @@ $(document).ready(function(){
 			$('#itemsNew').append(html);
 		}
 		// Thumbnails
-/*		{
+		{
 			var html = printDirsRecursive(response.itemsRecursive, response);
 			$('#thumbnailItems').append(html);
 				
@@ -106,7 +106,7 @@ $(document).ready(function(){
 			html += pairs.map(rootFolderOnly).reduce(dirToHtmlWithButtons, "");
 			$('#hoist_with_buttons').append(html);
 		}
-*/		loadImagesSequentially(0);
+		loadImagesSequentially(0);
 	})
 	.fail(function() {
 		console.debug( "error" );
