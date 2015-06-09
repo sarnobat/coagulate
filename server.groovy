@@ -684,7 +684,7 @@ public class Coagulate {
 							httpLinkFor(thumbnailFileAbsolutePath));
 					fileEntryJson = rFileEntryJson;
 				}
-				if (filename.endsWith("jpg")) {
+				if (filename.matches("(?i).*jpg")) {
 					JSONObject exifJson = getExifData(aFilePath);
 					fileEntryJson.put("exif", exifJson);
 				}
