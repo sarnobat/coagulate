@@ -645,7 +645,7 @@ public class Coagulate {
 				}
 			}
 //			System.out.println("getContentsAsJsonRecursive() - aFilePath - finished recursing");
-			System.out.println("getContentsAsJsonRecursive() - " + iDirectory.toString());
+//			System.out.println("getContentsAsJsonRecursive() - " + iDirectory.toString());
 			rFilesInLocationJson.put("dirs", dirsJson);
 			for (Path aFilePath : getSubdirectoryStream(iDirectory)) {
 				System.out.print(",");

@@ -17,7 +17,7 @@
 
 var urlBase = "http://192.168.1.2:4451/cmsfs/";
 var limit;
-var preDirLimit = 10;
+var preDirLimit;
 
 
 $(function() {
@@ -37,6 +37,7 @@ function updateURLIfEmpty() {
 			limit = 20;
 			window.history.pushState("object or string", "Title", document.URL + "&limit=" + limit);
 	}
+	preDirLimit = limit;
 }
 
 function updateURL() {
@@ -55,7 +56,7 @@ function dirToFilesInDirParameterized(dirContents) {
 
 function toPairs(obj) {
 	var ret = [];
-	var keys = Object.keys(obj);
+	var keys = Object.keys(obj).sort();// Sometimes you want to sort, sometimes shuffle. Make this toggleable
 	for (var i = 0; i < keys.length; i++) {
 		var key = keys[i];
 		var val = obj[key];
@@ -310,7 +311,7 @@ function printDirsRecursive(dirItems, response, idIn) {
 		if (filesInDir.length < 1) {
 			continue;
 		}
-		var filesInDirSortedMap = shuffle(Object.keys(filesInDir));
+		var filesInDirSortedMap = shuffle(Object.keys(filesInDir));//Object.keys(filesInDir).sort();
 		// For each file in the directory
 		for (var sortedIndex in filesInDirSortedMap) {
 			var filepath = filesInDirSortedMap[sortedIndex];
@@ -556,7 +557,7 @@ function dirToHtmlCards(dirObj) {
 	var html = "";
 	console.debug(dirObj);
 	var dir = Object.keys(dirObj);
-	var files = toPairs(dirObj[dir]).filter(filesOnly);
+	var files = toPairs(dirObj[dir]).slice(0, limit).filter(filesOnly);
 	var subdirs = dirObj[dir].dirs;
 	html += files.map(fileToHtmlParameterized(subdirs)).join('');
 //	(dirObj.dirs).join('');
