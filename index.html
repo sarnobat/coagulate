@@ -174,7 +174,7 @@ function dirObjToHtmlWithButtons(val, dir) {
 		++hoistButtonId;
 		html += "<span id='"+id+"' style='float : left' align='left'>";
 		html += "<br>";
-		html += createThumbnailItemHtml(fileObj);
+		html += createThumbnailItemHtml("", fileObj);
 		html += "<br>";
 		html += "<br>";
 		html += "<br>";
@@ -240,10 +240,10 @@ function dirObjToHtml(val, dir) {
 	} else {
 		pairs = pairs1.slice(0, preDirLimit);
 	}
-	
-	for (var i = 0; i < pairs.length; i++) {
-		html += createThumbnailItemHtml(pair[i][1]);
-	}
+	html += pairs.map(pairVal).reduce(createThumbnailItemHtml, "");
+//	for (var i = 0; i < pairs.length; i++) {
+//		html += createThumbnailItemHtml("", pair[i][1]);
+//	}
 
 	var files3 = preDirLimit;	
 	for (var i = 0; i < dirnames.length; i++) {
@@ -332,7 +332,7 @@ function printDirsRecursive(dirItems, response, idIn) {
 				if (id > limit) {
 					continue;
 				}
-				html += createThumbnailItemHtml(filesInDir[filepath]);
+				html += createThumbnailItemHtml("", filesInDir[filepath]);
 			}
 		}
 	}
@@ -340,7 +340,7 @@ function printDirsRecursive(dirItems, response, idIn) {
 }
 
 // No buttons
-function createThumbnailItemHtml(fileObj) {	
+function createThumbnailItemHtml(accumulator, fileObj) {	
 	
 	var fileSystem = fileObj.fileSystem;
 	
@@ -350,7 +350,7 @@ function createThumbnailItemHtml(fileObj) {
 	}
 
 	{
-		var toBeAppended = "";
+		var toBeAppended = accumulator;
 		var httpUrl = fileObj.httpUrl;
 		var thumbnailUrl = fileObj.thumbnailUrl;
 		
