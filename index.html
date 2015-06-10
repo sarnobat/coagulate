@@ -233,20 +233,19 @@ function dirObjToHtml(val, dir) {
 	}
 	var dirName = lastPartOf(dir);
 	html += "<h3>" + dirName + "</h3><textarea>" + dir + "</textarea><br>";
-	var pairs = toPairs(val);
-	var files2 = preDirLimit;
+	var pairs1 = toPairs(val).filter(function(aPair){aPair[0] != 'dirs'});
+	var pairs;
+	if (startsWith(dirName, '_+')) {
+		pairs = pairs1;
+	} else {
+		pairs = pairs1.slice(0, preDirLimit);
+	}
+	
 	for (var i = 0; i < pairs.length; i++) {
-		var pair = pairs[i];
-		var filename = Object.keys(pair)[0];
-		if (filename == 'dirs') {
-			continue;
-		}
-		var fileObj = pair[filename];
-		html += createThumbnailItemHtml(fileObj);
-		--files2;
-		if (files2 < 1 && !startsWith(dirName, '_+')) {
-			break;
-		}
+//		var pair = pairs[i];
+//		var filename = Object.keys(pair)[1].fileSystem;
+//		var fileObj = pair[filename];
+		html += createThumbnailItemHtml(pair[i][1]);
 	}
 
 	var files3 = preDirLimit;	
@@ -258,6 +257,10 @@ function dirObjToHtml(val, dir) {
 		}
 	}
 	return html;
+}
+
+function pairVal(pair) {
+	return pair[1];
 }
 
 // also retains ranking dirs
