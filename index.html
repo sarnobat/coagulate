@@ -241,9 +241,7 @@ function dirObjToHtml(val, dir) {
 		pairs = pairs1.slice(0, preDirLimit);
 	}
 	html += pairs.map(pairVal).reduce(createThumbnailItemHtml, "");
-//	for (var i = 0; i < pairs.length; i++) {
-//		html += createThumbnailItemHtml("", pair[i][1]);
-//	}
+
 
 	var files3 = preDirLimit;	
 	for (var i = 0; i < dirnames.length; i++) {
