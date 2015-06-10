@@ -445,25 +445,21 @@ function createThumbnailItemHtml(itemDetails) {
 // 
 function createItemHtml(response, item, key, unused, fileObj, subDirs)
 {	
-	var item2 = fileObj;//response.items[key][item];
-//	var subDirs2 = response.locations[key].dirs;
-
-	var image = fileObjToHtml(item2);
+	var image = fileObjToHtml(fileObj);
 
 	var width = "250px";
 	var height = "300px";
 	
-	var localLink = "<a href=\"file://" + item2.fileSystem.toString() +"\">" + "Local Link" + "</a>";
+	var localLink = "<a href=\"file://" + fileObj.fileSystem.toString() +"\">" + "Local Link" + "</a>";
 
 
 	var idstring = "i" + id;	
 	id += 1;
-	//console.debug(localLink);
 	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
 		+ image + "<td><td>"+createButtonsPanel(item, subDirs, key, idstring)
 		+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
-		+ decodeURIComponent(item)+"</textarea><br>"+item2.thumbnailUrl + "</td>"
-		+ "<td><a href='" +item2.httpUrl+"'>" + item2.httpUrl + "</a><br>" +localLink
+		+ decodeURIComponent(item)+"</textarea><br>"+fileObj.thumbnailUrl + "</td>"
+		+ "<td><a href='" +fileObj.httpUrl+"'>" + fileObj.httpUrl + "</a><br>" +localLink
 		+ "<br></td></tr></table></td></tr>";
 
 	return toBeAppended;
@@ -477,7 +473,6 @@ function createButtonsPanel(item, subdirs, key, idstring) {
 	{
 		var escaped = item.replace(/'/g, "&apos;");
 		buttons += "<button onclick='moveFileToParent(\"" + escaped + "\",\""+idstring+"\")'>Wrong Category</button><br>";
-		//var subdirs = response.locations[key].dirs;
 		var subdirsArray = Object.keys(subdirs).sort(sortFunction);
 		{
 			var buttonsAdded = 0;
@@ -575,20 +570,10 @@ function fileToHtmlParameterized(subdirs) {
 		} else {
 			var dirPath = filePath.substring(0, filePath.lastIndexOf("/"));
 			ret += createItemHtml(null, filePath, dirPath, null, fileObj, subdirs);
-//			ret += fileObjToHtml(fileObj);
 		}
 		return ret;
 	};
 }
-
-
-
-// item = filepath
-// key = dirpath
-// item2 = fileObj
-// 
-//function createItemHtml(response, item, key, id, fileObj, subDirs)
-
 
 function moveToNonExistingFolder(elem, fileToMove, parentDir, idstring) {
 	var newCategorySimpleName = prompt("Category name:");
