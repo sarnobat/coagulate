@@ -339,6 +339,70 @@ function printDirsRecursive(dirItems, response, idIn) {
 	return html;
 }
 
+// No buttons
+function createThumbnailItemHtml(fileObj) {	
+	
+	var fileSystem = fileObj.fileSystem;
+	
+	var res = fileSystem.match(/.*\.((txt)|(lnk))/gi);
+	if (res != null) {
+		return;
+	}
+
+	{
+		var toBeAppended = "";
+		var httpUrl = fileObj.httpUrl;
+		var thumbnailUrl = fileObj.thumbnailUrl;
+		
+		// Images
+		{
+			var res = fileSystem.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
+			if (res !=null) {
+				toBeAppended += '<a href="' + httpUrl + '" target="_blank">';
+				var degreesToOrient = 0;
+				if (fileObj.exif) {
+					degreesToOrient = 90*(parseInt(fileObj.exif.orientation) - 1);
+				}
+				// height ensures buttons don't jump left and right between items for 
+				// easier mass sorting. But it's not as nice to view.
+				var width = "250px";
+				var height = "100px";
+				toBeAppended += '<img class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'"/>';
+				toBeAppended += '</a>';
+			}
+		}
+		// Videos
+		{
+			var matchesVideo = fileSystem.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi))/gi);
+			if (matchesVideo != null) {
+				var simpleName = fileObj.httpUrl.split('/').pop();
+				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height="'+height+'" title="'+ simpleName +'">';
+			}
+		}
+		// PDFs
+		{
+			var matchesVideo = fileSystem.match(/.*((pdf)|(tif))/gi);
+			if (matchesVideo != null) {
+				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height='+height+'>';
+			}
+		}
+		toBeAppended = "<a href='" +httpUrl+"'>" + toBeAppended + "</a>";
+		toBeAppended += "&nbsp;";
+	}	
+	/*
+	var localLink = "<a href=\"file://" + item2.fileSystem.toString() +"\">" + "Local Link" + "</a>";
+	
+	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
+		+ toBeAppended + "<td><td>"+createButtonsPanel(item, response, key, idstring)
+		+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
+		+ decodeURIComponent(item)+"</textarea><br>"+lastModified + "</td>"
+		+ "<td><a href='" +httpUrl+"'>" + httpUrl + "</a><br>" +localLink
+		+ "<br></td></tr></table></td></tr>";
+*/
+//	console.debug(toBeAppended);
+	return toBeAppended;
+}
+
 function addSubdirLinks(response) {
 	for(var dirIndex in response.subdirectories) { 
 		var filesInDir = response.subdirectories[dirIndex];
@@ -369,74 +433,7 @@ function loadImagesSequentially(i) {
 
 }
 
-// item = filepath
-// key = directorypath
-function createThumbnailItemHtml(itemDetails) {	
-	// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
-	var width = "250px";
-	var height = "100px";
-	
-	var item = itemDetails.fileSystem;
-	
-	var res = item.match(/.*\.((txt)|(lnk))/gi);
-	if (res !=null) {
-		return;
-	}
-	
-	var item2 = itemDetails;//response.items[key][item];
-	{
-		var toBeAppended = "";
-		var httpUrl = item2.httpUrl;
-		var simpleName = item2.httpUrl.split('/').pop();;
-		//console.debug(item2);
-		var thumbnailUrl = item2.thumbnailUrl;
-		{
-			var lastModified = item2.lastModified;
-			{
-				var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
-				if (res !=null) {
-					toBeAppended += '<a href="' + httpUrl + '" target="_blank">';
-					var degreesToOrient = 0;
-					if (item2.exif) {
-						degreesToOrient = 90*(parseInt(item2.exif.orientation) - 1);
-					}
-					//toBeAppended += '<img height="'+height+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
-					toBeAppended += '<img class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'"/>';
-					toBeAppended += '</a>';
-				}
-			}
-		}
-		{
-			var matchesVideo = item.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi))/gi);
-			if (matchesVideo != null) {
-				//toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="' +httpUrl+ '"/></video>';
-				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height="'+height+'" title="'+ simpleName +'">';
-			}
-		}
-		{
-			var matchesVideo = item.match(/.*((pdf)|(tif))/gi);
-			if (matchesVideo != null) {
-				//toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="' +httpUrl+ '"/></video>';
-				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height='+height+'>';
-			}
-		}
-	}	
-	//var idstring = "i" + id;
-	toBeAppended = "<a href='" +httpUrl+"'>" + toBeAppended + "</a>";
-	toBeAppended += "&nbsp;";
-	/*
-	var localLink = "<a href=\"file://" + item2.fileSystem.toString() +"\">" + "Local Link" + "</a>";
-	
-	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
-		+ toBeAppended + "<td><td>"+createButtonsPanel(item, response, key, idstring)
-		+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
-		+ decodeURIComponent(item)+"</textarea><br>"+lastModified + "</td>"
-		+ "<td><a href='" +httpUrl+"'>" + httpUrl + "</a><br>" +localLink
-		+ "<br></td></tr></table></td></tr>";
-*/
-//	console.debug(toBeAppended);
-	return toBeAppended;
-}
+
 
 
 // item = filepath
@@ -552,7 +549,6 @@ function dirToHtmlCards(dirObj) {
 	var files = toPairs(dirObj[dir]).slice(0, limit).filter(filesOnly);
 	var subdirs = dirObj[dir].dirs;
 	html += files.map(fileToHtmlParameterized(subdirs)).join('');
-//	(dirObj.dirs).join('');
 	return html;
 }
 
