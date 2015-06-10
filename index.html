@@ -505,7 +505,7 @@ function createButtonsPanel(item, subdirs, key, idstring) {
 //}
 
 function fileObjToHtml(fileObj) {
-	var item2 = fileObj;
+//	var item2 = fileObj;
 // height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
 	var width = "250px";
 	var height = "300px";
@@ -520,19 +520,18 @@ function fileObjToHtml(fileObj) {
 
 	{
 		var toBeAppended = "";
-		var httpUrl = item2.httpUrl;
-		//console.debug(item2);
-		var thumbnailUrl = item2.thumbnailUrl;
+		var httpUrl = fileObj.httpUrl;
+		//console.debug(fileObj);
+		var thumbnailUrl = fileObj.thumbnailUrl;
 		{
-			var lastModified = item2.lastModified;
+			var lastModified = fileObj.lastModified;
 			{
 				var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
 				if (res !=null) {
 					toBeAppended += '<a href="' + httpUrl + '" target="_blank">';
-					//toBeAppended += '<img width="'+width+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + httpUrl + '"/>';
 					var degreesToOrient = 0;
-					if (item2.exif) {
-						degreesToOrient = 90*(parseInt(item2.exif.orientation) - 1);
+					if (fileObj.exif) {
+						degreesToOrient = 90*(parseInt(fileObj.exif.orientation) - 1);
 					}
 					toBeAppended += '<img width="'+width+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
 					toBeAppended += '</a>';
