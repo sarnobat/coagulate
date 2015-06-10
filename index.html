@@ -24,49 +24,6 @@ $(function() {
 	$( "#tabs" ).tabs();
 });
 
-function updateURLIfEmpty() {
-	var locations = $.url().param('locations');
-	if (locations == null || locations == '') {
-			updateURL();
-	} else {
-		$("#locations").val(decodeURIComponent(locations));
-	}
-
-  	limit = $.url().param('limit');
-	if (limit == null) {
-			limit = 20;
-			window.history.pushState("object or string", "Title", document.URL + "&limit=" + limit);
-	}
-	preDirLimit = limit;
-}
-
-function updateURL() {
-	history.pushState(null, null, '/coagulate?locations=' + encodeURIComponent($("#locations").val())); // HTML5
-}
-
-function dirToFilesInDirParameterized(dirContents) {
-	return function dirToFilesInDir(dir) {
-		return { 
-			"dir" : dir,
-			"filesInDir" : dirContents[dir] ,
-			"subdirs" : dirContents[dir].dirs
-		};
-	};
-}
-
-function toPairs(obj) {
-	var ret = [];
-	var keys = Object.keys(obj).sort();// Sometimes you want to sort, sometimes shuffle. Make this toggleable
-	for (var i = 0; i < keys.length; i++) {
-		var key = keys[i];
-		var val = obj[key];
-		var out = {};
-		out[key] = val;
-		ret.push(out);
-	}
-	return ret;
-}
-
 // TODO: This code is nice and simple thanks to the functional refactorings. What would 
 // be even better is if we could replace the loops with recursion.
 $(document).ready(function(){
@@ -115,6 +72,51 @@ $(document).ready(function(){
 	});
 	$('#items').append("This might take a while...");
 });
+
+
+function updateURLIfEmpty() {
+	var locations = $.url().param('locations');
+	if (locations == null || locations == '') {
+			updateURL();
+	} else {
+		$("#locations").val(decodeURIComponent(locations));
+	}
+
+  	limit = $.url().param('limit');
+	if (limit == null) {
+			limit = 20;
+			window.history.pushState("object or string", "Title", document.URL + "&limit=" + limit);
+	}
+	preDirLimit = limit;
+}
+
+function updateURL() {
+	history.pushState(null, null, '/coagulate?locations=' + encodeURIComponent($("#locations").val())); // HTML5
+}
+
+function dirToFilesInDirParameterized(dirContents) {
+	return function dirToFilesInDir(dir) {
+		return { 
+			"dir" : dir,
+			"filesInDir" : dirContents[dir] ,
+			"subdirs" : dirContents[dir].dirs
+		};
+	};
+}
+
+function toPairs(obj) {
+	var ret = [];
+	var keys = Object.keys(obj).sort();// Sometimes you want to sort, sometimes shuffle. Make this toggleable
+	for (var i = 0; i < keys.length; i++) {
+		var key = keys[i];
+		var val = obj[key];
+		var out = {};
+		out[key] = val;
+		ret.push(out);
+	}
+	return ret;
+}
+
 
 function dirToHtmlWithButtons(accumulator, dirPair) {
 
@@ -171,7 +173,10 @@ function dirObjToHtmlWithButtons(val, dir) {
 		var id = "hoistwithbuttons-" + hoistButtonId;
 		++hoistButtonId;
 		html += "<span id='"+id+"' style='float : left' align='left'>";
-		html += fileObjToHtmlThumbnail(fileObj);
+		html += "<br>";
+		html += createThumbnailItemHtml(fileObj);
+		html += "<br>";
+		html += "<br>";
 		html += "<br>";
 		html += "<button onclick='up(\""+filename +"\",\""+id+"\", "+level+")'>+</button>";
 		html += "<button onclick='down(\""+filename +"\",\""+id+"\", "+level+")'>-</button>";
@@ -237,7 +242,7 @@ function dirObjToHtml(val, dir) {
 			continue;
 		}
 		var fileObj = pair[filename];
-		html += fileObjToHtmlThumbnail(fileObj);
+		html += createThumbnailItemHtml(fileObj);
 		--files2;
 		if (files2 < 1 && !startsWith(dirName, '_+')) {
 			break;
@@ -395,8 +400,8 @@ function createThumbnailItemHtml(itemDetails) {
 					if (item2.exif) {
 						degreesToOrient = 90*(parseInt(item2.exif.orientation) - 1);
 					}
-					//toBeAppended += '<img width="'+width+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + httpUrl + '"/>';
-					toBeAppended += '<img height="'+height+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
+					//toBeAppended += '<img height="'+height+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
+					toBeAppended += '<img class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'"/>';
 					toBeAppended += '</a>';
 				}
 			}
@@ -495,9 +500,9 @@ function createButtonsPanel(item, subdirs, key, idstring) {
 	return buttons;
 }
 
-function fileObjToHtmlThumbnail(fileObj) {
-	return createThumbnailItemHtml(fileObj);
-}
+//function fileObjToHtmlThumbnail(fileObj) {
+//	return createThumbnailItemHtml(fileObj);
+//}
 
 function fileObjToHtml(fileObj) {
 	var item2 = fileObj;
