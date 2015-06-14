@@ -1785,45 +1785,27 @@ public class Coagulate {
 			return requestingRangeWithoutBeginning;
 		}
 
-		private static Response serveFileChunk(File f, String mime,
+		private static Response serveFileChunk(File file, String mime,
 				String etag, String range, long startFrom)
 				throws FileNotFoundException, IOException {
-			long endAt = getEndAt(range);
-
-			final boolean invalidRangeRequested = startFrom >= f.length();
-			final boolean rangeContainsEndOfData = endAt < 0;
-			String mime2 = getMimeType(mime,
+			final boolean invalidRangeRequested = startFrom >= file.length();
+			long endRangeAt = getEndRangeAt(getEndAt(range), file.length(),
 					invalidRangeRequested);
-
-			String status = getStatus(invalidRangeRequested);
-
-			long endRangeAt = getEndRangeAt(endAt, f.length(),
-					rangeContainsEndOfData,
-					invalidRangeRequested);
-
 			final long newLen = getNewLength(startFrom,
 					invalidRangeRequested, endRangeAt);
-
-			Object entity = getEntity(f, startFrom,
-					invalidRangeRequested, newLen);
-
-			String contentRange = getContentRange(startFrom,
-					f.length(), invalidRangeRequested, endRangeAt);
-
-			boolean hasContentLength = hasContentLength(invalidRangeRequested);
-
-			long contentLength = getContentLength(
-					invalidRangeRequested, newLen);
-
-			Response res1 = new Response(status, mime2, entity);
-			if (hasContentLength) {
-				res1.addHeader("Content-Length", ""
-						+ contentLength);
+			Response response = new Response(getStatus(invalidRangeRequested),
+					getMimeType(mime, invalidRangeRequested), getEntity(file,
+							startFrom, invalidRangeRequested, newLen));
+			if (hasContentLength(invalidRangeRequested)) {
+				response.addHeader("Content-Length", ""
+						+ getContentLength(
+								invalidRangeRequested, newLen));
 			}
-			res1.addHeader("ETag", etag);
-			res1.addHeader("Content-Range", contentRange);
-			res1.addHeader("Accept-Ranges", "bytes"); // Announce that the file server accepts partial content requests
-			return res1;
+			response.addHeader("ETag", etag);
+			response.addHeader("Content-Range", getContentRange(startFrom,
+					file.length(), invalidRangeRequested, endRangeAt));
+			response.addHeader("Accept-Ranges", "bytes"); // Announce that the file server accepts partial content requests
+			return response;
 		}
 
 		private static long getEndAt(String range) {
@@ -2029,7 +2011,8 @@ public class Coagulate {
 		}
 
 		private static long getEndRangeAt(long endAt, final long fileLen,
-				boolean rangeContainsEndOfData, boolean invalidRangeRequested) {
+				 boolean invalidRangeRequested) {
+			boolean rangeContainsEndOfData = endAt < 0;
 			long endRangeAt;
 			if (invalidRangeRequested) {
 				endRangeAt = -1;
