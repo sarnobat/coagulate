@@ -1932,7 +1932,7 @@ public class Coagulate {
 			Response res = new Response(HTTP_REDIRECT, MIME_HTML,
 					"<html><body>Redirected: <a href=\"" + urlWithDirectoryPathStandardized + "\">" +
 							urlWithDirectoryPathStandardized + "</a></body></html>");
-			res.addHeader("Location", urlWithDirectoryPathStandardized);
+			res.addHeader("Location", "/");
 			return res;
 		}
 
@@ -2299,7 +2299,7 @@ public class Coagulate {
 
 		//@Override
 		static String renderFilename(String uri, String filenameAfter) {
-			String path = encodeUri(uri + filenameAfter);
+			String path = filenameAfter;//encodeUri(uri); + Paths.get(filenameAfter).getFileName().toString());
 			String insideLink;
 			if (filenameAfter.endsWith("jpg") || filenameAfter.endsWith("jpg") || filenameAfter.endsWith("gif")
 					|| filenameAfter.endsWith("png")) {
