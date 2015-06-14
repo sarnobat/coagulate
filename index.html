@@ -240,6 +240,7 @@ function dirObjToHtml(val, dir) {
 	} else {
 		pairs = pairs1.slice(0, preDirLimit);
 	}
+	// TODO: make the other createThumbnailItemHtml() calls be done via map reduce
 	html += pairs.map(pairVal).reduce(createThumbnailItemHtml, "");
 
 
