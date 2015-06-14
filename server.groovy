@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,7 +54,6 @@ import org.apache.commons.imaging.formats.tiff.TiffField;
 import org.apache.commons.imaging.formats.tiff.constants.GpsTagConstants;
 import org.apache.commons.imaging.formats.tiff.constants.TiffTagConstants;
 import org.apache.commons.imaging.formats.tiff.taginfos.TagInfo;
-import org.apache.commons.imaging.formats.tiff.taginfos.TagInfoRational;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
@@ -62,8 +62,6 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.google.api.client.util.Maps;
-import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
@@ -545,6 +543,9 @@ public class Coagulate {
 			}
 			return rFilesInLocationJson;
 		}
+		
+		// I forgot what this was for
+		@Deprecated
 		private JSONObject getSubdirsAsJson(File iDirectory)
 				throws IOException {
 			JSONObject rFilesInLocationJson = new JSONObject();
@@ -990,7 +991,7 @@ public class Coagulate {
 		public Response serve (String uri, String method, Properties header, Properties parms, Properties files, InputStream body) {
 			//myOut.println(method + " '" + uri + "' ");
 
-			Enumeration e = header.propertyNames();
+			Enumeration<?> e = header.propertyNames();
 			while (e.hasMoreElements()) {
 				String value = (String) e.nextElement();
 				//myOut.println("  HDR: '" + value + "' = '" +header.getProperty(value) + "'");
@@ -1025,9 +1026,13 @@ public class Coagulate {
 			 * Basic constructor.
 			 */
 			public Response (String status, String mimeType, InputStream data) {
+				this(status, mimeType);
+				this.data = data;
+			}
+
+			public Response (String status, String mimeType) {
 				this.status = status;
 				this.mimeType = mimeType;
-				this.data = data;
 			}
 
 			/**
@@ -1035,8 +1040,7 @@ public class Coagulate {
 			 * given text.
 			 */
 			public Response (String status, String mimeType, String txt) {
-				this.status = status;
-				this.mimeType = mimeType;
+				this(status, mimeType);
 				try {
 					this.data = new ByteArrayInputStream(txt.getBytes("UTF-8"));
 				} catch (java.io.UnsupportedEncodingException uee) {
@@ -1044,6 +1048,21 @@ public class Coagulate {
 				}
 			}
 
+			public Response(String status, String mimeType, Object entity) {
+				this(status, mimeType);
+				if (data instanceof InputStream) {
+					this.data = (InputStream) entity;
+				} else if (entity instanceof String) {
+					try {
+						this.data = new ByteArrayInputStream(
+								((String) entity).getBytes("UTF-8"));
+					} catch (java.io.UnsupportedEncodingException uee) {
+						uee.printStackTrace();
+					}
+				} else {
+					throw new RuntimeException("entity not valid type");
+				}
+			}
 			/**
 			 * Adds given line to the header.
 			 */
@@ -1662,12 +1681,435 @@ public class Coagulate {
 		// ==================================================
 		// File server code
 		// ==================================================
+		
+
+		/**
+		 * (Rewritten without mutable state) 
+		 *
+		 * Serves file from homeDir and its' subdirectories (only).
+		 * Uses only URI, ignores all headers and HTTP parameters.
+		 */
+		public static Response serveFile(String url, Properties header, File homeDir,
+				boolean allowDirectoryListing) {
+
+			if (!isDirectory(homeDir)) {
+				return new Response(HTTP_INTERNALERROR, MIME_PLAINTEXT,
+						"INTERNAL ERRROR: serveFile(): given homeDir is not a directory.");
+			}
+			String urlWithoutQueryString = removeQueryString(url);
+			if (containsUpwardTraversal(urlWithoutQueryString)) {
+				return new Response(HTTP_FORBIDDEN, MIME_PLAINTEXT,
+						"FORBIDDEN: Won't serve ../ for security reasons.");
+			}
+			File requestedFileOrDir = new File(homeDir, urlWithoutQueryString);
+			if (!requestedFileOrDir.exists()) {
+				return new Response(HTTP_NOTFOUND, MIME_PLAINTEXT,
+						"Error 404, file not found.");
+			}
+			
+			if (requestedFileOrDir.isDirectory()) {
+				return serveDirectory(header, homeDir, allowDirectoryListing,
+						urlWithoutQueryString, requestedFileOrDir);
+			} else {// is a regular file
+				return serveRegularFile(requestedFileOrDir, header);
+			}
+		}
+
+		private static Response serveDirectory(Properties header, File homeDir,
+				boolean allowDirectoryListing, String urlWithoutQueryString,
+				File requestedFileOrDir) {
+			File requestedDir = requestedFileOrDir;
+			String urlWithDirectoryPathStandardized = maybeFixTrailingSlash(urlWithoutQueryString);
+			if (!urlWithoutQueryString.endsWith("/")) {
+				return doRedirect(urlWithDirectoryPathStandardized);
+			}
+			if (containsFile(requestedDir, "index.html")) {
+				return serveRegularFile(new File(homeDir,
+						urlWithDirectoryPathStandardized + "/index.html"),
+						header);
+			} else if (containsFile(requestedDir, "index.html")) {
+				return serveRegularFile(new File(homeDir,
+						urlWithDirectoryPathStandardized + "/index.htm"),
+						header);
+			} else {
+				return serveDirectory(header, homeDir,
+						allowDirectoryListing, requestedDir,
+						urlWithDirectoryPathStandardized);
+			}
+		}
+
+		private static Response serveDirectory(Properties header, File homeDir,
+				boolean allowDirectoryListing, File requestedDir,
+				String urlWithDirectoryPathStandardized) {
+			File fileAfterRewrite = maybeRewriteToDefaultFile(homeDir,
+					requestedDir, urlWithDirectoryPathStandardized);
+			if (fileAfterRewrite.isDirectory()) {
+				return serveDirectory(fileAfterRewrite,
+						allowDirectoryListing,
+						urlWithDirectoryPathStandardized);
+			} else {
+				return serveRegularFile(fileAfterRewrite, header);
+			}
+		}
+
+		private static Response serveRegularFile(File file, Properties header) {
+			try {
+				String mimeType = getMimeType(file);
+				String eTag = getEtag(file);
+				String range = getRange(header);
+				long start = getStartOfRange(range);
+				if (rangeBeginsAfterStart(range, start)) {
+					return serveFileChunk(file, mimeType, eTag, range, start);
+				} else {
+					if (eTag.equals(header.getProperty("if-none-match"))) {
+						return serveContentNotChanged(mimeType);
+					} else {
+						return serveEntireFile(file, mimeType, eTag, file.length());
+					}
+				}
+			} catch (IOException e) {
+				return new Response(HTTP_FORBIDDEN, MIME_PLAINTEXT,
+						"FORBIDDEN: Reading file failed.");
+			}
+		}
+
+		private static String getEtag(File file) {
+			String etag = Integer.toHexString((file.getAbsolutePath()
+					+ file.lastModified() + "" + file.length()).hashCode());
+			return etag;
+		}
+
+		private static boolean rangeBeginsAfterStart(String range,
+				long startFrom) {
+			boolean requestingRangeWithoutBeginning = range != null && startFrom >= 0;
+			return requestingRangeWithoutBeginning;
+		}
+
+		private static Response serveFileChunk(File f, String mime,
+				String etag, String range, long startFrom)
+				throws FileNotFoundException, IOException {
+			long endAt = getEndAt(range);
+
+			final boolean invalidRangeRequested = startFrom >= f.length();
+			final boolean rangeContainsEndOfData = endAt < 0;
+			String mime2 = getMimeType(mime,
+					invalidRangeRequested);
+
+			String status = getStatus(invalidRangeRequested);
+
+			long endRangeAt = getEndRangeAt(endAt, f.length(),
+					rangeContainsEndOfData,
+					invalidRangeRequested);
+
+			final long newLen = getNewLength(startFrom,
+					invalidRangeRequested, endRangeAt);
+
+			Object entity = getEntity(f, startFrom,
+					invalidRangeRequested, newLen);
+
+			String contentRange = getContentRange(startFrom,
+					f.length(), invalidRangeRequested, endRangeAt);
+
+			boolean hasContentLength = hasContentLength(invalidRangeRequested);
+
+			long contentLength = getContentLength(
+					invalidRangeRequested, newLen);
+
+			Response res1 = new Response(status, mime2, entity);
+			if (hasContentLength) {
+				res1.addHeader("Content-Length", ""
+						+ contentLength);
+			}
+			res1.addHeader("ETag", etag);
+			res1.addHeader("Content-Range", contentRange);
+			res1.addHeader("Accept-Ranges", "bytes"); // Announce that the file server accepts partial content requests
+			return res1;
+		}
+
+		private static long getEndAt(String range) {
+			long endAt = -1;
+			if (range != null) {
+				if (range.startsWith("bytes=")) {
+					int minus = range.indexOf('-');
+					try {
+						if (minus > 0) {
+							endAt = Long.parseLong(range.substring(minus + 1));
+						}
+					} catch (NumberFormatException nfe) {
+					}
+				}
+			}
+			return endAt;
+		}
+
+		private static long getStartOfRange(String range) {
+			long startFrom = 0;
+			if (range != null) {
+				if (range.startsWith("bytes=")) {
+					int minus = range.indexOf('-');
+					try {
+						if (minus > 0) {
+							startFrom = Long.parseLong(range.substring(0, minus));
+						}
+					} catch (NumberFormatException nfe) {
+					}
+				}
+			}
+			return startFrom;
+		}
+
+		private static String getRange(Properties header) {
+			String range = header.getProperty("range");
+			if (range != null) {
+				if (range.startsWith("bytes=")) {
+					range = range.substring("bytes=".length());
+				}
+			}
+			return range;
+		}
+
+		@Nullable
+		private static String getMimeType(File regularFile) throws IOException {
+			if (regularFile.isDirectory()) {
+				throw new RuntimeException("Developer error");
+			}
+			String mime = null;
+			// Get MIME type from file name extension, if possible
+			int dot = regularFile.getCanonicalPath().lastIndexOf('.');
+			if (dot >= 0) {
+				mime = (String) theMimeTypes.get(regularFile.getCanonicalPath()
+						.substring(dot + 1).toLowerCase());
+			}
+			if (mime == null) {
+				mime = MIME_DEFAULT_BINARY;
+			}
+			return mime;
+		}
+
+		private static boolean containsUpwardTraversal(
+				String uri) {
+			return uri.startsWith("..") || uri.endsWith("..") || uri.indexOf("../") >= 0;
+		}
+
+		private static String removeQueryString(String url) {
+			String ret;
+			String uri = url.trim().replace(File.separatorChar, "/".charAt(0));
+			if (uri.indexOf('?') >= 0) {
+				ret = uri.substring(0, uri.indexOf('?'));
+			} else {
+				ret = uri;
+			}
+			return ret;
+		}
+
+		private static boolean isDirectory(File iFile) {
+			return iFile.isDirectory();
+		}
+
+		private static boolean containsFile(File dir, String filename) {
+			if (!dir.isDirectory()) {
+				throw new RuntimeException("developer error");
+			}
+			return new File(dir, filename).exists();
+		}
+
+		private static Response serveDirectory(File dir, boolean allowDirectoryListing, String uri) {
+			if (!dir.isDirectory()) {
+				throw new RuntimeException("developer error");
+			} 
+			if (allowDirectoryListing && dir.canRead()) {
+				String[] files = dir.list();
+				String msg = listDirectoryAsHtml(uri, dir, files);
+				return new Response(HTTP_OK, MIME_HTML, msg);
+			} else {
+				return new Response(HTTP_FORBIDDEN, MIME_PLAINTEXT,
+						"FORBIDDEN: No directory listing.");
+			}
+		}
+
+		private static Response doRedirect(
+				String urlWithDirectoryPathStandardized) {
+			Response res = new Response(HTTP_REDIRECT, MIME_HTML,
+					"<html><body>Redirected: <a href=\"" + urlWithDirectoryPathStandardized + "\">" +
+							urlWithDirectoryPathStandardized + "</a></body></html>");
+			res.addHeader("Location", urlWithDirectoryPathStandardized);
+			return res;
+		}
+
+		private static String maybeFixTrailingSlash(String urlWithoutQueryString) {
+			String urlWithDirectoryPathStandardized;
+			if (!urlWithoutQueryString.endsWith("/")) {
+				urlWithDirectoryPathStandardized = addTrainingSlash(urlWithoutQueryString);
+			} else {
+				urlWithDirectoryPathStandardized = urlWithoutQueryString;
+			}
+			return urlWithDirectoryPathStandardized;
+		}
+
+		private static String addTrainingSlash(String urlWithoutQueryString) {
+			return urlWithoutQueryString + '/';
+		}
+
+		private static File maybeRewriteToDefaultFile(File homeDir,
+				File requestedDir, String urlWithDirectoryPathStandardized) {
+			File fileAfterRewrite = requestedDir;
+			if (new File(requestedDir, "index.html").exists()) {
+				fileAfterRewrite = new File(homeDir,
+						urlWithDirectoryPathStandardized + "/index.html");
+			} else if (new File(requestedDir, "index.htm").exists()) {
+				fileAfterRewrite = new File(homeDir,
+						urlWithDirectoryPathStandardized + "/index.htm");
+			}
+			return fileAfterRewrite;
+		}
+
+		/** Just return the HTTP head */
+		private static Response serveContentNotChanged(String mime) {
+			Response res;
+			res = new Response(HTTP_NOTMODIFIED, mime, "");
+			res.addHeader("Accept-Ranges", "bytes"); // Announce that the file server accepts partial content requests
+			// Do not add etag
+			return res;
+		}
+
+		private static Response serveEntireFile(File f, String mime,
+				String etag, final long fileLen) throws FileNotFoundException {
+			Response res;
+			res = new Response(HTTP_OK, mime,
+					new FileInputStream(f));
+			res.addHeader("Content-Length", "" + fileLen);
+			res.addHeader("ETag", etag);
+			res.addHeader("Accept-Ranges", "bytes"); // Announce that the file server accepts partial content requests
+			return res;
+		}
+
+		private static long getContentLength(boolean invalidRangeRequested,
+				final long newLen) {
+			long contentLength = -1;
+			if (invalidRangeRequested) {
+			} else {
+				contentLength = newLen;
+			}
+			return contentLength;
+		}
+
+		private static boolean hasContentLength(boolean invalidRangeRequested) {
+			boolean hasContentLength = false;
+			if (invalidRangeRequested) {
+				hasContentLength = false;
+			} else {
+				hasContentLength = true;
+			}
+			return hasContentLength;
+		}
+
+		private static String getContentRange(final long startFrom,
+				final long fileLen, boolean invalidRangeRequested,
+				long endRangeAt) {
+			String contentRange;
+			if (invalidRangeRequested) {
+				contentRange = "bytes 0-0/" + fileLen;
+			} else {
+				contentRange = "bytes " + startFrom + "-" + endRangeAt + "/" + fileLen;
+			}
+			return contentRange;
+		}
+
+		private static Object getEntity(File f, final long startFrom,
+				boolean invalidRangeRequested, final long newLen)
+				throws FileNotFoundException, IOException {
+			Object entity;
+			if (invalidRangeRequested) {
+				entity = "";
+			} else {
+				entity = prepareFileInputStream(f, startFrom,
+						newLen);
+			}
+			return entity;
+		}
+
+		private static long getEndRangeAt(long endAt, final long fileLen,
+				boolean rangeContainsEndOfData, boolean invalidRangeRequested) {
+			long endRangeAt;
+			if (invalidRangeRequested) {
+				endRangeAt = -1;
+			} else {
+				endRangeAt = getEndOfRange(endAt, fileLen,
+						rangeContainsEndOfData);
+			}
+			return endRangeAt;
+		}
+
+		private static long getNewLength(final long startFrom,
+				boolean invalidRangeRequested, long endRangeAt) {
+			final long newLen;
+			if (invalidRangeRequested) {
+				newLen = -1;
+			} else {
+				newLen = getNewLength(startFrom, endRangeAt);
+			}
+			return newLen;
+		}
+
+		private static String getStatus(boolean invalidRangeRequested) {
+			String status;
+			if (invalidRangeRequested) {
+				status = HTTP_RANGE_NOT_SATISFIABLE;
+			} else {
+				status = HTTP_PARTIALCONTENT;
+			}
+			return status;
+		}
+
+		private static String getMimeType(String mime,
+				boolean invalidRangeRequested) {
+			String mime2;
+			if (invalidRangeRequested) {
+				mime2 = MIME_PLAINTEXT;
+			} else {
+				mime2 = mime;
+			}
+			return mime2;
+		}
+
+		private static long getEndOfRange(long endAt, final long fileLen,
+				boolean rangeContainsEndOfData) {
+			long endRangeAt = endAt;
+			if (rangeContainsEndOfData) {
+				endRangeAt = fileLen - 1;
+			}
+			return endRangeAt;
+		}
+
+		private static long getNewLength(final long startFrom, long endRangeAt) {
+			if (endRangeAt < 0) {
+				throw new RuntimeException("DeveloperError");
+			}
+			long newLen = endRangeAt - startFrom + 1;
+			if (newLen < 0) {
+				newLen = 0;
+			}
+			return newLen;
+		}
+
+		private static FileInputStream prepareFileInputStream(File f,
+				long startFrom, final long dataLen)
+				throws FileNotFoundException, IOException {
+			FileInputStream fis = new FileInputStream(f) {
+				public int available () throws IOException {
+					return (int) dataLen;
+				}
+			};
+			fis.skip(startFrom);
+			return fis;
+		}
 
 		/**
 		 * Serves file from homeDir and its' subdirectories (only).
 		 * Uses only URI, ignores all headers and HTTP parameters.
 		 */
-		public static Response serveFile (String uri, Properties header, File homeDir,
+		@Deprecated // Mutable state. 
+		public static Response serveFileOld (String uri, Properties header, File homeDir,
 				boolean allowDirectoryListing) {
 			Response res = null;
 
@@ -1740,8 +2182,7 @@ public class Coagulate {
 						mime = MIME_DEFAULT_BINARY;
 					}
 
-					// Calculate etag
-					String etag = Integer.toHexString((f.getAbsolutePath() + f.lastModified() + "" + f.length()).hashCode());
+					String etag = getEtag(f);
 
 					// Support (simple) skipping:
 					long startFrom = 0;
