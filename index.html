@@ -454,9 +454,10 @@ function createItemHtml(response, item, key, unused, fileObj, subDirs)
 	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
 		+ image + "<td><td>"+createButtonsPanel(item, subDirs, key, idstring)
 		+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
-		+ decodeURIComponent(item)+"</textarea><br>"+fileObj.thumbnailUrl + "</td>"
+		+ decodeURIComponent(item)
+		+"</textarea></td>"
 		+ "<td><a href='" +fileObj.httpUrl+"'>" + fileObj.httpUrl + "</a><br>" +localLink
-		+ "<br></td></tr></table></td></tr>";
+		+ "<br><br>"+fileObj.thumbnailUrl + "</td></tr></table></td></tr>";
 
 	return toBeAppended;
 }

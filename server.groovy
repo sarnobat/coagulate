@@ -1,6 +1,7 @@
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -12,8 +13,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.io.Reader;
+import java.io.Writer;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -43,10 +47,12 @@ import javax.ws.rs.GET;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
 
 import org.apache.commons.imaging.ImageReadException;
 import org.apache.commons.imaging.Imaging;
@@ -64,11 +70,14 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.google.api.client.util.IOUtils;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
@@ -82,9 +91,49 @@ public class Coagulate {
 		private static final String clientIdRSAPath = "/home/sarnobat/.ssh/id_rsa";
 		private static final int SFTPPORT = 22;
 		private static final String SFTPUSER = "sarnobat";
-		private static final ChannelSftp channelSftp = geChannelSftp(SFTPHOST, SFTPPORT, SFTPUSER,
-				clientIdRSAPath);
+//		private static final ChannelSftp channelSftp = geChannelSftp(SFTPHOST, SFTPPORT, SFTPUSER,
+//				clientIdRSAPath);
 		
+	    private static final JSch jsch = new JSch();
+	    private static Session session;
+	    private static synchronized Session getSession() throws Exception {
+	        try {
+//	        	System.out.println("a");
+	            ChannelExec testChannel = (ChannelExec) session.openChannel("shell");
+//	            System.out.println("b");
+	            testChannel.setCommand("true");
+//	            System.out.println("c");
+	            testChannel.connect();
+//	            System.out.println("d");
+	            testChannel.disconnect();
+	        } catch (Throwable t) {
+//	        	System.out.println("e");
+	            session = jsch.getSession(SFTPUSER, SFTPHOST, SFTPPORT);
+//	            System.out.println("f");
+	            if (!Paths.get(clientIdRSAPath).toFile().exists()) {
+//	            	System.out.println("g");
+	            	throw new RuntimeException("No such file: " + clientIdRSAPath);
+	            }
+//	            System.out.println("h");
+				jsch.addIdentity(clientIdRSAPath);
+//				System.out.println("i");
+	            java.util.Properties config = new java.util.Properties();
+//	            System.out.println("j");
+				config.put("StrictHostKeyChecking", "no");
+//				System.out.println("k");
+	            session.setConfig(config);
+//	            System.out.println("l");
+	            if (!session.isConnected()) {
+//	            	System.out.println("m");
+	            session.connect();
+//            	System.out.println("n");
+	            }
+	        }
+//	        System.out.println("o");
+	        return session;
+	    }
+	    
+	    @Deprecated
 		private static ChannelSftp geChannelSftp(String host, int port,
 				String username, String privateKey) {
 			System.out.println("geChannelSftp() - begin");
@@ -100,12 +149,13 @@ public class Coagulate {
 				java.util.Properties config = new java.util.Properties();
 				config.put("StrictHostKeyChecking", "no");
 				session.setConfig(config);
+				session.setTimeout(0);
 				if (!session.isConnected()) {
-					session.connect();
+					session.connect(0);
 				}
 				channel = session.openChannel("sftp");
 				if (!channel.isConnected()) {
-					channel.connect();
+					channel.connect(0);
 				}
 				channelSftp = (ChannelSftp) channel;
 				System.out.println("geChannelSftp() - end");
@@ -164,7 +214,7 @@ public class Coagulate {
 		@javax.ws.rs.Path("static2/{absolutePath : .+}")
 		@Produces("application/json")
 		public Response getFileSsh(@PathParam("absolutePath") String absolutePath, @Context HttpHeaders header){
-			System.out.println("getFile() - begin\t" + absolutePath);
+			System.out.println("getFileSsh() - begin\t" + absolutePath);
 			Object entity = "{ 'foo' : 'bar' }";
 			String mimeType = "application/json";
 			final String absolutePath2 = "/" +absolutePath;
@@ -193,10 +243,47 @@ public class Coagulate {
 			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(IS_UNDER)){
 				try {
 	
-					InputStream is = FileServerGroovy
-							.serveFileViaSsh(absolutePath, new Properties(),
-									Paths.get("/").toFile(), true, channelSftp);
-					return Response.ok().entity(is).type(FileServerGroovy.getMimeType(absolutePath2)).build();
+//					final InputStream is = FileServerGroovy
+//							.serveFileViaSsh(absolutePath2, new Properties(),
+//									Paths.get("/").toFile(), true, getChannelSftp());
+					final ChannelSftp sftp = getChannelSftp();
+					sftp.cd(Paths.get(absolutePath2).getParent().toAbsolutePath().toString());
+					String fileSimpleName = Paths.get(absolutePath2)
+							.getFileName().toString();
+					final InputStream is = sftp.get(fileSimpleName);
+//					System.out.println("getFileSsh() - stream obtained\t" + absolutePath2);
+					
+					StreamingOutput stream = new StreamingOutput() {
+					    @Override
+					    public void write(OutputStream os) throws IOException,
+					    WebApplicationException {
+					    	System.out.println("Start");
+//					      Writer writer = new BufferedWriter(new OutputStreamWriter(os));
+//					      writer.write("test");
+					      IOUtils.copy(is, os);
+/*					      Reader reader = new InputStreamReader(is);
+
+					      char[] buf = new char[1024];
+					      int numRead;
+					      while ((numRead = reader.read(buf)) != -1) {
+					          String readData = String.valueOf(buf, 0, numRead);
+					          writer.write(readData);
+					          buf = new char[1024];
+					      }
+//					      writer.write("SSSSSSSDFDSFFDSF");
+					      writer.flush();*/
+					      is.close();
+					      os.close();
+					      sftp.disconnect();
+					      sftp.exit();
+					      System.out.println("getFileSsh() - served\t" + absolutePath2);
+					      System.out.println("Done");
+//					      writer.close();
+//					      is.close();
+					    }
+					  };
+					  
+					return Response.ok().entity(stream).type(FileServerGroovy.getMimeType(absolutePath2)).build();
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -209,6 +296,38 @@ public class Coagulate {
 					.build();
 		}
 		
+//		@Deprecated private static ChannelSftp getChannelSftp() {
+//			try {
+//				if (!channelSftp.isConnected()) {
+//					channelSftp.connect(0);
+//				}
+//				return channelSftp;
+//			} catch (JSchException e) {
+//				e.printStackTrace();
+//				throw new RuntimeException(e);
+//				}
+//		}
+
+		private static ChannelSftp getChannelSftp() {
+			System.out.println("1");
+			try {
+				Session session2 = getSession();
+				System.out.println("2");
+				ChannelSftp openChannel = (ChannelSftp) session2.openChannel("sftp");
+				System.out.println("3");
+				if (!openChannel.isConnected()) {
+					System.out.println("4");
+					openChannel.connect();
+					System.out.println("5");
+				}
+				System.out.println("6");
+				return openChannel;
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new RuntimeException(e);
+			}
+		}
+
 		@GET
 		@javax.ws.rs.Path("static/{absolutePath : .+}")
 		@Produces("application/json")
@@ -920,7 +1039,7 @@ public class Coagulate {
 		}
 
 		private String httpLinkFor(String iAbsolutePath) {
-			String prefix = "http://192.168.1.2:4451/cmsfs/static/";
+			String prefix = "http://192.168.1.2:4451/cmsfs/static2/";
 			return prefix + iAbsolutePath;
 		}
 
@@ -1799,7 +1918,7 @@ public class Coagulate {
 				} catch (SftpException e) {
 					e.printStackTrace();
 //					return internalError(e.getStackTrace().toString());
-					throw new RuntimeException("Unimplemented");				}
+					throw new RuntimeException("Something went wrong", e);				}
 		}
 
 		private static Response internalError(String errorMsg) {
@@ -2149,8 +2268,10 @@ public class Coagulate {
 
 		private static InputStream getRegularFileStreamFromSsh(String sourceFile,
 				ChannelSftp channelSftp) throws SftpException {
-			channelSftp.cd(Paths.get(sourceFile).getParent().toAbsolutePath()
-					.toString());
+			String string = Paths.get(sourceFile).getParent().toAbsolutePath()
+							.toString();
+			System.out.println("getRegularFileStreamFromSsh() - file to get: " + string);
+			channelSftp.cd(Preconditions.checkNotNull(string));
 			return new BufferedInputStream(channelSftp.get(Paths.get(sourceFile)
 					.getFileName().toString()));
 		}
