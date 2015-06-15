@@ -1,99 +1,620 @@
 <!DOCTYPE html>
 <html>
 <head>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js">
-<script type="text/javascript" src="js/kb_shortcut.packed.js" ></script>
+<title>Coagulate (Content Management System)</title>
+<link rel="shortcut icon" href="http://netgear.rohidekar.com/static/icons/Orb_Icons_001.png" type="image/x-icon" />
+
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.11.0/themes/smoothness/jquery-ui.css">
+<link rel="stylesheet" href="http://jqueryui.com/jquery-wp-content/themes/jqueryui.com/style.css">
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script src="http://netgear.rohidekar.com/yurl/jquery/jquery-ui.js"></script>
+<script type="text/javascript" src="http://netgear.rohidekar.com/yurl/jquery/purl.js"></script>
+<script src="http://netgear.rohidekar.com/yurl/js/webtoolkit.md5.js"></script>
 </script>
+<script src="http://netgear.rohidekar.com/yurl/js/imagezoom.ssarnobat.js"></script>
 <script>
 
 
-var urlBase = "http://netgear.rohidekar.com:4451/cmsfs/";
+var urlBase = "http://192.168.1.2:4451/cmsfs/";
+var limit;
+var preDirLimit;
+
+
+$(function() {
+	$( "#tabs" ).tabs();
+});
+
+// TODO: This code is nice and simple thanks to the functional refactorings. What would 
+// be even better is if we could replace the loops with recursion.
 $(document).ready(function(){
 
+	updateURLIfEmpty();
 
- $.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response){
-  	var id = 0;
-	for(var key in response.items) { 
-
-		// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
-		var width = "250px";
-		var height = "300px";
-		var itemsInDir = response.items[key];
-		for (var item in itemsInDir) {
-			var toBeAppended = "";
-			var res = item.match(/.*\.((jpe?g)|(png))/gi);
-			
-			var httpUrl = response.items[key][item].httpUrl;
-			
-			if (res !=null) {
-				//toBeAppended = '<img width="'+width+'" src="file:///' +item+ '"/>';
-				toBeAppended = '<img width="'+width+'" src="' + httpUrl + '"/>';
-			}
-			var matchesVideo = item.match(/.*((mp4)|(webm))/gi);
-			if (matchesVideo != null) {
-				//toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="file:///' +item+ '"/></video>';
-				toBeAppended = '&nbsp;<video width="'+width+'" controls="" muted=""><source type="video/mp4" src="' +httpUrl+ '"/></video>';
-			}
-			var buttons = "<table><tr><td>";
-			var i = 0;
+	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response) {
+		$('#items').empty();
+		addSubdirLinks(response);
+		var pairs = toPairs(response.itemsRecursive);
 		
-			++id;
-			var idstring = "i" + id;
+		// Map-reduce for cards view (for sorting)
+		{
+			$('#itemsNew').empty();
+			var html = "";
+			html += pairs.map(dirToHtmlCards).join('');
+			$('#itemsNew').append(html);
+		}
+		// Thumbnails
+		{
+			var html = printDirsRecursive(response.itemsRecursive, response);
+			$('#thumbnailItems').append(html);
+				
+		}
+		// Hoist
+		{
+			var html = "";
+			console.debug(html);
 			
-			var escaped = item.replace(/'/g, "&apos;");
+			html += pairs.map(rootFolderOnly).reduce(dirToHtml, "");
+			$('#hoist').append(html);
+		}
+		// Hoist (no buttons)
+		{
+			var html = "";
+			console.debug(html);
+			
+			html += pairs.map(rootFolderOnly).reduce(dirToHtmlWithButtons, "");
+			$('#hoist_with_buttons').append(html);
+		}
+		loadImagesSequentially(0);
+	})
+	.fail(function() {
+		console.debug( "error" );
+		$('#items').append("Error");
+	});
+	$('#items').append("This might take a while...");
+});
 
-			buttons += "<button onclick='moveFileToParent(\"" + escaped + "\",\""+idstring+"\")'>Wrong Category</button><br>";
-			var dirs = response.locations[key].dirs;
-			var dirsArray = Object.keys(dirs).sort(function(a, b) {
-				if (a.toLowerCase() < b.toLowerCase()) return -1;
-				if (a.toLowerCase() > b.toLowerCase()) return 1;
-				return 0;
-			  });
-			for(var dir in dirsArray) {
-				i++;
-				if (i%15 == 0) {
-					buttons += "</td><td>";
-				}
-				var dirName = dirsArray[dir];
-				var color = "";
-				if (dirName == 'other' || dir == 'divas') {
-					color = 'pink';
-				} else if (dirName.match(/Atletico/i) || dirName == 'brst') {
-					color = 'red';
-				} else if (dirName == 'legs') {
-					color = 'yellow';
-				}  else if (dirName == 'navel') {
-					color = 'purple';
-				}  else if (dirName == 'teen') {
-					color = 'white';
-				} else if (dirName.match(/soccer/i)) {
-					color = 'green';
-				} else if (dirName == 'ind') {
-					color = 'orange';
-					console.debug('found ind');
-				}
-				console.debug(dirName);
-				buttons += "<button onclick='moveFile(\"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+color+"'>"+dirName+"</button><br>";
 
-			}
-			buttons += "</td></tr></table>";
-			var tile = "<tr id='" +idstring+"'><td><table><tr><td>"+toBeAppended + "<td><td>"+buttons+"</td></tr><tr><td colspan=2><textarea rows=4 style='width:"+width+"; word-wrap:break-word;'>" + decodeURIComponent(item)+"</textarea></td></tr></table></td></tr>";
-			if (toBeAppended.length > 0) {
-				$('#items').append(tile);
+function updateURLIfEmpty() {
+	var locations = $.url().param('locations');
+	if (locations == null || locations == '') {
+			updateURL();
+	} else {
+		$("#locations").val(decodeURIComponent(locations));
+	}
+
+  	limit = $.url().param('limit');
+	if (limit == null) {
+			limit = 20;
+			window.history.pushState("object or string", "Title", document.URL + "&limit=" + limit);
+	}
+	preDirLimit = limit;
+}
+
+function updateURL() {
+	history.pushState(null, null, '/coagulate?locations=' + encodeURIComponent($("#locations").val())); // HTML5
+}
+
+function dirToFilesInDirParameterized(dirContents) {
+	return function dirToFilesInDir(dir) {
+		return { 
+			"dir" : dir,
+			"filesInDir" : dirContents[dir] ,
+			"subdirs" : dirContents[dir].dirs
+		};
+	};
+}
+
+function toPairs(obj) {
+	var ret = [];
+	var keys = Object.keys(obj).sort();// Sometimes you want to sort, sometimes shuffle. Make this toggleable
+	for (var i = 0; i < keys.length; i++) {
+		var key = keys[i];
+		var val = obj[key];
+		var out = {};
+		out[key] = val;
+		ret.push(out);
+	}
+	return ret;
+}
+
+
+function dirToHtmlWithButtons(accumulator, dirPair) {
+
+	var key = Object.keys(dirPair)[0];
+	var val = dirPair[key];
+	
+	return accumulator + "<tr><td><h2>" + lastPartOf(key) +"</h2></td></tr>" + dirObjToHtmlWithButtons(val, key);
+}
+
+function dirToHtml(accumulator, dirPair) {
+
+	var key = Object.keys(dirPair)[0];
+	var val = dirPair[key];
+	
+	return accumulator + "<h2>" + lastPartOf(key) +"</h2>" + dirObjToHtml(val, key);
+}
+
+function startsWith(str, prefix) {
+	return (str.lastIndexOf(prefix,0) == 0);
+}
+
+var hoistButtonId = 0;
+var level = 1000; // This is just a unique number, not semantically significant
+function dirObjToHtmlWithButtons(val, dir) {
+	var html = "";
+	// recurse pre-order
+	if (val.dirs) {
+		var dirnames = Object.keys(val.dirs);
+		for (var i = 0; i < dirnames.length; i++) {
+			var dirname =  dirnames[i];
+			if (lastPartOf(dirname).lastIndexOf('_+',0) == 0) {
+				var dirObj = val.dirs[dirname];
+				html +=  dirObjToHtmlWithButtons(dirObj, dirname);
 			}
 		}
 	}
-});
-function addslashes( str ) {
-    return (str + '').replace(/[\\"']/g, '\\$&').replace(/\u0000/g, '\\0');
+	var dirName = lastPartOf(dir);
+	--level;
+	html += "<tr><td><span id='level-" + level +"'>";
+
+	html += "<h3>" + dirName + "</h3>";
+//	html += "<br>";
+	html += "<textarea>" + dir + "</textarea>";
+	html += "<br>";
+	var pairs = toPairs(val);
+	var files2 = preDirLimit;
+	for (var i = 0; i < pairs.length; i++) {
+		var pair = pairs[i];
+		var filename = Object.keys(pair)[0];
+		if (filename == 'dirs') {
+			continue;
+		}
+		var fileObj = pair[filename];
+		var id = "hoistwithbuttons-" + hoistButtonId;
+		++hoistButtonId;
+		html += "<span id='"+id+"' style='float : left' align='left'>";
+		html += "<br>";
+		html += createThumbnailItemHtml("", fileObj);
+		html += "<br>";
+		html += "<br>";
+		html += "<br>";
+		html += "<button onclick='up(\""+filename +"\",\""+id+"\", "+level+")'>+</button>";
+		html += "<button onclick='down(\""+filename +"\",\""+id+"\", "+level+")'>-</button>";
+		html += "</span>";
+		--files2;
+		if (files2 < 1 && !startsWith(dirName, '_+')) {
+			break;
+		}
+	}
+	html += "</span></td></tr>";
+		
+	var files3 = preDirLimit;	
+	for (var i = 0; i < dirnames.length; i++) {
+		var dirname =  dirnames[i];
+		if (lastPartOf(dirname).lastIndexOf('_-',0) == 0) {
+			var dirObj = val.dirs[dirname];
+			html += dirObjToHtmlWithButtons(dirObj, dirname);
+		}
+	}
+	return html;
 }
 
-});
 
-function moveFile(filePath, destinationDirSimpleName,id) {
+function up(field,id, currentLevelId) {
+	$.getJSON("http://netgear.rohidekar.com:4463/helloworld/moveUp?path=" + encodeURIComponent(field),function(result){
+		var targetLevel = currentLevelId + 1;
+		// TODO: handle the case where target level doesn't exist
+		var elem = $("#"+id).remove();
+		$("#level-" + targetLevel).append(elem);
+	});
+}
+
+function down(field,id, currentLevelId) {
+	$.getJSON("http://netgear.rohidekar.com:4463/helloworld/moveDown?path=" + encodeURIComponent(field),function(result){
+		var targetLevel = currentLevelId - 1;
+		// TODO: handle the case where target level doesn't exist
+		var elem = $("#"+id).remove();
+		$("#level-" + targetLevel).append(elem);
+    });
+}
+
+function dirObjToHtml(val, dir) {
+	var html = "";
+	// recurse pre-order
+	if (val.dirs) {
+		var dirnames = Object.keys(val.dirs);
+		for (var i = 0; i < dirnames.length; i++) {
+			var dirname =  dirnames[i];
+			if (lastPartOf(dirname).lastIndexOf('_+',0) == 0) {
+				var dirObj = val.dirs[dirname];
+				html +=  dirObjToHtml(dirObj, dirname);
+			}
+		}
+	}
+	var dirName = lastPartOf(dir);
+	html += "<h3>" + dirName + "</h3><textarea>" + dir + "</textarea><br>";
+	var pairs1 = toPairs(val).filter(function(aPair){aPair[0] != 'dirs'});
+	var pairs;
+	if (startsWith(dirName, '_+')) {
+		pairs = pairs1;
+	} else {
+		pairs = pairs1.slice(0, preDirLimit);
+	}
+	// TODO: make the other createThumbnailItemHtml() calls be done via map reduce
+	html += pairs.map(pairVal).reduce(createThumbnailItemHtml, "");
+
+
+	var files3 = preDirLimit;	
+	for (var i = 0; i < dirnames.length; i++) {
+		var dirname =  dirnames[i];
+		if (lastPartOf(dirname).lastIndexOf('_-',0) == 0) {
+			var dirObj = val.dirs[dirname];
+			html += dirObjToHtml(dirObj, dirname);
+		}
+	}
+	return html;
+}
+
+function pairVal(pair) {
+	return pair[1];
+}
+
+// also retains ranking dirs
+function rootFolderOnly(dirPair) {
+	var ret = {};
+	var key = Object.keys(dirPair)[0];
+	// Assumption : the right hand side is deep copied.
+	ret[key] = dirPair[key];
+	val = ret[key];
+	if (val.dirs) {
+		var subDirs = Object.keys(val.dirs);
+		for (var i = 0; i < subDirs.length; i++) {
+			var subDir = subDirs[i];
+			var dirName = subDir.substr(subDir.lastIndexOf('/') + 1);
+			if (dirName.lastIndexOf('_', 0) == 0) {
+				// retain it
+				console.debug('to be retained:' + dirName);
+			} else {
+				
+				console.debug('to be deleted:' + dirName);
+				console.debug('before:' + Object.keys(val.dirs).length);
+				delete val.dirs[subDir];
+				//$(val.dirs).removeProp(dirName);
+				console.debug('after:' + Object.keys(val.dirs).length);
+			}
+		}
+	}
+	return ret;
+}
+
+function lastPartOf(str) {
+	return str.substr(str.lastIndexOf('/') + 1);
+}
+
+function filesOnly(anObj) {
+	if (anObj.dirs == null) {
+		return true;
+	}
+	return false;
+}
+
+// For thumbnails
+function printDirsRecursive(dirItems, response, idIn) {
+	var html = "";
+	var items = dirItems;
+
+	var id = 0;
+	// For each directory
+	var sortedItems = Object.keys(dirItems).sort();
+	for(var dirIndex in sortedItems) { 
+		var dirPath = sortedItems[dirIndex];
+		var categoryName1 = "";
+		categoryName1 = dirPath.split('/').pop();
+		html += "<h3>" + categoryName1 + "</h3>";
+		var filesInDir = items[dirPath];
+		if (filesInDir.length < 1) {
+			continue;
+		}
+		var filesInDirSortedMap = shuffle(Object.keys(filesInDir));//Object.keys(filesInDir).sort();
+		// For each file in the directory
+		for (var sortedIndex in filesInDirSortedMap) {
+			var filepath = filesInDirSortedMap[sortedIndex];
+			if (filepath.match(/.*(nohup.out$|Thumbs.db|[pP]icasa.ini)/)) {
+				//console.log('Skipping: ' + filepath);
+				continue;
+			}
+			if (filepath == 'dirs') {
+				var subdirItems = filesInDir['dirs'];
+				html += printDirsRecursive(subdirItems, response, idIn + "-" + id);
+			} else {
+				++id;
+				if (id > limit) {
+					continue;
+				}
+				html += createThumbnailItemHtml("", filesInDir[filepath]);
+			}
+		}
+	}
+	return html;
+}
+
+// No buttons
+function createThumbnailItemHtml(accumulator, fileObj) {	
+	
+	var fileSystem = fileObj.fileSystem;
+	
+	var res = fileSystem.match(/.*\.((txt)|(lnk))/gi);
+	if (res != null) {
+		return;
+	}
+
+	{
+		var toBeAppended = accumulator;
+		var httpUrl = fileObj.httpUrl;
+		var thumbnailUrl = fileObj.thumbnailUrl;
+		
+		// Images
+		{
+			var res = fileSystem.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
+			if (res !=null) {
+				toBeAppended += '<a href="' + httpUrl + '" target="_blank">';
+				var degreesToOrient = 0;
+				if (fileObj.exif) {
+					degreesToOrient = 90*(parseInt(fileObj.exif.orientation) - 1);
+				}
+				// height ensures buttons don't jump left and right between items for 
+				// easier mass sorting. But it's not as nice to view.
+				var width = "250px";
+				var height = "100px";
+				toBeAppended += '<img class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'"/>';
+				toBeAppended += '</a>';
+			}
+		}
+		// Videos
+		{
+			var matchesVideo = fileSystem.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi))/gi);
+			if (matchesVideo != null) {
+				var simpleName = fileObj.httpUrl.split('/').pop();
+				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height="'+height+'" title="'+ simpleName +'">';
+			}
+		}
+		// PDFs
+		{
+			var matchesVideo = fileSystem.match(/.*((pdf)|(tif))/gi);
+			if (matchesVideo != null) {
+				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height='+height+'>';
+			}
+		}
+		toBeAppended = "<a href='" +httpUrl+"'>" + toBeAppended + "</a>";
+		toBeAppended += "&nbsp;";
+	}	
+	/*
+	var localLink = "<a href=\"file://" + item2.fileSystem.toString() +"\">" + "Local Link" + "</a>";
+	
+	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
+		+ toBeAppended + "<td><td>"+createButtonsPanel(item, response, key, idstring)
+		+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
+		+ decodeURIComponent(item)+"</textarea><br>"+lastModified + "</td>"
+		+ "<td><a href='" +httpUrl+"'>" + httpUrl + "</a><br>" +localLink
+		+ "<br></td></tr></table></td></tr>";
+*/
+//	console.debug(toBeAppended);
+	return toBeAppended;
+}
+
+function addSubdirLinks(response) {
+	for(var dirIndex in response.subdirectories) { 
+		var filesInDir = response.subdirectories[dirIndex];
+
+		if (filesInDir.length < 1) {
+			continue;
+		}
+		for (var sortedIndex in filesInDir) {
+			var filepath = filesInDir[sortedIndex];
+			//console.debug(filepath.fileSystem);
+			$('#subdirs').append("<tr><td><a href='/coagulate/?locations=" +encodeURIComponent(filepath.fileSystem)+ "'>"+filepath.fileSystem+"</a></td></tr>");
+		}
+	}
+}
+function loadImagesSequentially(i) {
+	var images = $('.myimage');
+	if (i >= images.length) {
+		return
+	}
+
+	var imageAttrs = images[i].attributes;
+	var datasrc = $(images[i]).attr('data-src');
+	$(images[i]).attr('src',datasrc);
+	var a = function(j) {
+		loadImagesSequentially(++i);
+	};
+	$(images[i]).load(a(i));
+
+}
+
+
+
+
+// item = filepath
+// key = dirpath
+// item2 = fileObj
+// 
+function createItemHtml(response, item, key, unused, fileObj, subDirs)
+{	
+	var image = fileObjToHtml(fileObj);
+
+	var width = "250px";
+	var height = "300px";
+	
+	var localLink = "<a href=\"file://" + fileObj.fileSystem.toString() +"\">" + "Local Link" + "</a>";
+
+
+	var idstring = "i" + id;	
+	id += 1;
+	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
+		+ image + "<td><td>"+createButtonsPanel(item, subDirs, key, idstring)
+		+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
+		+ decodeURIComponent(item)+"</textarea><br>"+fileObj.thumbnailUrl + "</td>"
+		+ "<td><a href='" +fileObj.httpUrl+"'>" + fileObj.httpUrl + "</a><br>" +localLink
+		+ "<br></td></tr></table></td></tr>";
+
+	return toBeAppended;
+}
+
+// item = filepath
+// key = dirpath
+function createButtonsPanel(item, subdirs, key, idstring) {
+
+	var buttons = "<table><tr><td>";							
+	{
+		var escaped = item.replace(/'/g, "&apos;");
+		buttons += "<button onclick='moveFileToParent(\"" + escaped + "\",\""+idstring+"\")'>Wrong Category</button><br>";
+		var subdirsArray = Object.keys(subdirs).sort(sortFunction);
+		{
+			var buttonsAdded = 0;
+			for (var dir in subdirsArray) {
+				buttonsAdded++;
+				if (buttonsAdded%15 == 0) {
+					buttons += "</td><td>";
+				}
+				var dirPath = subdirsArray[dir];				
+				var dirName = dirPath.substr(dirPath.lastIndexOf('/') + 1);
+				buttons += "<button onmousedown='button.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
+			}
+		}
+	}
+	buttons += "<br>";
+	buttons += "<button onclick='moveToNonExistingFolder(this,\"" +escaped+"\",\""+dirName+"\",\""+idstring+"\")'>MOVE to custom</button><br>";
+	buttons += "<br>";
+	buttons += "<button onclick='copyFileToFolder(\"" + escaped + "\", \"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/favorites\",\""+idstring+"\", this)'>COPY TO favorites</button><br>";
+	buttons += "</td></tr></table>";
+	return buttons;
+}
+
+function fileObjToHtml(fileObj) {
+	// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
+	var width = "250px";
+	var height = "300px";
+	var item = fileObj.fileSystem;
+	{
+		var res = item.match(/.*\.((txt)|(lnk))/gi);
+		if (res !=null) {
+			return;
+		}
+	}
+	
+
+	{
+		var toBeAppended = "";
+		var httpUrl = fileObj.httpUrl;
+		//console.debug(fileObj);
+		var thumbnailUrl = fileObj.thumbnailUrl;
+		{
+			var lastModified = fileObj.lastModified;
+			{
+				var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
+				if (res !=null) {
+					toBeAppended += '<a href="' + httpUrl + '" target="_blank">';
+					var degreesToOrient = 0;
+					if (fileObj.exif) {
+						degreesToOrient = 90*(parseInt(fileObj.exif.orientation) - 1);
+					}
+					toBeAppended += '<img width="'+width+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
+					toBeAppended += '</a>';
+				}
+			}
+		}
+		{
+			var matchesVideo = item.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi))/gi);
+			if (matchesVideo != null) {
+				toBeAppended += '<img src=\"' +thumbnailUrl+'\">';
+			}
+		}
+		{
+			var matchesVideo = item.match(/.*((pdf)|(tif))/gi);
+			if (matchesVideo != null) {
+				toBeAppended += '<img src=\"' +thumbnailUrl+'\" width=200>';
+			}
+		}
+	}	
+	return toBeAppended;
+}
+
+
+function dirToHtmlCards(dirObj) {
+	var html = "";
+	console.debug(dirObj);
+	var dir = Object.keys(dirObj);
+	var files = toPairs(dirObj[dir]).slice(0, limit).filter(filesOnly);
+	var subdirs = dirObj[dir].dirs;
+	html += files.map(fileToHtmlParameterized(subdirs)).join('');
+	return html;
+}
+
+var id = 0;
+
+function fileToHtmlParameterized(subdirs) {
+	return function fileToHtml(filePair) {
+		var ret = "";
+		var filePath = Object.keys(filePair)[0];
+		var fileObj = filePair[filePath];
+	
+	
+		if (fileObj.fileSystem.match(/.*(nohup.out$|Thumbs.db|[pP]icasa.ini)/)) {
+			ret += "";
+		} else {
+			var dirPath = filePath.substring(0, filePath.lastIndexOf("/"));
+			ret += createItemHtml(null, filePath, dirPath, null, fileObj, subdirs);
+		}
+		return ret;
+	};
+}
+
+function moveToNonExistingFolder(elem, fileToMove, parentDir, idstring) {
+	var newCategorySimpleName = prompt("Category name:");
+	var newDir = parentDir + '/' + newCategorySimpleName;
+	moveFile(elem, fileToMove, newCategorySimpleName, idstring);
+}
+
+function moveFile(button, filePath, destinationDirSimpleName,id) {
 	$.getJSON(urlBase + "/move?filePath="+encodeURIComponent(filePath) + "&destinationDirSimpleName=" + destinationDirSimpleName,function(response){
 		$("#" + id).remove();
 	});
+}
+
+function sortFunction(a, b) {
+	if (a.toLowerCase() < b.toLowerCase()) return -1;
+	if (a.toLowerCase() > b.toLowerCase()) return 1;
+	return 0;
+}
+							
+function getColorForDir(dirName) {								
+	var color = "";
+	if (dirName == 'other' || dirName == 'divas') {
+		color = 'pink';
+	} else if (dirName.match(/Atletico/i) || dirName == 'brst') {
+		color = 'red';
+	}
+	else if (dirName.match(/Liverpool/i)) {
+		color = 'red';
+	}
+	 else if (dirName == 'legs') {
+		color = 'yellow';
+	}  else if (dirName == 'navel') {
+		color = 'purple';
+	}  else if (dirName == 'teen') {
+		color = 'lavender';
+	} else if (dirName.match(/soccer/i)) {
+		color = 'green';
+	} else if (dirName == 'ind') {
+		color = 'orange';
+		console.debug('found ind');
+	}
+	return color
+}
+
+function addslashes( str ) {
+    return (str + '').replace(/[\\"']/g, '\\$&').replace(/\u0000/g, '\\0');
 }
 
 function moveFileToParent(filePath, id) {
@@ -102,33 +623,153 @@ function moveFileToParent(filePath, id) {
 	});
 }
 
+function copyFileToFolder(filePath, destinationDirPath, id, button) {
+	$.getJSON(urlBase + "/copyToFolder?filePath="+encodeURIComponent(filePath) + "&destinationDirPath=" + encodeURIComponent(destinationDirPath), function(response){
+//		$("#" + id).css('background-color','green');
+		$(button).css('background-color','green');
+		$("#" + id).css('color','white');
+	});
+}
+
+function shuffle(array) {
+  var currentIndex = array.length, temporaryValue, randomIndex ;
+
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+
+    // And swap it with the current element.
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
+}
 
 </script>
+<style type="text/css">
+
+.ui-widget {
+	/* Reduces JQUery's default font size */
+    font-size: 70%;
+}
+
+.ui-tabs .ui-tabs-panel {
+	background-color : #FFE6EA;
+}
+</style>
 </head>
-<body>
-<table id="items"></table>
+<body style="background-color : #FFE6EA">
+
+
+<script> 
+    $(function(){
+      $("#menubar").load("http://netgear.rohidekar.com/index.html"); 
+    });
+</script>
+<div id="menubar"></div>
+
+Todo: Create a tab for simply viewing the images in a directory (no sorting). e.g. for "favorites". Otherwise you have to manually add links to yurl
+<br>
+<a href="http://netgear.rohidekar.com/coagulate">Reset Locations</a><br>
+
+<div id="tabs">
+  <ul>
+    <li><a href="#thumbnailtab">Thumbnails</a></li>
+    <li><a href="#sorttab">Sort</a></li>
+    <li><a href="#hoist_with_buttons_tab">Hoist</a></li>
+    <li><a href="#hoisttab">Hoist (read only)</a></li>
+  </ul>
+  <div id="thumbnailtab">
+      <table id="thumbnailItems"></table>
+  </div>
+  <div id="sorttab">
+	<table id="itemsNew"></table>
+    <table id="items"></table>
+  </div>
+  <div id="hoist_with_buttons_tab">  
+		<table id="hoist_with_buttons"></table>
+  </div>
+  <div id="hoisttab">  
+		<table id="hoist"></table>
+  </div>
+</div>
+
+
+<table id="subdirs"></table>
 
 Key bindings<br>
-<textarea id="locations">
-#/sarnobat.garagebandbroken/Windows/usb/Photos/2014-05-13 Los Angeles/originals
-/e/Sridhar/Photos/camera phone photos/iPhone/sort_these
-/e/Sridhar/Photos/camera phone photos/iPhone
-
-
+<textarea id="locations" cols="100" rows="30" onblur="updateURL()">
+## Miscellaneous
+/e/new
 #/Users/sarnobat/Desktop
-#/Volumes/Large/Videos
-#/Volumes/Unsorted/Videos
 
+##
+## Other
+##
+
+#/e/Drive J/pictures/Other (new)/pictures/misc_sync_master
+#/media/sarnobat/Unsorted/images
 #/Users/sarnobat/Windows/misc/ind
-#/Volumes/Unsorted/images
 #/Users/sarnobat/Windows/misc/favorites
+#/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/teen/primejailbat.com
 
-#/Volumes/Large/Videos/wwf
+##
+## Videos
+##
 
-#/Volumes/Unsorted/Videos/Atletico
-#/Volumes/Unsorted/Videos/wwf
+/media/sarnobat/Unsorted/Videos/
+/media/sarnobat/Large/Videos
+/e/new/video
+/e/Videos
+/d/Videos
+/media/sarnobat/c/Documents and Settings/Sridhar.SRIDHAR-E5FA83A/Desktop/videos/
+#/d/Flashget
+#/d/Flashget/Done
+#/e/Flashget
+#/media/sarnobat/Unsorted/Videos/wwf/
+#/media/sarnobat/Unsorted/Videos/Atletico
+#/media/sarnobat/Unsorted/Videos/soccer
+#/media/sarnobat/Unsorted/Videos/Other
 
+##
+## Images
+##
+
+/e/Sridhar/Photos/camera phone photos/iPhone/2015-04-28
+/e/Sridhar/Photos/camera phone photos/iPhone/2015-04-13/20150413-233008
+/e/Sridhar/Photos/camera phone photos/iPhone/2015-03-08
+/e/Sridhar/Photos/2003 and before - Pre Digital Camera/scans - unsorted
+/e/new/screenshots
+#/e/new/photos_iphone_white/20150313-203901
+#/e/Sridhar/Photos/Courtesy of others/dad	
+#/e/Sridhar/Photos/camera phone photos/iPhone/Sridhar
+#/e/Sridhar/Photos/camera phone photos/iPhone
+#/media/sarnobat/e/new/Starred_photos
+#/media/sarnobat/e/Sridhar/Photos/2014-10-11 Santa Cruz with Murali
+
+##
+## Pdf
+##
+
+#/media/sarnobat/Record/Record to DVD (non-videos)/books
+#/media/sarnobat/3TB/Computer Knowledge MegaCollection v1.0
+#/media/sarnobat/e/new/books
+#/media/sarnobat/e/Sridhar/Books
+#/media/sarnobat/d/Record these/Books
+#/e/new/pdf
+
+##
+## Audio
+##
+
+#/media/sarnobat/e/Sridhar/Audio - THIS IS NOT THE MASTER COPY, SO ITS POINTLESS
 </textarea>
+
 <br><br>
 <button>get urls</button>
 
