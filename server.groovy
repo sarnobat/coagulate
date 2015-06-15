@@ -66,6 +66,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.jcraft.jsch.ChannelSftp;
 
 public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
@@ -1684,11 +1685,40 @@ public class Coagulate {
 		
 
 		/**
+		 * @param channelSftp - Should already be opened for quicker response
+		 */
+		public static Response serveFileViaSsh(String url, Properties header, File homeDir,
+				boolean allowDirectoryListing, ChannelSftp channelSftp) {
+			if (!isDirectory(homeDir)) {
+				return new Response(HTTP_INTERNALERROR, MIME_PLAINTEXT,
+						"INTERNAL ERRROR: serveFile(): given homeDir is not a directory.");
+			}
+			String urlWithoutQueryString = removeQueryString(url);
+			if (containsUpwardTraversal(urlWithoutQueryString)) {
+				return new Response(HTTP_FORBIDDEN, MIME_PLAINTEXT,
+						"FORBIDDEN: Won't serve ../ for security reasons.");
+			}
+			File requestedFileOrDir = new File(homeDir, urlWithoutQueryString);
+			if (!requestedFileOrDir.exists()) {
+				return new Response(HTTP_NOTFOUND, MIME_PLAINTEXT,
+						"Error 404, file not found.");
+			}
+			
+			if (requestedFileOrDir.isDirectory()) {
+				return serveDirectory(header, homeDir, allowDirectoryListing,
+						urlWithoutQueryString, requestedFileOrDir);
+			} else {// is a regular file
+				return serveRegularFile(requestedFileOrDir, header);
+			}
+		}
+		
+		/**
 		 * (Rewritten without mutable state) 
 		 *
 		 * Serves file from homeDir and its' subdirectories (only).
 		 * Uses only URI, ignores all headers and HTTP parameters.
 		 */
+		@Deprecated // This only works for local files. We should serve files through SSH.
 		public static Response serveFile(String url, Properties header, File homeDir,
 				boolean allowDirectoryListing) {
 
@@ -1788,18 +1818,17 @@ public class Coagulate {
 		private static Response serveFileChunk(File file, String mime,
 				String etag, String range, long startFrom)
 				throws FileNotFoundException, IOException {
-			final boolean invalidRangeRequested = startFrom >= file.length();
+			boolean invalidRangeRequested = startFrom >= file.length();
 			long endRangeAt = getEndRangeAt(getEndAt(range), file.length(),
 					invalidRangeRequested);
-			final long newLen = getNewLength(startFrom,
-					invalidRangeRequested, endRangeAt);
+			long newLen = getNewLength(startFrom, invalidRangeRequested,
+					endRangeAt);
 			Response response = new Response(getStatus(invalidRangeRequested),
 					getMimeType(mime, invalidRangeRequested), getEntity(file,
 							startFrom, invalidRangeRequested, newLen));
 			if (hasContentLength(invalidRangeRequested)) {
-				response.addHeader("Content-Length", ""
-						+ getContentLength(
-								invalidRangeRequested, newLen));
+				response.addHeader("Content-Length",
+						"" + getContentLength(invalidRangeRequested, newLen));
 			}
 			response.addHeader("ETag", etag);
 			response.addHeader("Content-Range", getContentRange(startFrom,
@@ -1900,6 +1929,7 @@ public class Coagulate {
 				throw new RuntimeException("developer error");
 			} 
 			if (allowDirectoryListing && dir.canRead()) {
+				// TODO: we need to get the list of files from a stream over SSH
 				String[] files = dir.list();
 				String msg = listDirectoryAsHtml(uri, dir, files);
 				return new Response(HTTP_OK, MIME_HTML, msg);
@@ -2230,7 +2260,7 @@ public class Coagulate {
 			return res;
 		}
 
-		private static String listDirectoryAsHtml(String uri, File f, String[] files) {
+		private static String listDirectoryAsHtml(String uri, File directory, String[] files) {
 			String msg = "<html><body><h1>Directory " + uri + "</h1><br/>";
 
 			if (uri.length() > 1) {
@@ -2244,7 +2274,7 @@ public class Coagulate {
 			if (files != null) {
 				for (int i = 0; i < files.length; ++i) {
 					String filenameBefore = files[i];
-					File curFile = new File(f, filenameBefore);
+					File curFile = new File(directory, filenameBefore);
 					boolean dir = curFile.isDirectory();
 					if (dir) {
 						msg += "<b>";
