@@ -196,7 +196,7 @@ public class Coagulate {
 					InputStream is = FileServerGroovy
 							.serveFileViaSsh(absolutePath, new Properties(),
 									Paths.get("/").toFile(), true, channelSftp);
-					return Response.ok().entity(is).type(MediaType.APPLICATION_OCTET_STREAM).build();
+					return Response.ok().entity(is).type(FileServerGroovy.getMimeType(absolutePath2)).build();
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -1880,7 +1880,7 @@ public class Coagulate {
 		@Deprecated // Use {@link #serveRegularFileViaSsh}
 		private static Response serveRegularFile(File file, Properties header) {
 			try {
-				String mimeType = getMimeType(file);
+				String mimeType = getMimeTypeFromFile(file);
 				String eTag = getEtag(file);
 				String range = getRange(header);
 				long start = getStartOfRange(range);
@@ -1953,7 +1953,7 @@ public class Coagulate {
 			long newLen = getNewLength(startFrom, invalidRangeRequested,
 					endRangeAt);
 			Response response = new Response(getStatus(invalidRangeRequested),
-					getMimeType(mime, invalidRangeRequested), getEntity(file,
+					getMimeTypeForRange(mime, invalidRangeRequested), getEntity(file,
 							startFrom, invalidRangeRequested, newLen));
 			if (hasContentLength(invalidRangeRequested)) {
 				response.addHeader("Content-Length",
@@ -2009,7 +2009,7 @@ public class Coagulate {
 		}
 
 		@Nullable
-		private static String getMimeType(File regularFile) throws IOException {
+		private static String getMimeTypeFromFile(File regularFile) throws IOException {
 			if (regularFile.isDirectory()) {
 				throw new RuntimeException("Developer error");
 			}
@@ -2017,7 +2017,7 @@ public class Coagulate {
 			return getMimeType(fileFullPath);
 		}
 
-		private static String getMimeType(String fileFullPath) {
+		public static String getMimeType(String fileFullPath) {
 			String mime = null;
 			// Get MIME type from file name extension, if possible
 			int dot = fileFullPath.lastIndexOf('.');
@@ -2234,7 +2234,7 @@ public class Coagulate {
 			return status;
 		}
 
-		private static String getMimeType(String mime,
+		private static String getMimeTypeForRange(String mime,
 				boolean invalidRangeRequested) {
 			String mime2;
 			if (invalidRangeRequested) {
