@@ -1,4 +1,5 @@
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -44,6 +45,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.imaging.ImageReadException;
@@ -66,12 +68,54 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+import com.jcraft.jsch.SftpException;
 
 public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
 	public static class MyResource { // Must be public
+		private static final String SFTPHOST = "192.168.1.2";
+		private static final String clientIdRSAPath = "/home/sarnobat/.ssh/id_rsa";
+		private static final int SFTPPORT = 22;
+		private static final String SFTPUSER = "sarnobat";
+		private static final ChannelSftp channelSftp = geChannelSftp(SFTPHOST, SFTPPORT, SFTPUSER,
+				clientIdRSAPath);
+		
+		private static ChannelSftp geChannelSftp(String host, int port,
+				String username, String privateKey) {
+			System.out.println("geChannelSftp() - begin");
+			ChannelSftp channelSftp;
+			Session session = null;
+			Channel channel = null;
+			JSch jsch = new JSch();
+			try {
+				session = jsch.getSession(username, host, port);
+				// session.setPassword(SFTPPASS);
+				jsch.addIdentity(privateKey);
 
+				java.util.Properties config = new java.util.Properties();
+				config.put("StrictHostKeyChecking", "no");
+				session.setConfig(config);
+				if (!session.isConnected()) {
+					session.connect();
+				}
+				channel = session.openChannel("sftp");
+				if (!channel.isConnected()) {
+					channel.connect();
+				}
+				channelSftp = (ChannelSftp) channel;
+				System.out.println("geChannelSftp() - end");
+				return channelSftp;
+			} catch (JSchException e) {
+				e.printStackTrace();
+				throw new RuntimeException(e);
+			}
+		}
+		
 		//
 		// mutators
 		//
@@ -117,6 +161,55 @@ public class Coagulate {
 		}
 
 		@GET
+		@javax.ws.rs.Path("static2/{absolutePath : .+}")
+		@Produces("application/json")
+		public Response getFileSsh(@PathParam("absolutePath") String absolutePath, @Context HttpHeaders header){
+			System.out.println("getFile() - begin\t" + absolutePath);
+			Object entity = "{ 'foo' : 'bar' }";
+			String mimeType = "application/json";
+			final String absolutePath2 = "/" +absolutePath;
+			final List<String> whitelisted = ImmutableList
+					.of("/media/sarnobat/Large/Videos/",
+							"/media/sarnobat/Unsorted/images/",
+							"/media/sarnobat/Unsorted/Videos/",
+							"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/",
+							"/e/new/",
+							"/media/sarnobat/e/Drive J/",
+							"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
+			Predicate<String> IS_UNDER = new Predicate<String>() {
+				@Override
+				public boolean apply(@Nullable String permittedDirectory) {
+					if (absolutePath2.startsWith(permittedDirectory)) {
+						return true;
+					}
+					if (absolutePath2.startsWith(permittedDirectory.replace("/media/sarnobat",""))) {
+						return true;
+					}
+					if (absolutePath2.replace("/media/sarnobat","").startsWith(permittedDirectory)) {
+						return true;
+					}
+					return false;
+				}};
+			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(IS_UNDER)){
+				try {
+	
+					InputStream is = FileServerGroovy
+							.serveFileViaSsh(absolutePath, new Properties(),
+									Paths.get("/").toFile(), true, channelSftp);
+					return Response.ok().entity(is).type(MediaType.APPLICATION_OCTET_STREAM).build();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} else {
+				System.out.println("Not whitelisted: " + absolutePath2);
+			}
+			return Response.ok()
+					.header("Access-Control-Allow-Origin", "*")
+					.entity(entity).type(mimeType)
+					.build();
+		}
+		
+		@GET
 		@javax.ws.rs.Path("static/{absolutePath : .+}")
 		@Produces("application/json")
 		public Response getFile(@PathParam("absolutePath") String absolutePath, @Context HttpHeaders header){
@@ -130,7 +223,8 @@ public class Coagulate {
 							"/media/sarnobat/Unsorted/Videos/",
 							"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/",
 							"/e/new/",
-							"/media/sarnobat/e/Drive J/");
+							"/media/sarnobat/e/Drive J/",
+							"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
 			Predicate<String> IS_UNDER = new Predicate<String>() {
 				@Override
 				public boolean apply(@Nullable String permittedDirectory) {
@@ -1687,29 +1781,30 @@ public class Coagulate {
 		/**
 		 * @param channelSftp - Should already be opened for quicker response
 		 */
-		public static Response serveFileViaSsh(String url, Properties header, File homeDir,
+		public static InputStream serveFileViaSsh(String url, Properties header, File homeDir,
 				boolean allowDirectoryListing, ChannelSftp channelSftp) {
 			if (!isDirectory(homeDir)) {
-				return new Response(HTTP_INTERNALERROR, MIME_PLAINTEXT,
-						"INTERNAL ERRROR: serveFile(): given homeDir is not a directory.");
+				String errorMsg = "INTERNAL ERRROR: serveFile(): given homeDir is not a directory.";
+//				return internalError(errorMsg);
+				throw new RuntimeException("Unimplemented");
 			}
 			String urlWithoutQueryString = removeQueryString(url);
 			if (containsUpwardTraversal(urlWithoutQueryString)) {
-				return new Response(HTTP_FORBIDDEN, MIME_PLAINTEXT,
-						"FORBIDDEN: Won't serve ../ for security reasons.");
-			}
-			File requestedFileOrDir = new File(homeDir, urlWithoutQueryString);
-			if (!requestedFileOrDir.exists()) {
-				return new Response(HTTP_NOTFOUND, MIME_PLAINTEXT,
-						"Error 404, file not found.");
-			}
-			
-			if (requestedFileOrDir.isDirectory()) {
-				return serveDirectory(header, homeDir, allowDirectoryListing,
-						urlWithoutQueryString, requestedFileOrDir);
-			} else {// is a regular file
-				return serveRegularFile(requestedFileOrDir, header);
-			}
+//				return new Response(HTTP_FORBIDDEN, MIME_PLAINTEXT,
+//						"FORBIDDEN: Won't serve ../ for security reasons.");
+				throw new RuntimeException("Unimplemented");			}
+
+				try {
+					return serveRegularFileViaSsh(null, header, channelSftp, '/'+urlWithoutQueryString);
+				} catch (SftpException e) {
+					e.printStackTrace();
+//					return internalError(e.getStackTrace().toString());
+					throw new RuntimeException("Unimplemented");				}
+		}
+
+		private static Response internalError(String errorMsg) {
+			return new Response(HTTP_INTERNALERROR, MIME_PLAINTEXT,
+					errorMsg);
 		}
 		
 		/**
@@ -1782,6 +1877,7 @@ public class Coagulate {
 			}
 		}
 
+		@Deprecated // Use {@link #serveRegularFileViaSsh}
 		private static Response serveRegularFile(File file, Properties header) {
 			try {
 				String mimeType = getMimeType(file);
@@ -1803,6 +1899,39 @@ public class Coagulate {
 			}
 		}
 
+		// TODO: remove "file"
+		private static InputStream serveRegularFileViaSsh(File file, Properties header, ChannelSftp channelSftp, String filePath) throws SftpException {
+			// TODO: Handle these cases
+//			File requestedFileOrDir = new File(homeDir, urlWithoutQueryString);
+//			if (!requestedFileOrDir.exists()) {
+//				return new Response(HTTP_NOTFOUND, MIME_PLAINTEXT,
+//						"Error 404, file not found.");
+//			}
+//			
+//			if (requestedFileOrDir.isDirectory()) {
+//				return serveDirectory(header, homeDir, allowDirectoryListing,
+//						urlWithoutQueryString, requestedFileOrDir);
+//			}
+//			try {
+//				String mimeType = getMimeType(file);
+//				String eTag = getEtag(file);
+//				String range = getRange(header);
+//				long start = getStartOfRange(range);
+//				if (rangeBeginsAfterStart(range, start)) {
+//					return serveFileChunk(file, mimeType, eTag, range, start);
+//				} else {
+//					if (eTag.equals(header.getProperty("if-none-match"))) {
+//						return serveContentNotChanged(mimeType);
+//					} else {
+						return serveEntireFileViaSsh(file, getMimeType(filePath), null, -1L, channelSftp, filePath);
+//					}
+//				}
+//			} catch (IOException e) {
+//				return new Response(HTTP_FORBIDDEN, MIME_PLAINTEXT,
+//						"FORBIDDEN: Reading file failed.");
+//			}
+		}
+		
 		private static String getEtag(File file) {
 			String etag = Integer.toHexString((file.getAbsolutePath()
 					+ file.lastModified() + "" + file.length()).hashCode());
@@ -1884,11 +2013,16 @@ public class Coagulate {
 			if (regularFile.isDirectory()) {
 				throw new RuntimeException("Developer error");
 			}
+			String fileFullPath = regularFile.getCanonicalPath();
+			return getMimeType(fileFullPath);
+		}
+
+		private static String getMimeType(String fileFullPath) {
 			String mime = null;
 			// Get MIME type from file name extension, if possible
-			int dot = regularFile.getCanonicalPath().lastIndexOf('.');
+			int dot = fileFullPath.lastIndexOf('.');
 			if (dot >= 0) {
-				mime = (String) theMimeTypes.get(regularFile.getCanonicalPath()
+				mime = (String) theMimeTypes.get(fileFullPath
 						.substring(dot + 1).toLowerCase());
 			}
 			if (mime == null) {
@@ -1984,6 +2118,7 @@ public class Coagulate {
 			return res;
 		}
 
+		@Deprecated // Use {@link #serveEntireFileViaSsh}
 		private static Response serveEntireFile(File f, String mime,
 				String etag, final long fileLen) throws FileNotFoundException {
 			Response res;
@@ -1994,7 +2129,32 @@ public class Coagulate {
 			res.addHeader("Accept-Ranges", "bytes"); // Announce that the file server accepts partial content requests
 			return res;
 		}
+		
+		private static InputStream serveEntireFileViaSsh(File f, String mime,
+				String etag, final long fileLen, ChannelSftp channelSftp, String filePath) throws SftpException {
+			InputStream sshStream = getRegularFileStreamFromSsh(filePath, channelSftp);
+			System.out.println("serveEntireFileViaSsh() - begin");
+//			Response res;
+			return sshStream;
+//					)(
+////					HTTP_OK, mime,
+////					sshStream);
+//			res.addHeader("Content-Length", "" + fileLen);
+//			res.addHeader("ETag", etag);
+//			res.addHeader("Accept-Ranges", "bytes"); // Announce that the file server accepts partial content requests
+//			return res;
+			// TODO how can we autoclose a stream after reading?
+			// sshStream.close();
+		}
 
+		private static InputStream getRegularFileStreamFromSsh(String sourceFile,
+				ChannelSftp channelSftp) throws SftpException {
+			channelSftp.cd(Paths.get(sourceFile).getParent().toAbsolutePath()
+					.toString());
+			return new BufferedInputStream(channelSftp.get(Paths.get(sourceFile)
+					.getFileName().toString()));
+		}
+		
 		private static long getContentLength(boolean invalidRangeRequested,
 				final long newLen) {
 			long contentLength = -1;
