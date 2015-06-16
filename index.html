@@ -68,9 +68,9 @@ $(document).ready(function(){
 	})
 	.fail(function() {
 		console.debug( "error" );
-		$('#items').append("Error");
+		$('#status').append("Error");
 	});
-	$('#items').append("This might take a while...");
+	$('#status').append("This might take a while...");
 });
 
 
@@ -677,6 +677,7 @@ function shuffle(array) {
 Todo: Create a tab for simply viewing the images in a directory (no sorting). e.g. for "favorites". Otherwise you have to manually add links to yurl
 <br>
 <a href="http://netgear.rohidekar.com/coagulate">Reset Locations</a><br>
+<div id="status"></div>
 
 <div id="tabs">
   <ul>

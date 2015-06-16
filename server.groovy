@@ -1,37 +1,18 @@
-
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.io.Reader;
-import java.io.Writer;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.Date;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
@@ -40,7 +21,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
-import java.util.Vector;
 
 import javax.annotation.Nullable;
 import javax.ws.rs.GET;
@@ -50,7 +30,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
@@ -71,18 +50,14 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.google.api.client.util.IOUtils;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
-import com.jcraft.jsch.SftpException;
 
 public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
@@ -91,81 +66,31 @@ public class Coagulate {
 		private static final String clientIdRSAPath = "/home/sarnobat/.ssh/id_rsa";
 		private static final int SFTPPORT = 22;
 		private static final String SFTPUSER = "sarnobat";
-//		private static final ChannelSftp channelSftp = geChannelSftp(SFTPHOST, SFTPPORT, SFTPUSER,
-//				clientIdRSAPath);
 		
 	    private static final JSch jsch = new JSch();
 	    private static Session session;
 	    private static synchronized Session getSession() throws Exception {
 	        try {
-//	        	System.out.println("a");
 	            ChannelExec testChannel = (ChannelExec) session.openChannel("shell");
-//	            System.out.println("b");
 	            testChannel.setCommand("true");
-//	            System.out.println("c");
 	            testChannel.connect();
-//	            System.out.println("d");
 	            testChannel.disconnect();
 	        } catch (Throwable t) {
-//	        	System.out.println("e");
 	            session = jsch.getSession(SFTPUSER, SFTPHOST, SFTPPORT);
-//	            System.out.println("f");
 	            if (!Paths.get(clientIdRSAPath).toFile().exists()) {
-//	            	System.out.println("g");
 	            	throw new RuntimeException("No such file: " + clientIdRSAPath);
 	            }
-//	            System.out.println("h");
 				jsch.addIdentity(clientIdRSAPath);
-//				System.out.println("i");
 	            java.util.Properties config = new java.util.Properties();
-//	            System.out.println("j");
 				config.put("StrictHostKeyChecking", "no");
-//				System.out.println("k");
 	            session.setConfig(config);
-//	            System.out.println("l");
 	            if (!session.isConnected()) {
-//	            	System.out.println("m");
-	            session.connect();
-//            	System.out.println("n");
+	            	session.connect();
 	            }
 	        }
-//	        System.out.println("o");
 	        return session;
 	    }
 	    
-	    @Deprecated
-		private static ChannelSftp geChannelSftp(String host, int port,
-				String username, String privateKey) {
-			System.out.println("geChannelSftp() - begin");
-			ChannelSftp channelSftp;
-			Session session = null;
-			Channel channel = null;
-			JSch jsch = new JSch();
-			try {
-				session = jsch.getSession(username, host, port);
-				// session.setPassword(SFTPPASS);
-				jsch.addIdentity(privateKey);
-
-				java.util.Properties config = new java.util.Properties();
-				config.put("StrictHostKeyChecking", "no");
-				session.setConfig(config);
-				session.setTimeout(0);
-				if (!session.isConnected()) {
-					session.connect(0);
-				}
-				channel = session.openChannel("sftp");
-				if (!channel.isConnected()) {
-					channel.connect(0);
-				}
-				channelSftp = (ChannelSftp) channel;
-				System.out.println("geChannelSftp() - end");
-				return channelSftp;
-			} catch (JSchException e) {
-				e.printStackTrace();
-				throw new RuntimeException(e);
-			}
-		}
-		
 		//
 		// mutators
 		//
@@ -193,31 +118,25 @@ public class Coagulate {
 			Path sourceFilePath = Paths.get(sourceFilePathString);
 			Path destinationFile = getDestinationFilePathAvoidingExisting(sourceFilePath);
 			doMove(sourceFilePath, destinationFile);
-//			System.out.println("File now resides at "
-//					+ destinationFile.toAbsolutePath().toString());
 		}
 
 		private Path getDestinationFilePathAvoidingExisting(Path sourceFile)
 				throws IllegalAccessError {
-			Path destinationFile;
-			_1: {
-				String filename = sourceFile.getFileName().toString();
-				Path parent = sourceFile.getParent().getParent().toAbsolutePath();
-				String parentPath = parent.toAbsolutePath().toString();
-				String destinationFilePath = parentPath + "/" + filename;
-				destinationFile = determineDestinationPathAvoidingExisting(destinationFilePath);
-			}
-			return destinationFile;
+			String filename = sourceFile.getFileName().toString();
+			Path parent = sourceFile.getParent().getParent().toAbsolutePath();
+			String parentPath = parent.toAbsolutePath().toString();
+			String destinationFilePath = parentPath + "/" + filename;
+			return determineDestinationPathAvoidingExisting(destinationFilePath);
 		}
 
 		@GET
 		@javax.ws.rs.Path("static2/{absolutePath : .+}")
 		@Produces("application/json")
-		public Response getFileSsh(@PathParam("absolutePath") String absolutePath, @Context HttpHeaders header){
-			System.out.println("getFileSsh() - begin\t" + absolutePath);
+		public Response getFileSsh(@PathParam("absolutePath") String absolutePathWithSlashMissing, @Context HttpHeaders header){
+			System.out.println("getFileSsh() - begin\t" + absolutePathWithSlashMissing);
 			Object entity = "{ 'foo' : 'bar' }";
 			String mimeType = "application/json";
-			final String absolutePath2 = "/" +absolutePath;
+			final String absolutePath = "/" +absolutePathWithSlashMissing;
 			final List<String> whitelisted = ImmutableList
 					.of("/media/sarnobat/Large/Videos/",
 							"/media/sarnobat/Unsorted/images/",
@@ -226,101 +145,72 @@ public class Coagulate {
 							"/e/new/",
 							"/media/sarnobat/e/Drive J/",
 							"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
-			Predicate<String> IS_UNDER = new Predicate<String>() {
-				@Override
-				public boolean apply(@Nullable String permittedDirectory) {
-					if (absolutePath2.startsWith(permittedDirectory)) {
-						return true;
-					}
-					if (absolutePath2.startsWith(permittedDirectory.replace("/media/sarnobat",""))) {
-						return true;
-					}
-					if (absolutePath2.replace("/media/sarnobat","").startsWith(permittedDirectory)) {
-						return true;
-					}
-					return false;
-				}};
-			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(IS_UNDER)){
+			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(IS_UNDER(absolutePath))){
 				try {
-	
-//					final InputStream is = FileServerGroovy
-//							.serveFileViaSsh(absolutePath2, new Properties(),
-//									Paths.get("/").toFile(), true, getChannelSftp());
 					final ChannelSftp sftp = getChannelSftp();
-					sftp.cd(Paths.get(absolutePath2).getParent().toAbsolutePath().toString());
-					String fileSimpleName = Paths.get(absolutePath2)
+					sftp.cd(Paths.get(absolutePath).getParent().toAbsolutePath().toString());
+					String fileSimpleName = Paths.get(absolutePath)
 							.getFileName().toString();
 					final InputStream is = sftp.get(fileSimpleName);
-//					System.out.println("getFileSsh() - stream obtained\t" + absolutePath2);
-					
 					StreamingOutput stream = new StreamingOutput() {
 					    @Override
 					    public void write(OutputStream os) throws IOException,
 					    WebApplicationException {
 					    	System.out.println("Start");
-//					      Writer writer = new BufferedWriter(new OutputStreamWriter(os));
-//					      writer.write("test");
 					      IOUtils.copy(is, os);
-/*					      Reader reader = new InputStreamReader(is);
-
-					      char[] buf = new char[1024];
-					      int numRead;
-					      while ((numRead = reader.read(buf)) != -1) {
-					          String readData = String.valueOf(buf, 0, numRead);
-					          writer.write(readData);
-					          buf = new char[1024];
-					      }
-//					      writer.write("SSSSSSSDFDSFFDSF");
-					      writer.flush();*/
 					      is.close();
 					      os.close();
 					      sftp.disconnect();
 					      sftp.exit();
-					      System.out.println("getFileSsh() - served\t" + absolutePath2);
+					      System.out.println("getFileSsh() - served\t" + absolutePath);
 					      System.out.println("Done");
-//					      writer.close();
-//					      is.close();
 					    }
 					  };
 					  
-					return Response.ok().entity(stream).type(FileServerGroovy.getMimeType(absolutePath2)).build();
+					return Response.ok().entity(stream).type(FileServerGroovy.getMimeType(absolutePath)).build();
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			} else {
-				System.out.println("Not whitelisted: " + absolutePath2);
+				System.out.println("Not whitelisted: " + absolutePath);
 			}
-			return Response.ok()
+			return Response.serverError()
 					.header("Access-Control-Allow-Origin", "*")
 					.entity(entity).type(mimeType)
 					.build();
 		}
-		
-//		@Deprecated private static ChannelSftp getChannelSftp() {
-//			try {
-//				if (!channelSftp.isConnected()) {
-//					channelSftp.connect(0);
-//				}
-//				return channelSftp;
-//			} catch (JSchException e) {
-//				e.printStackTrace();
-//				throw new RuntimeException(e);
-//				}
-//		}
 
+		private static Predicate<String> IS_UNDER(final String absolutePath) {
+			Predicate<String> IS_UNDER = new Predicate<String>() {
+				@Override
+				public boolean apply(@Nullable String permittedDirectory) {
+					if (absolutePath.startsWith(permittedDirectory)) {
+						return true;
+					}
+					if (absolutePath.startsWith(permittedDirectory.replace("/media/sarnobat",""))) {
+						return true;
+					}
+					if (absolutePath.replace("/media/sarnobat","").startsWith(permittedDirectory)) {
+						return true;
+					}
+					return false;
+				}};
+			return IS_UNDER;
+		}
+		
 		private static ChannelSftp getChannelSftp() {
-			System.out.println("1");
+			System.out.println("getChannelSftp() - begin. Getting session.");
 			try {
-				Session session2 = getSession();
-				System.out.println("2");
-				ChannelSftp openChannel = (ChannelSftp) session2.openChannel("sftp");
-				System.out.println("3");
+				Session session = getSession();
+				System.out.println("getChannelSftp() - got session, about to open channel");
+				ChannelSftp openChannel = (ChannelSftp) session.openChannel("sftp");
+				System.out.println("getChannelSftp() - checking if connected");
 				if (!openChannel.isConnected()) {
-					System.out.println("4");
+					System.out.println("getChannelSftp() - not connected, connecting");
 					openChannel.connect();
-					System.out.println("5");
+					System.out.println("getChannelSftp() - connected");
 				}
-				System.out.println("6");
+				System.out.println("getChannelSftp() - end");
 				return openChannel;
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -474,15 +364,10 @@ public class Coagulate {
 
 		private static Path getUnconflictedDestinationFilePath(String folderName, Path path)
 				throws IllegalAccessError, IOException {
-			Path rDestinationFile;
-			_1: {
-				String parentDirPath = path.getParent().toAbsolutePath()
-						.toString();
-				String destinationFolderPath = parentDirPath + "/" + folderName;
-				Path subfolder = getOrCreateDestinationFolder(destinationFolderPath);
-				rDestinationFile = allocateFile(path, subfolder);
-			}
-			return rDestinationFile;
+			String parentDirPath = path.getParent().toAbsolutePath().toString();
+			String destinationFolderPath = parentDirPath + "/" + folderName;
+			Path subfolder = getOrCreateDestinationFolder(destinationFolderPath);
+			return allocateFile(path, subfolder);
 		}
 
 		private static void doMove(Path path, Path destinationFile)
@@ -605,19 +490,17 @@ public class Coagulate {
 		private JSONObject createSubdirectoriesJson(
 				String[] iDirectoryPathStrings) {
 			JSONObject rItemsJson = new JSONObject();
-			_3: {
-				for (String aDirectoryPathString : iDirectoryPathStrings) {
-					if (!shouldGetContents(aDirectoryPathString)) {
-						continue;
-					}
-					try {
-						rItemsJson.put(aDirectoryPathString,
-								createSubdirDetailsJson2(aDirectoryPathString));
-					} catch (JSONException e) {
-						e.printStackTrace();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
+			for (String aDirectoryPathString : iDirectoryPathStrings) {
+				if (!shouldGetContents(aDirectoryPathString)) {
+					continue;
+				}
+				try {
+					rItemsJson.put(aDirectoryPathString,
+							createSubdirDetailsJson2(aDirectoryPathString));
+				} catch (JSONException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
 				}
 			}
 			return rItemsJson;
@@ -631,14 +514,12 @@ public class Coagulate {
 				throws IOException {
 			System.out.println("createFilesJsonRecursive() - begin");
 			JSONObject rItemsJson = new JSONObject();
-			_3: {
-				for (String aDirectoryPathString : iDirectoryPathStrings) {
-					if (!shouldGetContents(aDirectoryPathString)) {
-						continue;
-					}
-					rItemsJson.put(aDirectoryPathString,
-							createItemDetailsJsonRecursive(aDirectoryPathString));
+			for (String aDirectoryPathString : iDirectoryPathStrings) {
+				if (!shouldGetContents(aDirectoryPathString)) {
+					continue;
 				}
+				rItemsJson.put(aDirectoryPathString,
+						createItemDetailsJsonRecursive(aDirectoryPathString));
 			}
 			System.out.println("createFilesJsonRecursive() - end");
 			return rItemsJson;
@@ -648,14 +529,12 @@ public class Coagulate {
 				throws IOException {
 			System.out.println("createFilesJson() - begin");
 			JSONObject rItemsJson = new JSONObject();
-			_3: {
-				for (String aDirectoryPathString : iDirectoryPathStrings) {
-					if (!shouldGetContents(aDirectoryPathString)) {
-						continue;
-					}
-					rItemsJson.put(aDirectoryPathString,
-							createItemDetailsJson(aDirectoryPathString));
+			for (String aDirectoryPathString : iDirectoryPathStrings) {
+				if (!shouldGetContents(aDirectoryPathString)) {
+					continue;
 				}
+				rItemsJson.put(aDirectoryPathString,
+						createItemDetailsJson(aDirectoryPathString));
 			}
 			System.out.println("createFilesJson() - end");
 			return rItemsJson;
@@ -664,15 +543,12 @@ public class Coagulate {
 		private JSONObject createLocationsJson(String[] iDirectoryPathStrings)
 				throws IOException {
 			JSONObject rLocationsJson = new JSONObject();
-			_3: {
-				for (String aDirectoryPathString : iDirectoryPathStrings) {
-					if (!shouldGetContents(aDirectoryPathString)) {
-						continue;
-					}
-					rLocationsJson.put(
-							aDirectoryPathString,
-							createLocationDetailsJson(aDirectoryPathString));
+			for (String aDirectoryPathString : iDirectoryPathStrings) {
+				if (!shouldGetContents(aDirectoryPathString)) {
+					continue;
 				}
+				rLocationsJson.put(aDirectoryPathString,
+						createLocationDetailsJson(aDirectoryPathString));
 			}
 			return rLocationsJson;
 		}
@@ -687,6 +563,7 @@ public class Coagulate {
 			return getContentsAsJsonRecursive(new File(iDirectoryPathString),2);
 		}
 		
+		@SuppressWarnings("unused")
 		private JSONObject createLocationDetailsJson(String iDirectoryPathString) throws IOException {
 			JSONObject rLocationDetailsJson = new JSONObject();
 			_1: {
@@ -705,24 +582,19 @@ public class Coagulate {
 		private boolean shouldGetContents(String iDirectoryPathString) {
 			System.out.println("3 " + iDirectoryPathString);
 			if (iDirectoryPathString.startsWith("#")) {
-//				System.out.println("4 " + iDirectoryPathString);
 				return false;
 			}
-//			System.out.println("5 " + iDirectoryPathString);
-
 			File aDirectory = new File(iDirectoryPathString);
 			if (!aDirectory.exists()) {
-//				System.out.println(iDirectoryPathString + " doesn't exist.");
 				return false;
 			}
 			if (!aDirectory.isDirectory()) {
-//				System.out
-//						.println(iDirectoryPathString + " is not a directory");
 				return false;
 			}
 			return true;
 		}
 
+		@SuppressWarnings("unused")
 		private JSONObject getSubdirsAsJson2(File iDirectory)
 				throws IOException {
 			JSONObject rFilesInLocationJson = new JSONObject();
@@ -734,67 +606,29 @@ public class Coagulate {
 				}
 				if (filename.endsWith(".html") || filename.endsWith(".htm")
 						|| iDirectory.getName().endsWith("_files")) {
-//					System.out.println("Not supported yet: " + filename);
 					continue;
 				}
-				String thumbnailFileAbsolutePath;
-				_1: {
-					thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + filename + ".jpg"; 
-				}
+				String thumbnailFileAbsolutePath = iDirectory.getAbsolutePath()
+						+ "/_thumbnails/" + filename + ".jpg";
 				JSONObject fileEntryJson ;
 				_2: {
 					JSONObject rFileEntryJson = new JSONObject();
 					rFileEntryJson
 							.put("location", iDirectory.getAbsolutePath());
+					rFileEntryJson.put("fileSystem", fileAbsolutePath);
 					rFileEntryJson
-							.put("fileSystem", fileAbsolutePath);
-					rFileEntryJson.put("httpUrl", httpLinkFor(fileAbsolutePath));
-					rFileEntryJson.put("thumbnailUrl", httpLinkFor(thumbnailFileAbsolutePath));
-				fileEntryJson = rFileEntryJson;
+							.put("httpUrl", httpLinkFor(fileAbsolutePath));
+					rFileEntryJson.put("thumbnailUrl",
+							httpLinkFor(thumbnailFileAbsolutePath));
+					fileEntryJson = rFileEntryJson;
 				}
 				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
-//				System.out.println(fileAbsolutePath);
 			}
 			return rFilesInLocationJson;
 		}
 		
-		// I forgot what this was for
-		@Deprecated
-		private JSONObject getSubdirsAsJson(File iDirectory)
-				throws IOException {
-			JSONObject rFilesInLocationJson = new JSONObject();
-			for (Path aFilePath : getSubdirectoryStream2(iDirectory)) {
-				String filename = aFilePath.getFileName().toString();
-				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
-				if (filename.contains("DS_Store")) {
-					continue;
-				}
-				if (filename.endsWith(".html") || filename.endsWith(".htm")
-						|| iDirectory.getName().endsWith("_files")) {
-//					System.out.println("Not supported yet: " + filename);
-					continue;
-				}
-				String thumbnailFileAbsolutePath;
-				_1: {
-					thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + filename + ".jpg"; 
-				}
-				JSONObject fileEntryJson ;
-				_2: {
-					JSONObject rFileEntryJson = new JSONObject();
-					rFileEntryJson
-							.put("location", iDirectory.getAbsolutePath());
-					rFileEntryJson
-							.put("fileSystem", fileAbsolutePath);
-					rFileEntryJson.put("httpUrl", httpLinkFor(fileAbsolutePath));
-					rFileEntryJson.put("thumbnailUrl", httpLinkFor(thumbnailFileAbsolutePath));
-				fileEntryJson = rFileEntryJson;
-				}
-				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
-//				System.out.println(fileAbsolutePath);
-			}
-			return rFilesInLocationJson;
-		}
 		
+		@SuppressWarnings("unused")
 		private JSONObject getContentsAsJson(File iDirectory)
 				throws IOException {
 			System.out.println("getContentsAsJson() - begin");
@@ -807,13 +641,9 @@ public class Coagulate {
 				}
 				if (filename.endsWith(".html") || filename.endsWith(".htm")
 						|| iDirectory.getName().endsWith("_files")) {
-//					System.out.println("Not supported yet: " + filename);
 					continue;
 				}
-				String thumbnailFileAbsolutePath;
-				_1: {
-					thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + filename + ".jpg"; 
-				}
+				String thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + filename + ".jpg"; 
 				JSONObject fileEntryJson ;
 				_2: {
 					JSONObject rFileEntryJson = new JSONObject();
@@ -823,19 +653,18 @@ public class Coagulate {
 							.put("fileSystem", fileAbsolutePath);
 					rFileEntryJson.put("httpUrl", httpLinkFor(fileAbsolutePath));
 					rFileEntryJson.put("thumbnailUrl", httpLinkFor(thumbnailFileAbsolutePath));
-				fileEntryJson = rFileEntryJson;
+					fileEntryJson = rFileEntryJson;
 				}
 				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
-//				System.out.println(fileAbsolutePath);
 			}
 			System.out.println("getContentsAsJson() - end");
 			return rFilesInLocationJson;
 		}
 		
 
+		@SuppressWarnings("unused")
 		private JSONObject getContentsAsJsonRecursive(File iDirectory, int iLevelToRecurse)
 				throws IOException {
-//			System.out.println("getContentsAsJsonRecursive() - begin");
 			int levelToRecurse = iLevelToRecurse - 1;
 			JSONObject rFilesInLocationJson = new JSONObject();
 			JSONObject dirsJson = new JSONObject();
@@ -843,15 +672,9 @@ public class Coagulate {
 			System.out.println("getContentsAsJsonRecursive() - " + iDirectory.toString());
 			for (Path aFilePath : getDirectoryStreamRecursive(iDirectory)) {
 				System.out.print(".");
-//					System.out
-//							.println("getContentsAsJsonRecursive() - dir loop - "
-//									+ aFilePath);
 				if (!Files.isDirectory(aFilePath)) {
 					continue;
 				}
-//					System.out
-//							.println("getContentsAsJsonRecursive() - dir loop - recursing into "
-//									+ aFilePath);
 				if (levelToRecurse > 0 || aFilePath.getFileName().toString().startsWith("_")) {
 					dirsJson.put(
 							aFilePath.toAbsolutePath().toString(),
@@ -859,14 +682,11 @@ public class Coagulate {
 									levelToRecurse));
 				}
 			}
-//			System.out.println("getContentsAsJsonRecursive() - aFilePath - finished recursing");
-//			System.out.println("getContentsAsJsonRecursive() - " + iDirectory.toString());
 			rFilesInLocationJson.put("dirs", dirsJson);
 			for (Path aFilePath : getSubdirectoryStream(iDirectory)) {
 				System.out.print(",");
 				String filename = aFilePath.getFileName().toString();
 				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
-//				System.out.println("getContentsAsJsonRecursive() file loop: " + fileAbsolutePath);
 				if (Files.isDirectory(aFilePath)) {
 					continue;
 				} 
@@ -875,24 +695,15 @@ public class Coagulate {
 				}
 				if (filename.endsWith(".html") || filename.endsWith(".htm")
 						|| iDirectory.getName().endsWith("_files")) {
-//					System.out.println("Not supported yet: " + filename);
 					continue;
 				}
-//				System.out.println("getContentsAsJsonRecursive() file loop; not a dir: " + fileAbsolutePath);
-//				System.out.println("getContentsAsJsonRecursive() file loop; parent dir: " + iDirectory.getAbsolutePath());
-				String thumbnailFileAbsolutePath;
-				_1: {
-					thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + filename + ".jpg";
-				}
-//				System.out.println("getContentsAsJsonRecursive() file loop; got thumbnail path for " + fileAbsolutePath);
+				String thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + filename + ".jpg";
 				JSONObject fileEntryJson;
 				_2: {
 					JSONObject rFileEntryJson = new JSONObject();
 					rFileEntryJson
 							.put("location", iDirectory.getAbsolutePath());
-//					System.out.println("getContentsAsJsonRecursive() file loop; setting file path path for " + fileAbsolutePath);
 					rFileEntryJson.put("fileSystem", fileAbsolutePath);
-//					System.out.println("getContentsAsJsonRecursive() file loop; getting http url: " + fileAbsolutePath);
 					rFileEntryJson
 							.put("httpUrl", httpLinkFor(fileAbsolutePath));
 					rFileEntryJson.put("thumbnailUrl",
@@ -905,7 +716,6 @@ public class Coagulate {
 				}
 				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
 			}
-//			System.out.println("getContentsAsJsonRecursive() - finished file loop");
 			return rFilesInLocationJson;
 		}
 
@@ -949,9 +759,7 @@ public class Coagulate {
 				}
 			} catch (ImageReadException e) {
 				System.out.print("!");
-				//e.printStackTrace();
 			} catch (IOException e) {
-				//e.printStackTrace();
 				System.out.println(e);
 			}
 			return ret;
@@ -1043,6 +851,8 @@ public class Coagulate {
 			return prefix + iAbsolutePath;
 		}
 
+		
+		@SuppressWarnings("unused")
 		private String httpLinkForOld(String iAbsolutePath) {
 			//String domain = "http://netgear.rohidekar.com";
 			String domain = "http://192.168.1.2";
@@ -1110,7 +920,6 @@ public class Coagulate {
 		private Collection<String> addKeyBindings(String location,
 				JSONObject locationDetails) throws IOException, JSONException {
 			Collection<String> dirsWithBoundKey = new HashSet<String>();
-			_6: {
 				JSONObject fileBindingsJson = new JSONObject();
 				File f = new File(location + "/" + "categories.txt");
 				File f2 = new File(location + "/" + "photoSorter.txt");
@@ -1143,7 +952,6 @@ public class Coagulate {
 					}
 					locationDetails.put("keys", fileBindingsJson);
 				}
-			}
 			return dirsWithBoundKey;
 		}
 
@@ -1191,61 +999,19 @@ public class Coagulate {
 		// API parts
 		// ==================================================
 
-		/**
-		 * Override this to customize the server.<p>
-		 * <p/>
-		 * (By default, this delegates to serveFile() and allows directory listing.)
-		 *
-		 * @param uri	Percent-decoded URI without parameters, for example "/index.cgi"
-		 * @param method "GET", "POST" etc.
-		 * @param parms  Parsed, percent decoded parameters from URI and, in case of POST, data.
-		 * @param header Header entries, percent decoded
-		 * @return HTTP response, see class Response for details
-		 */
-		public Response serve (String uri, String method, Properties header, Properties parms, Properties files, InputStream body) {
-			//myOut.println(method + " '" + uri + "' ");
-
-			Enumeration<?> e = header.propertyNames();
-			while (e.hasMoreElements()) {
-				String value = (String) e.nextElement();
-				//myOut.println("  HDR: '" + value + "' = '" +header.getProperty(value) + "'");
-			}
-			e = parms.propertyNames();
-			while (e.hasMoreElements()) {
-				String value = (String) e.nextElement();
-				//myOut.println("  PRM: '" + value + "' = '" +parms.getProperty(value) + "'");
-			}
-			e = files.propertyNames();
-			while (e.hasMoreElements()) {
-				String value = (String) e.nextElement();
-				//myOut.println("  UPLOADED: '" + value + "' = '" +files.getProperty(value) + "'");
-			}
-
-			return serveFile(uri, header, myRootDir, true);
-		}
 
 		/**
 		 * HTTP response.
 		 * Return one of these from serve().
 		 */
 		public static class Response {
-			/**
-			 * Default constructor: response = HTTP_OK, data = mime = 'null'
-			 */
-			public Response () {
-				this.status = HTTP_OK;
-			}
 
-			/**
-			 * Basic constructor.
-			 */
 			public Response (String status, String mimeType, InputStream data) {
 				this(status, mimeType);
 				this.data = data;
 			}
 
 			public Response (String status, String mimeType) {
-				this.status = status;
 				this.mimeType = mimeType;
 			}
 
@@ -1285,11 +1051,6 @@ public class Coagulate {
 			}
 
 			/**
-			 * HTTP status code after processing, e.g. "200 OK", HTTP_OK
-			 */
-			public String status;
-
-			/**
 			 * MIME type of content, e.g. "text/html"
 			 */
 			public String mimeType;
@@ -1316,8 +1077,10 @@ public class Coagulate {
 		public static final String HTTP_NOTMODIFIED = "304 Not Modified";
 		public static final String HTTP_FORBIDDEN = "403 Forbidden";
 		public static final String HTTP_NOTFOUND = "404 Not Found";
+		@SuppressWarnings("unused")
 		public static final String HTTP_BADREQUEST = "400 Bad Request";
 		public static final String HTTP_INTERNALERROR = "500 Internal Server Error";
+		@SuppressWarnings("unused")
 		public static final String HTTP_NOTIMPLEMENTED = "501 Not Implemented";
 
 		/**
@@ -1326,605 +1089,10 @@ public class Coagulate {
 		public static final String MIME_PLAINTEXT = "text/plain";
 		public static final String MIME_HTML = "text/html";
 		public static final String MIME_DEFAULT_BINARY = "application/octet-stream";
-		public static final String MIME_XML = "text/xml";
-
-		// ==================================================
-		// Socket & server code
-		// ==================================================
-
-		public FileServerGroovy (int port) throws IOException {
-			this(port, new File(".").getAbsoluteFile());
-		}
-
-		public FileServerGroovy (SocketAddress inetAddress) throws IOException {
-			this(new File(".").getAbsoluteFile(), inetAddress);
-		}
-
-		public FileServerGroovy (int port, File wwwroot) throws IOException {
-			this(wwwroot, new InetSocketAddress(port));
-		}
-
-		/**
-		 * Starts a HTTP server to given port.<p>
-		 * Throws an IOException if the socket is already in use
-		 */
-		public FileServerGroovy (/*int port, */File wwwroot, SocketAddress inetAddress) throws IOException {
-			//        myTcpPort = port;
-			this.myRootDir = wwwroot;
-			//        myServerSocket = new ServerSocket(myTcpPort, inetAddress);
-			myServerSocket = new ServerSocket();
-			myServerSocket.bind(inetAddress);
-			myThread = new Thread(new Runnable() {
-				public void run () {
-					try {
-						while (true) {
-							new HTTPSession(myServerSocket.accept());
-						}
-					} catch (IOException ioe) {
-					}
-				}
-			});
-			myThread.setDaemon(true);
-			myThread.start();
-		}
-
-
-		/**
-		 * Stops the server.
-		 */
-		public void stop () {
-			try {
-				myServerSocket.close();
-				myThread.join();
-			} catch (IOException ioe) {
-			} catch (InterruptedException e) {
-			}
-		}
-		
-
-		/**
-		 * Handles one session, i.e. parses the HTTP request
-		 * and returns the response.
-		 */
-		private class HTTPSession implements Runnable {
-			public HTTPSession (Socket s) {
-				mySocket = s;
-				Thread t = new Thread(this);
-				t.setDaemon(true);
-				t.start();
-			}
-
-			public void run () {
-				try {
-					InputStream is = mySocket.getInputStream();
-					if (is == null) return;
-
-					// Read the first 8192 bytes.
-					// The full header should fit in here.
-					// Apache's default header limit is 8KB.
-					int bufsize = 8192;
-					byte[] buf = new byte[bufsize];
-					int rlen = is.read(buf, 0, bufsize);
-					if (rlen <= 0) return;
-
-					// Create a BufferedReader for parsing the header.
-					ByteArrayInputStream hbis = new ByteArrayInputStream(buf, 0, rlen);
-					BufferedReader hin = new BufferedReader(new InputStreamReader(hbis));
-					Properties pre = new Properties();
-					Properties parms = new Properties();
-					Properties header = new Properties();
-					Properties files = new Properties();
-
-					// Decode the header into parms and header java properties
-					decodeHeader(hin, pre, parms, header);
-					String method = pre.getProperty("method");
-					String uri = pre.getProperty("uri");
-
-					long size = 0x7FFFFFFFFFFFFFFFl;
-					String contentLength = header.getProperty("content-length");
-					if (contentLength != null) {
-						try {
-							size = Integer.parseInt(contentLength);
-						} catch (NumberFormatException ex) {
-						}
-					}
-
-					// We are looking for the byte separating header from body.
-					// It must be the last byte of the first two sequential new lines.
-					int splitbyte = 0;
-					boolean sbfound = false;
-					while (splitbyte < rlen) {
-						if (buf[splitbyte] == '\r' && buf[++splitbyte] == '\n' && buf[++splitbyte] == '\r' && buf[++splitbyte] == '\n') {
-							sbfound = true;
-							break;
-						}
-						splitbyte++;
-					}
-					splitbyte++;
-
-					// Write the part of body already read to ByteArrayOutputStream f
-					ByteArrayOutputStream f = new ByteArrayOutputStream();
-					if (splitbyte < rlen) f.write(buf, splitbyte, rlen - splitbyte);
-
-					// While Firefox sends on the first read all the data fitting
-					// our buffer, Chrome and Opera sends only the headers even if
-					// there is data for the body. So we do some magic here to find
-					// out whether we have already consumed part of body, if we
-					// have reached the end of the data to be sent or we should
-					// expect the first byte of the body at the next read.
-					if (splitbyte < rlen) {
-						size -= rlen - splitbyte + 1;
-					} else if (!sbfound || size == 0x7FFFFFFFFFFFFFFFl) {
-						size = 0;
-					}
-
-					// Now read all the body and write it to f
-					buf = new byte[1024 * 16];
-					while (rlen >= 0 && size > 0) {
-						rlen = is.read(buf, 0, 1024 * 16);
-						size -= rlen;
-						if (rlen > 0) {
-							f.write(buf, 0, rlen);
-						}
-					}
-
-					// Get the raw body as a byte []
-					byte[] fbuf = f.toByteArray();
-
-					// Create a BufferedReader for easily reading it as string.
-					ByteArrayInputStream bin = new ByteArrayInputStream(fbuf);
-					BufferedReader br = new BufferedReader(new InputStreamReader(bin));
-
-					// If the method is POST, there may be parameters
-					// in data section, too, read it:
-					if (method.equalsIgnoreCase("POST")) {
-						String contentType = "";
-						String contentTypeHeader = header.getProperty("content-type");
-						StringTokenizer st = new StringTokenizer(contentTypeHeader, "; ");
-						if (st.hasMoreTokens()) {
-							contentType = st.nextToken();
-						}
-
-						if (contentType.equalsIgnoreCase("multipart/form-data")) {
-							// Handle multipart/form-data
-							if (!st.hasMoreTokens()) {
-								sendError(HTTP_BADREQUEST, "BAD REQUEST: Content type is multipart/form-data but boundary missing. Usage: GET /example/file.html");
-							}
-							String boundaryExp = st.nextToken();
-							st = new StringTokenizer(boundaryExp, "=");
-							if (st.countTokens() != 2) {
-								sendError(HTTP_BADREQUEST, "BAD REQUEST: Content type is multipart/form-data but boundary syntax error. Usage: GET /example/file.html");
-							}
-							st.nextToken();
-							String boundary = st.nextToken();
-
-							decodeMultipartData(boundary, fbuf, br, parms, files);
-						} else {
-							// Handle application/x-www-form-urlencoded
-							/*
-													String postLine = "";
-													char pbuf[] = new char[512];
-													int read = in.read(pbuf);
-													while (read >= 0 && !postLine.endsWith("\r\n")) {
-														postLine += String.valueOf(pbuf, 0, read);
-														read = in.read(pbuf);
-													}
-													postLine = postLine.trim();
-													*/
-							//body = postLine;
-							//decodeParms(postLine, parms);
-						}
-					}
-
-					if (method.equalsIgnoreCase("PUT")) {
-						files.put("content", saveTmpFile(fbuf, 0, f.size()));
-					}
-
-					// Ok, now do the serve()
-					Response r = serve(uri, method, header, parms, files, bin);
-					if (r == null) {
-						sendError(HTTP_INTERNALERROR, "SERVER INTERNAL ERROR: Serve() returned a null response.");
-					} else {
-						sendResponse(r.status, r.mimeType, r.header, r.data);
-					}
-
-					br.close();
-					is.close();
-				} catch (IOException ioe) {
-					try {
-						sendError(HTTP_INTERNALERROR, "SERVER INTERNAL ERROR: IOException: " + ioe.getMessage());
-					} catch (Throwable t) {
-					}
-				} catch (InterruptedException ie) {
-					// Thrown by sendError, ignore and exit the thread.
-				}
-			}
-
-			/**
-			 * Decodes the sent headers and loads the data into
-			 * java Properties' key - value pairs
-			 */
-			private void decodeHeader (BufferedReader input, Properties pre, Properties parms, Properties header)
-					throws InterruptedException {
-				try {
-					// Read the request line
-					String inLine = input.readLine();
-					if (inLine == null) return;
-					StringTokenizer st = new StringTokenizer(inLine);
-					if (!st.hasMoreTokens()) {
-						sendError(HTTP_BADREQUEST, "BAD REQUEST: Syntax error. Usage: GET /example/file.html");
-					}
-
-					String method = st.nextToken();
-					pre.put("method", method);
-
-					if (!st.hasMoreTokens()) {
-						sendError(HTTP_BADREQUEST, "BAD REQUEST: Missing URI. Usage: GET /example/file.html");
-					}
-
-					String uri = st.nextToken();
-
-					// Decode parameters from the URI
-					int qmi = uri.indexOf('?');
-					if (qmi >= 0) {
-						decodeParms(uri.substring(qmi + 1), parms);
-						uri = decodePercent(uri.substring(0, qmi));
-					} else {
-						uri = decodePercent(uri);
-					}
-
-					// If there's another token, it's protocol version,
-					// followed by HTTP headers. Ignore version but parse headers.
-					// NOTE: this now forces header names lowercase since they are
-					// case insensitive and vary by client.
-					if (st.hasMoreTokens()) {
-						String line = input.readLine();
-						while (line != null && line.trim().length() > 0) {
-							int p = line.indexOf(':');
-							if (p >= 0) {
-								header.put(line.substring(0, p).trim().toLowerCase(), line.substring(p + 1).trim());
-							}
-							line = input.readLine();
-						}
-					}
-
-					pre.put("uri", uri);
-				} catch (IOException ioe) {
-					sendError(HTTP_INTERNALERROR, "SERVER INTERNAL ERROR: IOException: " + ioe.getMessage());
-				}
-			}
-
-			/**
-			 * Decodes the Multipart Body data and put it
-			 * into java Properties' key - value pairs.
-			 */
-			private void decodeMultipartData (String boundary, byte[] fbuf, BufferedReader input, Properties parms, Properties files)
-					throws InterruptedException {
-				try {
-					int[] bpositions = getBoundaryPositions(fbuf, boundary.getBytes());
-					int boundarycount = 1;
-					String mpline = input.readLine();
-					while (mpline != null) {
-						if (mpline.indexOf(boundary) == -1) {
-							sendError(HTTP_BADREQUEST, "BAD REQUEST: Content type is multipart/form-data but next chunk does not start with boundary. Usage: GET /example/file.html");
-						}
-						boundarycount++;
-						Properties item = new Properties();
-						mpline = input.readLine();
-						while (mpline != null && mpline.trim().length() > 0) {
-							int p = mpline.indexOf(':');
-							if (p != -1) {
-								item.put(mpline.substring(0, p).trim().toLowerCase(), mpline.substring(p + 1).trim());
-							}
-							mpline = input.readLine();
-						}
-						if (mpline != null) {
-							String contentDisposition = item.getProperty("content-disposition");
-							if (contentDisposition == null) {
-								sendError(HTTP_BADREQUEST, "BAD REQUEST: Content type is multipart/form-data but no content-disposition info found. Usage: GET /example/file.html");
-							}
-							StringTokenizer st = new StringTokenizer(contentDisposition, "; ");
-							Properties disposition = new Properties();
-							while (st.hasMoreTokens()) {
-								String token = st.nextToken();
-								int p = token.indexOf('=');
-								if (p != -1) {
-									disposition.put(token.substring(0, p).trim().toLowerCase(), token.substring(p + 1).trim());
-								}
-							}
-							String pname = disposition.getProperty("name");
-							pname = pname.substring(1, pname.length() - 1);
-
-							String value = "";
-							if (item.getProperty("content-type") == null) {
-								while (mpline != null && mpline.indexOf(boundary) == -1) {
-									mpline = input.readLine();
-									if (mpline != null) {
-										int d = mpline.indexOf(boundary);
-										if (d == -1) {
-											value += mpline;
-										} else {
-											value += mpline.substring(0, d - 2);
-										}
-									}
-								}
-							} else {
-								if (boundarycount > bpositions.length) {
-									sendError(HTTP_INTERNALERROR, "Error processing request");
-								}
-								int offset = stripMultipartHeaders(fbuf, bpositions[boundarycount - 2]);
-								String path = saveTmpFile(fbuf, offset, bpositions[boundarycount - 1] - offset - 4);
-								files.put(pname, path);
-								value = disposition.getProperty("filename");
-								value = value.substring(1, value.length() - 1);
-								boolean enteredLoopAtLeastOnce = false;
-								while (enteredLoopAtLeastOnce || (mpline != null && mpline.indexOf(boundary) == -1))
-								{
-									enteredLoopAtLeastOnce = true;
-									mpline = input.readLine();
-								}
-//								do {
-//									mpline = input.readLine();
-//								} while (mpline != null && mpline.indexOf(boundary) == -1);
-							}
-							parms.put(pname, value);
-						}
-					}
-				} catch (IOException ioe) {
-					sendError(HTTP_INTERNALERROR, "SERVER INTERNAL ERROR: IOException: " + ioe.getMessage());
-				}
-			}
-
-			/**
-			 * Find the byte positions where multipart boundaries start.
-			 */
-			public int[] getBoundaryPositions (byte[] b, byte[] boundary) {
-				int matchcount = 0;
-				int matchbyte = -1;
-				Vector matchbytes = new Vector();
-				for (int i = 0; i < b.length; i++) {
-					if (b[i] == boundary[matchcount]) {
-						if (matchcount == 0) {
-							matchbyte = i;
-						}
-						matchcount++;
-						if (matchcount == boundary.length) {
-							matchbytes.addElement(new Integer(matchbyte));
-							matchcount = 0;
-							matchbyte = -1;
-						}
-					} else {
-						i -= matchcount;
-						matchcount = 0;
-						matchbyte = -1;
-					}
-				}
-				int[] ret = new int[matchbytes.size()];
-				for (int i = 0; i < ret.length; i++) {
-					ret[i] = ((Integer) matchbytes.elementAt(i)).intValue();
-				}
-				return ret;
-			}
-
-			/**
-			 * Retrieves the content of a sent file and saves it
-			 * to a temporary file.
-			 * The full path to the saved file is returned.
-			 */
-			private String saveTmpFile (byte[] b, int offset, int len) {
-				String path = "";
-				if (len > 0) {
-					String tmpdir = System.getProperty("java.io.tmpdir");
-					try {
-						File temp = File.createTempFile("NanoHTTPD", "", new File(tmpdir));
-						OutputStream fstream = new FileOutputStream(temp);
-						fstream.write(b, offset, len);
-						fstream.close();
-						path = temp.getAbsolutePath();
-					} catch (Exception e) { // Catch exception if any
-						System.err.println("Error: " + e.getMessage());
-					}
-				}
-				return path;
-			}
-
-
-			/**
-			 * It returns the offset separating multipart file headers
-			 * from the file's data.
-			 */
-			private int stripMultipartHeaders (byte[] b, int offset) {
-				int i = 0;
-				for (i = offset; i < b.length; i++) {
-					if (b[i] == '\r' && b[++i] == '\n' && b[++i] == '\r' && b[++i] == '\n') {
-						break;
-					}
-				}
-				return i + 1;
-			}
-
-			/**
-			 * Decodes the percent encoding scheme. <br/>
-			 * For example: "an+example%20string" -> "an example string"
-			 */
-			private String decodePercent (String str) throws InterruptedException {
-				try {
-					StringBuffer sb = new StringBuffer();
-					for (int i = 0; i < str.length(); i++) {
-						char c = str.charAt(i);
-						switch (c) {
-							case '+':
-								sb.append(' ');
-								break;
-							case '%':
-								sb.append((char) Integer.parseInt(str.substring(i + 1, i + 3), 16));
-								i += 2;
-								break;
-							default:
-								sb.append(c);
-								break;
-						}
-					}
-					return sb.toString();
-				} catch (Exception e) {
-					sendError(HTTP_BADREQUEST, "BAD REQUEST: Bad percent-encoding.");
-					return null;
-				}
-			}
-
-			/**
-			 * Decodes parameters in percent-encoded URI-format
-			 * ( e.g. "name=Jack%20Daniels&pass=Single%20Malt" ) and
-			 * adds them to given Properties. NOTE: this doesn't support multiple
-			 * identical keys due to the simplicity of Properties -- if you need multiples,
-			 * you might want to replace the Properties with a Hashtable of Vectors or such.
-			 */
-			private void decodeParms (String parms, Properties p)
-					throws InterruptedException {
-				if (parms == null) {
-					return;
-				}
-
-				StringTokenizer st = new StringTokenizer(parms, "&");
-				while (st.hasMoreTokens()) {
-					String e = st.nextToken();
-					int sep = e.indexOf('=');
-					if (sep >= 0) {
-						p.put(decodePercent(e.substring(0, sep)).trim(),
-								decodePercent(e.substring(sep + 1)));
-					}
-				}
-			}
-
-			/**
-			 * Returns an error message as a HTTP response and
-			 * throws InterruptedException to stop further request processing.
-			 */
-			private void sendError (String status, String msg) throws InterruptedException {
-				sendResponse(status, MIME_PLAINTEXT, null, new ByteArrayInputStream(msg.getBytes()));
-				throw new InterruptedException();
-			}
-
-			/**
-			 * Sends given response to the socket.
-			 */
-			private void sendResponse (String status, String mime, Properties header, InputStream data) {
-				try {
-					if (status == null) {
-						throw new Error("sendResponse(): Status can't be null.");
-					}
-
-					OutputStream out = mySocket.getOutputStream();
-					PrintWriter pw = new PrintWriter(out);
-					pw.print("HTTP/1.0 " + status + " \r\n");
-
-					if (mime != null) {
-						pw.print("Content-Type: " + mime + "\r\n");
-					}
-
-					if (header == null || header.getProperty("Date") == null) {
-						pw.print("Date: " + gmtFrmt.format(new Date()) + "\r\n");
-					}
-
-					if (header != null) {
-						Enumeration e = header.keys();
-						while (e.hasMoreElements()) {
-							String key = (String) e.nextElement();
-							String value = header.getProperty(key);
-							pw.print(key + ": " + value + "\r\n");
-						}
-					}
-
-					pw.print("\r\n");
-					pw.flush();
-
-					if (data != null) {
-						int pending = data.available();	// This is to support partial sends, see serveFile()
-						byte[] buff = new byte[theBufferSize];
-						while (pending > 0) {
-							int read = data.read(buff, 0, ((pending > theBufferSize) ? theBufferSize : pending));
-							if (read <= 0) break;
-							out.write(buff, 0, read);
-							pending -= read;
-						}
-					}
-					out.flush();
-					out.close();
-					if (data != null) {
-						data.close();
-					}
-				} catch (IOException ioe) {
-					// Couldn't write? No can do.
-					try {
-						mySocket.close();
-					} catch (Throwable t) {
-					}
-				}
-			}
-
-			private Socket mySocket;
-		}
-
-		/**
-		 * URL-encodes everything between "/"-characters.
-		 * Encodes spaces as '%20' instead of '+'.
-		 */
-		static String encodeUri (String uri) {
-			String newUri = "";
-			StringTokenizer st = new StringTokenizer(uri, "/ ", true);
-			while (st.hasMoreTokens()) {
-				String tok = st.nextToken();
-				if (tok.equals("/")) {
-					newUri += "/";
-				} else if (tok.equals(" ")) {
-					newUri += "%20";
-				} else {
-					newUri += URLEncoder.encode(tok);
-					// For Java 1.4 you'll want to use this instead:
-					// try { newUri += URLEncoder.encode( tok, "UTF-8" ); } catch ( java.io.UnsupportedEncodingException uee ) {}
-				}
-			}
-			return newUri;
-		}
-
-		private int myTcpPort;
-		private final ServerSocket myServerSocket;
-		private Thread myThread;
-		private File myRootDir;
 
 		// ==================================================
 		// File server code
 		// ==================================================
-		
-
-		/**
-		 * @param channelSftp - Should already be opened for quicker response
-		 */
-		public static InputStream serveFileViaSsh(String url, Properties header, File homeDir,
-				boolean allowDirectoryListing, ChannelSftp channelSftp) {
-			if (!isDirectory(homeDir)) {
-				String errorMsg = "INTERNAL ERRROR: serveFile(): given homeDir is not a directory.";
-//				return internalError(errorMsg);
-				throw new RuntimeException("Unimplemented");
-			}
-			String urlWithoutQueryString = removeQueryString(url);
-			if (containsUpwardTraversal(urlWithoutQueryString)) {
-//				return new Response(HTTP_FORBIDDEN, MIME_PLAINTEXT,
-//						"FORBIDDEN: Won't serve ../ for security reasons.");
-				throw new RuntimeException("Unimplemented");			}
-
-				try {
-					return serveRegularFileViaSsh(null, header, channelSftp, '/'+urlWithoutQueryString);
-				} catch (SftpException e) {
-					e.printStackTrace();
-//					return internalError(e.getStackTrace().toString());
-					throw new RuntimeException("Something went wrong", e);				}
-		}
-
-		private static Response internalError(String errorMsg) {
-			return new Response(HTTP_INTERNALERROR, MIME_PLAINTEXT,
-					errorMsg);
-		}
 		
 		/**
 		 * (Rewritten without mutable state) 
@@ -2016,39 +1184,6 @@ public class Coagulate {
 				return new Response(HTTP_FORBIDDEN, MIME_PLAINTEXT,
 						"FORBIDDEN: Reading file failed.");
 			}
-		}
-
-		// TODO: remove "file"
-		private static InputStream serveRegularFileViaSsh(File file, Properties header, ChannelSftp channelSftp, String filePath) throws SftpException {
-			// TODO: Handle these cases
-//			File requestedFileOrDir = new File(homeDir, urlWithoutQueryString);
-//			if (!requestedFileOrDir.exists()) {
-//				return new Response(HTTP_NOTFOUND, MIME_PLAINTEXT,
-//						"Error 404, file not found.");
-//			}
-//			
-//			if (requestedFileOrDir.isDirectory()) {
-//				return serveDirectory(header, homeDir, allowDirectoryListing,
-//						urlWithoutQueryString, requestedFileOrDir);
-//			}
-//			try {
-//				String mimeType = getMimeType(file);
-//				String eTag = getEtag(file);
-//				String range = getRange(header);
-//				long start = getStartOfRange(range);
-//				if (rangeBeginsAfterStart(range, start)) {
-//					return serveFileChunk(file, mimeType, eTag, range, start);
-//				} else {
-//					if (eTag.equals(header.getProperty("if-none-match"))) {
-//						return serveContentNotChanged(mimeType);
-//					} else {
-						return serveEntireFileViaSsh(file, getMimeType(filePath), null, -1L, channelSftp, filePath);
-//					}
-//				}
-//			} catch (IOException e) {
-//				return new Response(HTTP_FORBIDDEN, MIME_PLAINTEXT,
-//						"FORBIDDEN: Reading file failed.");
-//			}
 		}
 		
 		private static String getEtag(File file) {
@@ -2249,33 +1384,7 @@ public class Coagulate {
 			return res;
 		}
 		
-		private static InputStream serveEntireFileViaSsh(File f, String mime,
-				String etag, final long fileLen, ChannelSftp channelSftp, String filePath) throws SftpException {
-			InputStream sshStream = getRegularFileStreamFromSsh(filePath, channelSftp);
-			System.out.println("serveEntireFileViaSsh() - begin");
-//			Response res;
-			return sshStream;
-//					)(
-////					HTTP_OK, mime,
-////					sshStream);
-//			res.addHeader("Content-Length", "" + fileLen);
-//			res.addHeader("ETag", etag);
-//			res.addHeader("Accept-Ranges", "bytes"); // Announce that the file server accepts partial content requests
-//			return res;
-			// TODO how can we autoclose a stream after reading?
-			// sshStream.close();
-		}
-
-		private static InputStream getRegularFileStreamFromSsh(String sourceFile,
-				ChannelSftp channelSftp) throws SftpException {
-			String string = Paths.get(sourceFile).getParent().toAbsolutePath()
-							.toString();
-			System.out.println("getRegularFileStreamFromSsh() - file to get: " + string);
-			channelSftp.cd(Preconditions.checkNotNull(string));
-			return new BufferedInputStream(channelSftp.get(Paths.get(sourceFile)
-					.getFileName().toString()));
-		}
-		
+	
 		private static long getContentLength(boolean invalidRangeRequested,
 				final long newLen) {
 			long contentLength = -1;
@@ -2398,148 +1507,7 @@ public class Coagulate {
 			return fis;
 		}
 
-		/**
-		 * Serves file from homeDir and its' subdirectories (only).
-		 * Uses only URI, ignores all headers and HTTP parameters.
-		 */
-		@Deprecated // Mutable state. 
-		public static Response serveFileOld (String uri, Properties header, File homeDir,
-				boolean allowDirectoryListing) {
-			Response res = null;
 
-			// Make sure we won't die of an exception later
-			if (!homeDir.isDirectory()) {
-				res = new Response(HTTP_INTERNALERROR, MIME_PLAINTEXT,
-						"INTERNAL ERRROR: serveFile(): given homeDir is not a directory.");
-			}
-
-			if (res == null) {
-				// Remove URL arguments
-				uri = uri.trim().replace(File.separatorChar, "/".charAt(0));
-				if (uri.indexOf('?') >= 0) {
-					uri = uri.substring(0, uri.indexOf('?'));
-				}
-
-				// Prohibit getting out of current directory
-				if (uri.startsWith("..") || uri.endsWith("..") || uri.indexOf("../") >= 0) {
-					res = new Response(HTTP_FORBIDDEN, MIME_PLAINTEXT,
-							"FORBIDDEN: Won't serve ../ for security reasons.");
-				}
-			}
-
-			File f = new File(homeDir, uri);
-			if (res == null && !f.exists()) {
-				res = new Response(HTTP_NOTFOUND, MIME_PLAINTEXT,
-						"Error 404, file not found.");
-			}
-
-			// List the directory, if necessary
-			if (res == null && f.isDirectory()) {
-				// Browsers get confused without '/' after the
-				// directory, send a redirect.
-				if (!uri.endsWith("/")) {
-					uri += "/";
-					res = new Response(HTTP_REDIRECT, MIME_HTML,
-							"<html><body>Redirected: <a href=\"" + uri + "\">" +
-									uri + "</a></body></html>");
-					res.addHeader("Location", uri);
-				}
-
-				if (res == null) {
-					// First try index.html and index.htm
-					if (new File(f, "index.html").exists()) {
-						f = new File(homeDir, uri + "/index.html");
-					} else if (new File(f, "index.htm").exists()) {
-						f = new File(homeDir, uri + "/index.htm");
-					}
-					// No index file, list the directory if it is readable
-					else if (allowDirectoryListing && f.canRead()) {
-						String[] files = f.list();
-						String msg = listDirectoryAsHtml(uri, f, files);
-						res = new Response(HTTP_OK, MIME_HTML, msg);
-					} else {
-						res = new Response(HTTP_FORBIDDEN, MIME_PLAINTEXT,
-								"FORBIDDEN: No directory listing.");
-					}
-				}
-			}
-
-			try {
-				if (res == null) {
-					// Get MIME type from file name extension, if possible
-					String mime = null;
-					int dot = f.getCanonicalPath().lastIndexOf('.');
-					if (dot >= 0) {
-						mime = (String) theMimeTypes.get(f.getCanonicalPath().substring(dot + 1).toLowerCase());
-					}
-					if (mime == null) {
-						mime = MIME_DEFAULT_BINARY;
-					}
-
-					String etag = getEtag(f);
-
-					// Support (simple) skipping:
-					long startFrom = 0;
-					long endAt = -1;
-					String range = header.getProperty("range");
-					if (range != null) {
-						if (range.startsWith("bytes=")) {
-							range = range.substring("bytes=".length());
-							int minus = range.indexOf('-');
-							try {
-								if (minus > 0) {
-									startFrom = Long.parseLong(range.substring(0, minus));
-									endAt = Long.parseLong(range.substring(minus + 1));
-								}
-							} catch (NumberFormatException nfe) {
-							}
-						}
-					}
-
-					// Change return code and add Content-Range header when skipping is requested
-					long fileLen = f.length();
-					if (range != null && startFrom >= 0) {
-						if (startFrom >= fileLen) {
-							res = new Response(HTTP_RANGE_NOT_SATISFIABLE, MIME_PLAINTEXT, "");
-							res.addHeader("Content-Range", "bytes 0-0/" + fileLen);
-							res.addHeader("ETag", etag);
-						} else {
-							if (endAt < 0) {
-								endAt = fileLen - 1;
-							}
-							long newLen = endAt - startFrom + 1;
-							if (newLen < 0) newLen = 0;
-
-							final long dataLen = newLen;
-							FileInputStream fis = new FileInputStream(f) {
-								public int available () throws IOException {
-									return (int) dataLen;
-								}
-							};
-							fis.skip(startFrom);
-
-							res = new Response(HTTP_PARTIALCONTENT, mime, fis);
-							res.addHeader("Content-Length", "" + dataLen);
-							res.addHeader("Content-Range", "bytes " + startFrom + "-" + endAt + "/" + fileLen);
-							res.addHeader("ETag", etag);
-						}
-					} else {
-						if (etag.equals(header.getProperty("if-none-match"))) {
-							res = new Response(HTTP_NOTMODIFIED, mime, "");
-						} else {
-							res = new Response(HTTP_OK, mime, new FileInputStream(f));
-							res.addHeader("Content-Length", "" + fileLen);
-							res.addHeader("ETag", etag);
-						}
-					}
-				}
-			} catch (IOException ioe) {
-				res = new Response(HTTP_FORBIDDEN, MIME_PLAINTEXT, "FORBIDDEN: Reading file failed.");
-			}
-
-			res.addHeader("Accept-Ranges", "bytes"); // Announce that the file server accepts partial content requestes
-			return res;
-		}
 
 		private static String listDirectoryAsHtml(String uri, File directory, String[] files) {
 			String msg = "<html><body><h1>Directory " + uri + "</h1><br/>";
@@ -2628,7 +1596,7 @@ public class Coagulate {
 		/**
 		 * Hashtable mapping (String)FILENAME_EXTENSION -> (String)MIME_TYPE
 		 */
-		private static Hashtable theMimeTypes = new Hashtable();
+		private static Hashtable<String, String> theMimeTypes = new Hashtable<String, String>();
 
 		static {
 			StringTokenizer st = new StringTokenizer(
@@ -2661,67 +1629,15 @@ public class Coagulate {
 			}
 		}
 
-		private static int theBufferSize = 16 * 1024;
-
-		// Change this if you want to log to somewhere else than stdout
-		protected static PrintStream myOut = System.out;
-
-		/**
-		 * GMT date formatter
-		 */
 		private static java.text.SimpleDateFormat gmtFrmt;
 
 		static {
 			gmtFrmt = new java.text.SimpleDateFormat("E, d MMM yyyy HH:mm:ss 'GMT'", Locale.US);
 			gmtFrmt.setTimeZone(TimeZone.getTimeZone("GMT"));
 		}
-
-		/**
-		 * The distribution licence
-		 */
-		private static final String LICENCE =
-				"Copyright (C) 2001,2005-2011 by Jarno Elonen <elonen@iki.fi>\n" +
-						"and Copyright (C) 2010 by Konstantinos Togias <info@ktogias.gr>\n" +
-						"\n" +
-						"Redistribution and use in source and binary forms, with or without\n" +
-						"modification, are permitted provided that the following conditions\n" +
-						"are met:\n" +
-						"\n" +
-						"Redistributions of source code must retain the above copyright notice,\n" +
-						"this list of conditions and the following disclaimer. Redistributions in\n" +
-						"binary form must reproduce the above copyright notice, this list of\n" +
-						"conditions and the following disclaimer in the documentation and/or other\n" +
-						"materials provided with the distribution. The name of the author may not\n" +
-						"be used to endorse or promote products derived from this software without\n" +
-						"specific prior written permission. \n" +
-						" \n" +
-						"THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR\n" +
-						"IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES\n" +
-						"OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.\n" +
-						"IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,\n" +
-						"INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT\n" +
-						"NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,\n" +
-						"DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY\n" +
-						"THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n" +
-						"(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE\n" +
-						"OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.";
 	}
 	
-//	public static void main(String[] args) {
-//		try {
-//			new FileServerGroovy(8082,
-//					Paths.get("/media/sarnobat/Unsorted/images").toFile());
-//			System.out.println("Started");
-//		} catch (IOException ioe) {
-//			System.err.println("Couldn't start server:\n" + ioe);
-//			System.exit(-1);
-//		}
-//		try {
-//			System.in.read();
-//		} catch (Throwable t) {
-//			System.out.println("Exiting");
-//		}
-//	}
+
 	public static void main(String[] args) throws URISyntaxException {
 		try {
 			JdkHttpServerFactory.createHttpServer(new URI(
