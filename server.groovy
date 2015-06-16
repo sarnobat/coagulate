@@ -608,8 +608,7 @@ public class Coagulate {
 						|| iDirectory.getName().endsWith("_files")) {
 					continue;
 				}
-				String thumbnailFileAbsolutePath = iDirectory.getAbsolutePath()
-						+ "/_thumbnails/" + filename + ".jpg";
+				String thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + filename + ".jpg";
 				JSONObject fileEntryJson ;
 				_2: {
 					JSONObject rFileEntryJson = new JSONObject();
