@@ -44,6 +44,9 @@ import org.apache.commons.imaging.formats.tiff.taginfos.TagInfo;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
+import org.apache.sshd.ClientSession;
+import org.apache.sshd.SshClient;
+import org.apache.sshd.client.SftpClient;
 import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.json.JSONException;
@@ -54,43 +57,61 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.Session;
+//import com.jcraft.jsch.ChannelExec;
+//import com.jcraft.jsch.ChannelSftp;
+//import com.jcraft.jsch.JSch;
+//import com.jcraft.jsch.Session;
 
 public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
 	public static class MyResource { // Must be public
-		private static final String SFTPHOST = "192.168.1.2";
-		private static final String clientIdRSAPath = "/home/sarnobat/.ssh/id_rsa";
+		private static final String SFTPHOST = "netgear.rohidekar.com";
+		private static final String clientIdRSAPath = "/Users/sarnobat/.ssh/id_rsa";
 		private static final int SFTPPORT = 22;
 		private static final String SFTPUSER = "sarnobat";
 		
-	    private static final JSch jsch = new JSch();
-	    private static Session session;
-	    private static synchronized Session getSession() throws Exception {
-	        try {
-	            ChannelExec testChannel = (ChannelExec) session.openChannel("shell");
-	            testChannel.setCommand("true");
-	            testChannel.connect();
-	            testChannel.disconnect();
-	        } catch (Throwable t) {
-	            session = jsch.getSession(SFTPUSER, SFTPHOST, SFTPPORT);
-	            if (!Paths.get(clientIdRSAPath).toFile().exists()) {
-	            	throw new RuntimeException("No such file: " + clientIdRSAPath);
-	            }
-				jsch.addIdentity(clientIdRSAPath);
-	            java.util.Properties config = new java.util.Properties();
-				config.put("StrictHostKeyChecking", "no");
-	            session.setConfig(config);
-	            if (!session.isConnected()) {
-	            	session.connect();
-	            }
-	        }
-	        return session;
-	    }
-	    
+//	    private static final JSch jsch = new JSch();
+//	    private static Session session;
+//	    private static synchronized Session getSession() throws Exception {
+//	        try {
+//	        	System.out.println("getSession() - 1" + getSessionStatus(session));
+//	        	
+//	        	ChannelExec testChannel = (ChannelExec) session.openChannel("shell");
+//	        	System.out.println("getSession() - 2" + getSessionStatus(session));
+//	            testChannel.setCommand("true");
+//	        	System.out.println("getSession() - 3" + getSessionStatus(session));
+//	            testChannel.connect();
+//	        	System.out.println("getSession() - 4" + getSessionStatus(session));
+//	            testChannel.disconnect();
+//	        	System.out.println("getSession() - 5" + getSessionStatus(session));
+//	        } catch (Throwable t) {
+//	        	if (session == null) {
+//		            session = jsch.getSession(SFTPUSER, SFTPHOST, SFTPPORT);
+//	        	}
+//	        	if (!Paths.get(clientIdRSAPath).toFile().exists()) {
+//	        		throw new RuntimeException("No such file: " + clientIdRSAPath);
+//	        	}
+//	        	System.out.println("getSession() - 6" + getSessionStatus(session));
+//	        	jsch.addIdentity(clientIdRSAPath);
+//	        	System.out.println("getSession() - 7" + getSessionStatus(session));
+//	            java.util.Properties config = new java.util.Properties();
+//	        	System.out.println("getSession() - 8" + getSessionStatus(session));
+//				config.put("StrictHostKeyChecking", "no");
+//	        	System.out.println("getSession() - 9" + getSessionStatus(session));
+//	            session.setConfig(config);
+//	        	System.out.println("getSession() - 10" + getSessionStatus(session));
+//	            if (!session.isConnected()) {
+//	            	session.connect();
+//		        	System.out.println("getSession() - 11" + getSessionStatus(session));
+//	            }
+//	        }
+//	        return session;
+//	    }
+//	    
+//		private static String getSessionStatus(Session session) {
+//			return "\tsession connected = "+session.isConnected() + "::server alive count max = " + session.getServerAliveCountMax() + "::server alive interval = " + session.getServerAliveInterval();
+//		}
+
 		//
 		// mutators
 		//
@@ -147,24 +168,35 @@ public class Coagulate {
 							"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
 			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(IS_UNDER(absolutePath))){
 				try {
-					final ChannelSftp sftp = getChannelSftp();
-					sftp.cd(Paths.get(absolutePath).getParent().toAbsolutePath().toString());
+					final SftpClient sftp = getClient();
+					
+//					final ChannelSftp sftp = getChannelSftp();
+//					sftp.cd(Paths.get(absolutePath).getParent().toAbsolutePath().toString());
 					String fileSimpleName = Paths.get(absolutePath)
 							.getFileName().toString();
-					final InputStream is = sftp.get(fileSimpleName);
+					System.out.println("getFileSsh() - 1" + getStatus(sftp));
+					final InputStream is = sftp.read(absolutePath);
+					System.out.println("getFileSsh() - 2"+ getStatus(sftp));
 					StreamingOutput stream = new StreamingOutput() {
 					    @Override
 					    public void write(OutputStream os) throws IOException,
 					    WebApplicationException {
 					    	System.out.println("Start");
+					    	System.out.println("getFileSsh() - 3"+ getStatus(sftp));
 					      IOUtils.copy(is, os);
+					      System.out.println("getFileSsh() - 4"+ getStatus(sftp));
 					      is.close();
+					      System.out.println("getFileSsh() - 5"+ getStatus(sftp));
 					      os.close();
-					      sftp.disconnect();
-					      sftp.exit();
+					      System.out.println("getFileSsh() - 6"+ getStatus(sftp));
+//					      sftp.disconnect();
+					      System.out.println("getFileSsh() - 7"+ getStatus(sftp));
+//					      sftp.exit();
+					      System.out.println("getFileSsh() - 8"+ getStatus(sftp));
 					      System.out.println("getFileSsh() - served\t" + absolutePath);
 					      System.out.println("Done");
 					    }
+
 					  };
 					  
 					return Response.ok().entity(stream).type(FileServerGroovy.getMimeType(absolutePath)).build();
@@ -180,6 +212,24 @@ public class Coagulate {
 					.build();
 		}
 
+		private static SftpClient getClient() throws InterruptedException,
+				IOException {
+			SshClient client = SshClient.setUpDefaultClient();
+			client.start();
+			ClientSession session = client.connect("sarnobat", "netgear.rohidekar.com", 22).await()
+					.getSession();
+			// TODO: Use key authentication instead
+			session.addPasswordIdentity("aize2F");
+			session.auth().await();
+			SftpClient sftp = session.createSftpClient();
+			return sftp;
+		}
+
+		private static String getStatus(SftpClient sftp) {
+//			return sftp.isConnected() + "::" + sftp.isClosed();
+			return "";
+		}
+		
 		private static Predicate<String> IS_UNDER(final String absolutePath) {
 			Predicate<String> IS_UNDER = new Predicate<String>() {
 				@Override
@@ -198,25 +248,25 @@ public class Coagulate {
 			return IS_UNDER;
 		}
 		
-		private static ChannelSftp getChannelSftp() {
-			System.out.println("getChannelSftp() - begin. Getting session.");
-			try {
-				Session session = getSession();
-				System.out.println("getChannelSftp() - got session, about to open channel");
-				ChannelSftp openChannel = (ChannelSftp) session.openChannel("sftp");
-				System.out.println("getChannelSftp() - checking if connected");
-				if (!openChannel.isConnected()) {
-					System.out.println("getChannelSftp() - not connected, connecting");
-					openChannel.connect();
-					System.out.println("getChannelSftp() - connected");
-				}
-				System.out.println("getChannelSftp() - end");
-				return openChannel;
-			} catch (Exception e) {
-				e.printStackTrace();
-				throw new RuntimeException(e);
-			}
-		}
+//		private static ChannelSftp getChannelSftp() {
+//			System.out.println("getChannelSftp() - begin. Getting session.");
+//			try {
+//				Session session = getSession();
+//				System.out.println("getChannelSftp() - got session, about to open channel");
+//				ChannelSftp openChannel = (ChannelSftp) session.openChannel("sftp");
+//				System.out.println("getChannelSftp() - checking if connected");
+//				if (!openChannel.isConnected()) {
+//					System.out.println("getChannelSftp() - not connected, connecting");
+//					openChannel.connect();
+//					System.out.println("getChannelSftp() - connected");
+//				}
+//				System.out.println("getChannelSftp() - end");
+//				return openChannel;
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//				throw new RuntimeException(e);
+//			}
+//		}
 
 		@GET
 		@javax.ws.rs.Path("static/{absolutePath : .+}")
