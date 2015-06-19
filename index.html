@@ -74,6 +74,25 @@ $(document).ready(function(){
 });
 
 
+function shuffle(array) {
+  var currentIndex = array.length, temporaryValue, randomIndex ;
+
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+
+    // And swap it with the current element.
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
+}
+
 function updateURLIfEmpty() {
 	var locations = $.url().param('locations');
 	if (locations == null || locations == '') {
@@ -546,7 +565,7 @@ function dirToHtmlCards(dirObj) {
 	var html = "";
 	console.debug(dirObj);
 	var dir = Object.keys(dirObj);
-	var files = toPairs(dirObj[dir]).slice(0, limit).filter(filesOnly);
+	var files = shuffle(toPairs(dirObj[dir])).slice(0, limit).filter(filesOnly);
 	var subdirs = dirObj[dir].dirs;
 	html += files.map(fileToHtmlParameterized(subdirs)).join('');
 	return html;
