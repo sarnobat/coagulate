@@ -196,8 +196,8 @@ public class Coagulate {
 					      System.out.println("getFileSsh() - 7"+ getStatus(sftp));
 //					      sftp.exit();
 //					      client.close();
-					      session.close(false);
-					      sftp.close();
+//					      session.close(false);
+//					      sftp.close();
 					      System.out.println("getFileSsh() - 8"+ getStatus(sftp));
 					      System.out.println("getFileSsh() - served\t" + absolutePath);
 					      System.out.println("Done");
@@ -669,7 +669,8 @@ public class Coagulate {
 		private JSONObject getSubdirsAsJson2(File iDirectory)
 				throws IOException {
 			JSONObject rFilesInLocationJson = new JSONObject();
-			for (Path aFilePath : getSubdirectoryStream2(iDirectory)) {
+			DirectoryStream<Path> subdirectoryStream2 = getSubdirectoryStream2(iDirectory);
+			for (Path aFilePath : subdirectoryStream2) {
 				String filename = aFilePath.getFileName().toString();
 				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
 				if (filename.contains("DS_Store")) {
@@ -694,6 +695,7 @@ public class Coagulate {
 				}
 				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
 			}
+			subdirectoryStream2.close();
 			return rFilesInLocationJson;
 		}
 		
@@ -703,7 +705,8 @@ public class Coagulate {
 				throws IOException {
 			System.out.println("getContentsAsJson() - begin");
 			JSONObject rFilesInLocationJson = new JSONObject();
-			for (Path aFilePath : getDirectoryStream(iDirectory)) {
+			DirectoryStream<Path> directoryStream = getDirectoryStream(iDirectory);
+			for (Path aFilePath : directoryStream) {
 				String filename = aFilePath.getFileName().toString();
 				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
 				if (filename.contains("DS_Store")) {
@@ -727,6 +730,7 @@ public class Coagulate {
 				}
 				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
 			}
+			directoryStream.close();
 			System.out.println("getContentsAsJson() - end");
 			return rFilesInLocationJson;
 		}
@@ -743,7 +747,8 @@ public class Coagulate {
 			System.out.println();
 			System.out.println("getContentsAsJsonRecursive() - " + iDirectory.toString());
 			int  i = 0;
-			for (Path aFilePath : getDirectoryStreamRecursive(iDirectory)) {
+			DirectoryStream<Path> directoryStreamRecursive = getDirectoryStreamRecursive(iDirectory);
+			for (Path aFilePath : directoryStreamRecursive) {
 				if (!Files.isDirectory(aFilePath)) {
 					continue;
 				}
@@ -759,10 +764,12 @@ public class Coagulate {
 					++i;
 				}
 			}
+			directoryStreamRecursive.close();
 			System.out.println();
 			rFilesInLocationJson.put("dirs", dirsJson);
 			int j = 0;
-			for (Path aFilePath : getSubdirectoryStream(iDirectory)) {
+			DirectoryStream<Path> subdirectoryStream = getSubdirectoryStream(iDirectory);
+			for (Path aFilePath : subdirectoryStream) {
 				String filename = aFilePath.getFileName().toString();
 				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
 				if (Files.isDirectory(aFilePath)) {
@@ -801,6 +808,8 @@ public class Coagulate {
 				}
 				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
 			}
+			subdirectoryStream.close();
+			
 			return rFilesInLocationJson;
 		}
 
