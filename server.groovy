@@ -21,6 +21,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
 import javax.ws.rs.GET;
@@ -65,10 +68,10 @@ import com.google.common.collect.ImmutableMap;
 public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
 	public static class MyResource { // Must be public
-		private static final String SFTPHOST = "netgear.rohidekar.com";
-		private static final String clientIdRSAPath = "/Users/sarnobat/.ssh/id_rsa";
-		private static final int SFTPPORT = 22;
-		private static final String SFTPUSER = "sarnobat";
+//		private static final String SFTPHOST = "netgear.rohidekar.com";
+//		private static final String clientIdRSAPath = "/Users/sarnobat/.ssh/id_rsa";
+//		private static final int SFTPPORT = 22;
+//		private static final String SFTPUSER = "sarnobat";
 		
 //	    private static final JSch jsch = new JSch();
 //	    private static Session session;
@@ -172,8 +175,8 @@ public class Coagulate {
 					
 //					final ChannelSftp sftp = getChannelSftp();
 //					sftp.cd(Paths.get(absolutePath).getParent().toAbsolutePath().toString());
-					String fileSimpleName = Paths.get(absolutePath)
-							.getFileName().toString();
+//					String fileSimpleName = Paths.get(absolutePath)
+//							.getFileName().toString();
 					System.out.println("getFileSsh() - 1" + getStatus(sftp));
 					final InputStream is = sftp.read(absolutePath);
 					System.out.println("getFileSsh() - 2"+ getStatus(sftp));
@@ -192,6 +195,9 @@ public class Coagulate {
 //					      sftp.disconnect();
 					      System.out.println("getFileSsh() - 7"+ getStatus(sftp));
 //					      sftp.exit();
+//					      client.close();
+					      session.close(false);
+					      sftp.close();
 					      System.out.println("getFileSsh() - 8"+ getStatus(sftp));
 					      System.out.println("getFileSsh() - served\t" + absolutePath);
 					      System.out.println("Done");
@@ -212,18 +218,26 @@ public class Coagulate {
 					.build();
 		}
 
-		private static SftpClient getClient() throws InterruptedException,
+		private static synchronized SftpClient getClient() throws InterruptedException,
 				IOException {
-			SshClient client = SshClient.setUpDefaultClient();
-			client.start();
-			ClientSession session = client.connect("sarnobat", "netgear.rohidekar.com", 22).await()
-					.getSession();
-			// TODO: Use key authentication instead
-			session.addPasswordIdentity("aize2F");
-			session.auth().await();
-			SftpClient sftp = session.createSftpClient();
+//			if (sftp == null) {
+				client = SshClient.setUpDefaultClient();
+				client.start();
+				session = client
+						.connect("sarnobat", "netgear.rohidekar.com", 22)
+						.await().getSession();
+				// TODO: Use key authentication instead
+				session.addPasswordIdentity("aize2F");
+				session.auth().await();
+				sftp = session.createSftpClient();
+//			} else {
+//				sftp = session.createSftpClient();
+//			}
 			return sftp;
 		}
+		private static SshClient client;
+		private static ClientSession session ;
+		private static SftpClient sftp ;
 
 		private static String getStatus(SftpClient sftp) {
 //			return sftp.isConnected() + "::" + sftp.isClosed();
@@ -369,11 +383,16 @@ public class Coagulate {
 				@QueryParam("filePath") String iFilePath,
 				@QueryParam("destinationDirSimpleName") String iDestinationDirSimpleName)
 				throws JSONException, IOException {
-
+			System.out.println("move() - begin");
 			if (iFilePath.endsWith("htm") || iFilePath.endsWith(".html")) {
 				throw new RuntimeException("Need to move the _files folder too");
 			}
-
+			System.out.println("move() - 2");
+			if (iDestinationDirSimpleName.equals("_ 1")) {
+				System.out.println("move() - dir name is wrong");
+				throw new RuntimeException("dir name is wrong: " + iDestinationDirSimpleName);
+			}
+//			System.out.println("move() - 3");
 			try {
 				moveFileToSubfolder(iFilePath, iDestinationDirSimpleName);
 			} catch (Exception e) {
@@ -388,6 +407,7 @@ public class Coagulate {
 
 		private static void moveFileToSubfolder(String filePath,
 				String iSubfolderSimpleName) throws IllegalAccessError, IOException {
+			System.out.println("moveFileToSubfolder() - begin");
 			Path sourceFilePath = Paths.get(filePath);
 			if (!Files.exists(sourceFilePath)) {
 				throw new RuntimeException("No such source file");
@@ -395,12 +415,13 @@ public class Coagulate {
 			Path targetDir = Paths.get(sourceFilePath.getParent().toString()
 					+ "/" + iSubfolderSimpleName);
 			if (!Files.exists(targetDir)) {
+				System.out.println("moveFileToSubfolder() - creating dir " + targetDir.toString());
 				Files.createDirectory(targetDir);
 			} else if (!Files.isDirectory(targetDir)) {
 				throw new RuntimeException("Target is an existing file");
 			}
 			if (fileAlreadyInDesiredSubdir(iSubfolderSimpleName, sourceFilePath)) {
-//				System.out.println("Not moving to identical subfolder");
+//				System.out.println("Not moving to self");
 				return;
 			}
 			doMove(sourceFilePath, getUnconflictedDestinationFilePath(iSubfolderSimpleName, sourceFilePath));
@@ -529,8 +550,8 @@ public class Coagulate {
 			JSONObject rResponse = new JSONObject();
 			rResponse.put("items", createFilesJson(iDirectoryPathStrings));
 			rResponse.put("itemsRecursive", createFilesJsonRecursive(iDirectoryPathStrings));
-			rResponse.put("locations",
-					createLocationsJson(iDirectoryPathStrings));
+//			rResponse.put("locations",
+//					createLocationsJson(iDirectoryPathStrings));
 			rResponse.put("subdirectories",
 					createSubdirectoriesJson(iDirectoryPathStrings));
 			System.out.println("createListJson() - end");
@@ -711,6 +732,8 @@ public class Coagulate {
 		}
 		
 
+		private static final int SUBDIRS_LIMIT = 20;
+		private static final int FILES_PER_DIR_LIMIT = 20;
 		@SuppressWarnings("unused")
 		private JSONObject getContentsAsJsonRecursive(File iDirectory, int iLevelToRecurse)
 				throws IOException {
@@ -719,21 +742,27 @@ public class Coagulate {
 			JSONObject dirsJson = new JSONObject();
 			System.out.println();
 			System.out.println("getContentsAsJsonRecursive() - " + iDirectory.toString());
+			int  i = 0;
 			for (Path aFilePath : getDirectoryStreamRecursive(iDirectory)) {
-				System.out.print(".");
 				if (!Files.isDirectory(aFilePath)) {
 					continue;
 				}
+				System.out.print("d");
 				if (levelToRecurse > 0 || aFilePath.getFileName().toString().startsWith("_")) {
+//					if (i > SUBDIRS_LIMIT) {
+//						break;
+//					}
 					dirsJson.put(
 							aFilePath.toAbsolutePath().toString(),
 							getContentsAsJsonRecursive(aFilePath.toFile(),
 									levelToRecurse));
+					++i;
 				}
 			}
+			System.out.println();
 			rFilesInLocationJson.put("dirs", dirsJson);
+			int j = 0;
 			for (Path aFilePath : getSubdirectoryStream(iDirectory)) {
-				System.out.print(",");
 				String filename = aFilePath.getFileName().toString();
 				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
 				if (Files.isDirectory(aFilePath)) {
@@ -746,6 +775,12 @@ public class Coagulate {
 						|| iDirectory.getName().endsWith("_files")) {
 					continue;
 				}
+				if (!iDirectory.getName().startsWith("_+")) {
+					if (j > FILES_PER_DIR_LIMIT) {
+						break;
+					}
+				}
+				System.out.print("f");
 				String thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + filename + ".jpg";
 				JSONObject fileEntryJson;
 				_2: {
@@ -758,6 +793,7 @@ public class Coagulate {
 					rFileEntryJson.put("thumbnailUrl",
 							httpLinkFor(thumbnailFileAbsolutePath));
 					fileEntryJson = rFileEntryJson;
+					++j;
 				}
 				if (filename.matches("(?i).*jpg")) {
 					JSONObject exifJson = getExifData(aFilePath);
@@ -1688,6 +1724,11 @@ public class Coagulate {
 	
 
 	public static void main(String[] args) throws URISyntaxException {
+	// Turn off log4j which sshd spews out
+		Handler[] handlers = Logger.getLogger("").getHandlers();
+		for (int index = 0; index < handlers.length; index++) {
+			handlers[index].setLevel(Level.SEVERE);
+		}
 		try {
 			JdkHttpServerFactory.createHttpServer(new URI(
 					"http://localhost:4451/"), new ResourceConfig(

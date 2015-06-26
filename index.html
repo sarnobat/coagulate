@@ -325,6 +325,7 @@ function printDirsRecursive(dirItems, response, idIn) {
 	var id = 0;
 	// For each directory
 	var sortedItems = Object.keys(dirItems).sort();
+	// TODO: Move current dir to front
 	for(var dirIndex in sortedItems) { 
 		var dirPath = sortedItems[dirIndex];
 		var categoryName1 = "";
@@ -335,7 +336,7 @@ function printDirsRecursive(dirItems, response, idIn) {
 			continue;
 		}
 		var filesInDirSortedMap = shuffle(Object.keys(filesInDir));//Object.keys(filesInDir).sort();
-		// For each file in the directory
+		// For each regular file in the directory
 		for (var sortedIndex in filesInDirSortedMap) {
 			var filepath = filesInDirSortedMap[sortedIndex];
 			if (filepath.match(/.*(nohup.out$|Thumbs.db|[pP]icasa.ini)/)) {
@@ -343,14 +344,21 @@ function printDirsRecursive(dirItems, response, idIn) {
 				continue;
 			}
 			if (filepath == 'dirs') {
-				var subdirItems = filesInDir['dirs'];
-				html += printDirsRecursive(subdirItems, response, idIn + "-" + id);
 			} else {
 				++id;
 				if (id > limit) {
 					continue;
 				}
 				html += createThumbnailItemHtml("", filesInDir[filepath]);
+			}
+		}
+		// For subdirs
+		for (var sortedIndex in filesInDirSortedMap) {
+			var filepath = filesInDirSortedMap[sortedIndex];
+			if (filepath == 'dirs') {
+				var subdirItems = filesInDir['dirs'];
+				html += printDirsRecursive(subdirItems, response, idIn + "-" + id);
+			} else {
 			}
 		}
 	}
@@ -597,7 +605,7 @@ function moveToNonExistingFolder(elem, fileToMove, parentDir, idstring) {
 }
 
 function moveFile(button, filePath, destinationDirSimpleName,id) {
-	$.getJSON(urlBase + "/move?filePath="+encodeURIComponent(filePath) + "&destinationDirSimpleName=" + destinationDirSimpleName,function(response){
+	$.getJSON(urlBase + "/move?filePath="+encodeURIComponent(filePath) + "&destinationDirSimpleName=" + encodeURIComponent(destinationDirSimpleName),function(response){
 		$("#" + id).remove();
 	});
 }
