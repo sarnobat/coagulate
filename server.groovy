@@ -28,6 +28,7 @@ import java.util.logging.Logger;
 import javax.annotation.Nullable;
 import javax.ws.rs.GET;
 import javax.ws.rs.PathParam;
+
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
@@ -197,7 +198,7 @@ public class Coagulate {
 //					      sftp.exit();
 //					      client.close();
 //					      session.close(false);
-//					      sftp.close();
+					      sftp.close();
 					      System.out.println("getFileSsh() - 8"+ getStatus(sftp));
 					      System.out.println("getFileSsh() - served\t" + absolutePath);
 					      System.out.println("Done");
@@ -221,6 +222,10 @@ public class Coagulate {
 		private static synchronized SftpClient getClient() throws InterruptedException,
 				IOException {
 //			if (sftp == null) {
+
+			SshClient client;
+			ClientSession session ;
+			SftpClient sftp ;
 				client = SshClient.setUpDefaultClient();
 				client.start();
 				session = client
@@ -235,9 +240,9 @@ public class Coagulate {
 //			}
 			return sftp;
 		}
-		private static SshClient client;
-		private static ClientSession session ;
-		private static SftpClient sftp ;
+//		private static SshClient client;
+//		private static ClientSession session ;
+//		private static SftpClient sftp ;
 
 		private static String getStatus(SftpClient sftp) {
 //			return sftp.isConnected() + "::" + sftp.isClosed();
@@ -1733,17 +1738,23 @@ public class Coagulate {
 	
 
 	public static void main(String[] args) throws URISyntaxException {
-	// Turn off log4j which sshd spews out
-		Handler[] handlers = Logger.getLogger("").getHandlers();
-		for (int index = 0; index < handlers.length; index++) {
-			handlers[index].setLevel(Level.SEVERE);
-		}
+		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
+		// Turn off log4j which sshd spews out (actually this doesn't work)
+		disableSshLogging();
 		try {
 			JdkHttpServerFactory.createHttpServer(new URI(
 					"http://localhost:4451/"), new ResourceConfig(
 					MyResource.class));
 		} catch (Exception e) {
 			System.out.println("Port already listened on.");
+		}
+	}
+
+
+	private static void disableSshLogging() {
+		Handler[] handlers = Logger.getLogger("").getHandlers();
+		for (int index = 0; index < handlers.length; index++) {
+			handlers[index].setLevel(Level.SEVERE);
 		}
 	}
 }
