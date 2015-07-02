@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
 import java.util.logging.Handler;
@@ -57,6 +58,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.google.api.client.util.IOUtils;
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
@@ -228,6 +230,9 @@ public class Coagulate {
 			SftpClient sftp ;
 				client = SshClient.setUpDefaultClient();
 				client.start();
+				if (session != null && session.isClosed()) {
+					System.out.println("getClient() - too late, was closed");
+				}
 				session = client
 						.connect("sarnobat", "netgear.rohidekar.com", 22)
 						.await().getSession();
@@ -705,23 +710,53 @@ public class Coagulate {
 		}
 		
 		
-		@SuppressWarnings("unused")
 		private JSONObject getContentsAsJson(File iDirectory)
 				throws IOException {
 			System.out.println("getContentsAsJson() - begin");
 			JSONObject rFilesInLocationJson = new JSONObject();
 			DirectoryStream<Path> directoryStream = getDirectoryStream(iDirectory);
-			for (Path aFilePath : directoryStream) {
-				String filename = aFilePath.getFileName().toString();
-				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
-				if (filename.contains("DS_Store")) {
-					continue;
-				}
-				if (filename.endsWith(".html") || filename.endsWith(".htm")
-						|| iDirectory.getName().endsWith("_files")) {
-					continue;
-				}
-				String thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + filename + ".jpg"; 
+			Set<JSONObject> filesInLocation = FluentIterable
+					.from(directoryStream).filter(IS_DISPLAYABLE)
+					.transform(PATH_TO_JSON_ITEM).toSet();
+//			for (Path aFilePath : directoryStream) {
+//				String filename = aFilePath.getFileName().toString();
+//				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
+//				if (filename.contains("DS_Store")) {
+//					continue;
+//				}
+//				if (filename.endsWith(".html") || filename.endsWith(".htm")
+//						|| iDirectory.getName().endsWith("_files")) {
+//					continue;
+//				}
+//				String thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + filename + ".jpg"; 
+//				JSONObject fileEntryJson ;
+//				_2: {
+//					JSONObject rFileEntryJson = new JSONObject();
+//					rFileEntryJson
+//							.put("location", iDirectory.getAbsolutePath());
+//					rFileEntryJson
+//							.put("fileSystem", fileAbsolutePath);
+//					rFileEntryJson.put("httpUrl", httpLinkFor(fileAbsolutePath));
+//					rFileEntryJson.put("thumbnailUrl", httpLinkFor(thumbnailFileAbsolutePath));
+//					fileEntryJson = rFileEntryJson;
+//				}
+//				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
+//			}
+			directoryStream.close();
+			for (JSONObject fileEntryJson : filesInLocation) {
+				rFilesInLocationJson.put(fileEntryJson.getString("fileSystem"),
+						fileEntryJson);
+			}
+			System.out.println("getContentsAsJson() - end");
+			return rFilesInLocationJson;
+		}
+		
+		private static final Function<Path, JSONObject> PATH_TO_JSON_ITEM = new Function<Path, JSONObject>() {
+			@Override
+			public JSONObject apply(Path iPath) {
+				File iDirectory = iPath.getParent().toFile();
+				String fileAbsolutePath = iPath.toAbsolutePath().toString();
+				String thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + iPath.getFileName().getFileName() + ".jpg"; 
 				JSONObject fileEntryJson ;
 				_2: {
 					JSONObject rFileEntryJson = new JSONObject();
@@ -733,14 +768,25 @@ public class Coagulate {
 					rFileEntryJson.put("thumbnailUrl", httpLinkFor(thumbnailFileAbsolutePath));
 					fileEntryJson = rFileEntryJson;
 				}
-				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
+				return fileEntryJson;
 			}
-			directoryStream.close();
-			System.out.println("getContentsAsJson() - end");
-			return rFilesInLocationJson;
-		}
-		
+		};
 
+		private static final Predicate<Path> IS_DISPLAYABLE = new Predicate<Path>() {
+			@Override
+			public boolean apply(Path iPath) {
+				String filename = iPath.getFileName().toString();
+				if (filename.contains("DS_Store")) {
+					return false;
+				}
+				if (filename.endsWith(".html") || filename.endsWith(".htm")
+//						|| iDirectory.getName().endsWith("_files")
+						) {
+					return false;
+				}			
+				return true;
+			}};
+		
 		private static final int SUBDIRS_LIMIT = 20;
 		private static final int FILES_PER_DIR_LIMIT = 20;
 		@SuppressWarnings("unused")
@@ -888,7 +934,7 @@ public class Coagulate {
 		}
 
 		
-		private DirectoryStream<Path> getDirectoryStream(File aDirectory)
+		private static DirectoryStream<Path> getDirectoryStream(File aDirectory)
 				throws IOException {
 			String absolutePath = aDirectory.getAbsolutePath();
 			Path aDirectoryPath = Paths.get(absolutePath);
@@ -932,7 +978,7 @@ public class Coagulate {
 			return rDirectoryStream;
 		}
 		
-		private DirectoryStream<Path> getDirectoryStream(Path iDirectoryPath)
+		private static DirectoryStream<Path> getDirectoryStream(Path iDirectoryPath)
 				throws IOException {
 			DirectoryStream<Path> rDirectoryStream = Files
 					.newDirectoryStream(iDirectoryPath,
@@ -945,14 +991,14 @@ public class Coagulate {
 			return rDirectoryStream;
 		}
 
-		private String httpLinkFor(String iAbsolutePath) {
+		private static String httpLinkFor(String iAbsolutePath) {
 			String prefix = "http://192.168.1.2:4451/cmsfs/static2/";
 			return prefix + iAbsolutePath;
 		}
 
 		
 		@SuppressWarnings("unused")
-		private String httpLinkForOld(String iAbsolutePath) {
+		private static String httpLinkForOld(String iAbsolutePath) {
 			//String domain = "http://netgear.rohidekar.com";
 			String domain = "http://192.168.1.2";
 			// Unsorted
