@@ -18,7 +18,7 @@
 var urlBase = "http://192.168.1.2:4451/cmsfs/";
 var limit;
 var preDirLimit;
-
+var pairs;
 
 $(function() {
 	$( "#tabs" ).tabs();
@@ -33,14 +33,11 @@ $(document).ready(function(){
 	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response) {
 		$('#items').empty();
 		addSubdirLinks(response);
-		var pairs = toPairs(response.itemsRecursive);
+		pairs = toPairs(response.itemsRecursive);
 		
 		// Sorting
 		{
-			$('#itemsNew').empty();
-			var html = "";
-			html += pairs.map(DIR_TO_HTML_CARDS).join('');
-			$('#itemsNew').append(html);
+			reRenderCards();
 		}
 		// Thumbnails
 		{
@@ -73,6 +70,18 @@ $(document).ready(function(){
 	$('#status').append("This might take a while...");
 });
 
+function reRender() {
+	pairs = shuffle(pairs);
+	reRenderCards();
+	loadImagesSequentially(0);
+}
+
+function reRenderCards() {
+	$('#itemsNew').empty();
+	var html = "";
+	html += pairs.map(DIR_TO_HTML_CARDS).join('');
+	$('#itemsNew').append(html);
+}
 
 function shuffle(array) {
   var currentIndex = array.length, temporaryValue, randomIndex ;
@@ -727,6 +736,7 @@ Todo: Create a tab for simply viewing the images in a directory (no sorting). e.
       <table id="thumbnailItems"></table>
   </div>
   <div id="sorttab">
+  	<button onclick="reRender()">Shuffle</button>
 	<table id="itemsNew"></table>
     <table id="items"></table>
   </div>
