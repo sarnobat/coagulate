@@ -39,7 +39,7 @@ $(document).ready(function(){
 		{
 			$('#itemsNew').empty();
 			var html = "";
-			html += pairs.map(dirToHtmlCards).join('');
+			html += pairs.map(DIR_TO_HTML_CARDS).join('');
 			$('#itemsNew').append(html);
 		}
 		// Thumbnails
@@ -51,17 +51,17 @@ $(document).ready(function(){
 		// Hoist
 		{
 			var html = "";
-			console.debug(html);
+			//console.debug(html);
 			
-			html += pairs.map(rootFolderOnly).reduce(dirToHtml, "");
+			html += pairs.map(rootFolderOnly).reduce(DIR_TO_HTML, "");
 			$('#hoist').append(html);
 		}
 		// Hoist (no buttons)
 		{
 			var html = "";
-			console.debug(html);
+			//console.debug(html);
 			
-			html += pairs.map(rootFolderOnly).reduce(dirToHtmlWithButtons, "");
+			html += pairs.map(rootFolderOnly).reduce(DIR_TO_HTML_WITH_BUTTONS, "");
 			$('#hoist_with_buttons').append(html);
 		}
 		loadImagesSequentially(0);
@@ -136,6 +136,9 @@ function toPairs(obj) {
 	return ret;
 }
 
+function DIR_TO_HTML_WITH_BUTTONS(accumulator, dirPair) {
+	return dirToHtmlWithButtons(accumulator, dirPair);
+}
 
 function dirToHtmlWithButtons(accumulator, dirPair) {
 
@@ -143,6 +146,10 @@ function dirToHtmlWithButtons(accumulator, dirPair) {
 	var val = dirPair[key];
 	
 	return accumulator + "<tr><td><h2>" + lastPartOf(key) +"</h2></td></tr>" + dirObjToHtmlWithButtons(val, key);
+}
+
+function DIR_TO_HTML(accumulator, dirPair) {
+	return dirToHtml(accumulator, dirPair);
 }
 
 function dirToHtml(accumulator, dirPair) {
@@ -568,10 +575,13 @@ function fileObjToHtml(fileObj) {
 	return toBeAppended;
 }
 
+function DIR_TO_HTML_CARDS(dirObj) {
+	return dirToHtmlCards(dirObj);
+}
 
 function dirToHtmlCards(dirObj) {
 	var html = "";
-	console.debug(dirObj);
+	//console.debug(dirObj);
 	var dir = Object.keys(dirObj);
 	var files = shuffle(toPairs(dirObj[dir])).slice(0, limit).filter(filesOnly);
 	var subdirs = dirObj[dir].dirs;

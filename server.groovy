@@ -196,9 +196,9 @@ public class Coagulate {
 //					      sftp.disconnect();
 					      System.out.println("getFileSsh() - 7"+ getStatus(sftp));
 //					      sftp.exit();
+					      sftp.close();
 //					      client.close();
 //					      session.close(false);
-					      sftp.close();
 					      System.out.println("getFileSsh() - 8"+ getStatus(sftp));
 					      System.out.println("getFileSsh() - served\t" + absolutePath);
 					      System.out.println("Done");
@@ -224,7 +224,7 @@ public class Coagulate {
 //			if (sftp == null) {
 
 			SshClient client;
-			ClientSession session ;
+//			ClientSession session ;
 			SftpClient sftp ;
 				client = SshClient.setUpDefaultClient();
 				client.start();
@@ -241,7 +241,7 @@ public class Coagulate {
 			return sftp;
 		}
 //		private static SshClient client;
-//		private static ClientSession session ;
+		private static ClientSession session ;
 //		private static SftpClient sftp ;
 
 		private static String getStatus(SftpClient sftp) {
