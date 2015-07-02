@@ -196,7 +196,7 @@ public class Coagulate {
 //					      sftp.disconnect();
 					      System.out.println("getFileSsh() - 7"+ getStatus(sftp));
 //					      sftp.exit();
-					      sftp.close();
+//					      sftp.close();
 //					      client.close();
 //					      session.close(false);
 					      System.out.println("getFileSsh() - 8"+ getStatus(sftp));
