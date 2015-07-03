@@ -51,6 +51,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.SshClient;
+import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SftpClient;
 import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -229,6 +230,7 @@ public class Coagulate {
 //			ClientSession session ;
 			SftpClient sftp ;
 				client = SshClient.setUpDefaultClient();
+		        client.getProperties().put(ClientFactoryManager.HEARTBEAT_INTERVAL, "500");
 				client.start();
 				if (session != null && session.isClosed()) {
 					System.out.println("getClient() - too late, was closed");
