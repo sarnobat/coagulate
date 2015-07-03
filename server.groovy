@@ -12,6 +12,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -68,6 +69,7 @@ import com.google.common.collect.ImmutableMap;
 //import com.jcraft.jsch.ChannelSftp;
 //import com.jcraft.jsch.JSch;
 //import com.jcraft.jsch.Session;
+import com.google.common.collect.Maps;
 
 public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
@@ -712,7 +714,7 @@ public class Coagulate {
 		}
 		
 		
-		private JSONObject getContentsAsJson(File iDirectory)
+		private static JSONObject getContentsAsJson(File iDirectory)
 				throws IOException {
 			System.out.println("getContentsAsJson() - begin");
 			JSONObject rFilesInLocationJson = new JSONObject();
@@ -756,6 +758,7 @@ public class Coagulate {
 		private static final Function<Path, JSONObject> PATH_TO_JSON_ITEM = new Function<Path, JSONObject>() {
 			@Override
 			public JSONObject apply(Path iPath) {
+				System.out.print("f");
 				File iDirectory = iPath.getParent().toFile();
 				String fileAbsolutePath = iPath.toAbsolutePath().toString();
 				String thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + iPath.getFileName().getFileName() + ".jpg"; 
@@ -777,96 +780,151 @@ public class Coagulate {
 		private static final Predicate<Path> IS_DISPLAYABLE = new Predicate<Path>() {
 			@Override
 			public boolean apply(Path iPath) {
+				if (iPath.toFile().isDirectory()) {
+					return false;
+				}
 				String filename = iPath.getFileName().toString();
 				if (filename.contains("DS_Store")) {
 					return false;
 				}
 				if (filename.endsWith(".html") || filename.endsWith(".htm")
-//						|| iDirectory.getName().endsWith("_files")
-						) {
+				// || iDirectory.getName().endsWith("_files")
+				) {
 					return false;
-				}			
+				}
 				return true;
-			}};
-		
-		private static final int SUBDIRS_LIMIT = 20;
-		private static final int FILES_PER_DIR_LIMIT = 20;
-		@SuppressWarnings("unused")
-		private JSONObject getContentsAsJsonRecursive(File iDirectory, int iLevelToRecurse)
-				throws IOException {
-			int levelToRecurse = iLevelToRecurse - 1;
-			JSONObject rFilesInLocationJson = new JSONObject();
-			JSONObject dirsJson = new JSONObject();
-			System.out.println();
-			System.out.println("getContentsAsJsonRecursive() - " + iDirectory.toString());
-			int  i = 0;
-			DirectoryStream<Path> directoryStreamRecursive = getDirectoryStreamRecursive(iDirectory);
-			for (Path aFilePath : directoryStreamRecursive) {
-				if (!Files.isDirectory(aFilePath)) {
-					continue;
+			}
+		};
+
+		private static final Function<Path, Map.Entry<String, JSONObject>> DIR_PATH_TO_JSON_DIR = new Function<Path, Map.Entry<String, JSONObject>>() {
+			@Override
+			@Nullable
+			public AbstractMap.SimpleEntry<String, JSONObject> apply(
+					@Nullable Path dir) {
+				if (!dir.toFile().isDirectory()) {
+					throw new RuntimeException("not a dir: "
+							+ dir.toAbsolutePath());
 				}
 				System.out.print("d");
-				if (levelToRecurse > 0 || aFilePath.getFileName().toString().startsWith("_")) {
-//					if (i > SUBDIRS_LIMIT) {
-//						break;
-//					}
-					dirsJson.put(
-							aFilePath.toAbsolutePath().toString(),
-							getContentsAsJsonRecursive(aFilePath.toFile(),
-									levelToRecurse));
-					++i;
+				JSONObject dirJson;
+				try {
+					dirJson = getContentsAsJson(dir.toFile());
+				} catch (IOException e) {
+					e.printStackTrace();
+					throw new RuntimeException(e);
 				}
+				return new AbstractMap.SimpleEntry<String, JSONObject>(dir.toAbsolutePath().toString(),
+						dirJson);
 			}
-			directoryStreamRecursive.close();
-			System.out.println();
-			rFilesInLocationJson.put("dirs", dirsJson);
-			int j = 0;
-			DirectoryStream<Path> subdirectoryStream = getSubdirectoryStream(iDirectory);
-			for (Path aFilePath : subdirectoryStream) {
-				String filename = aFilePath.getFileName().toString();
-				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
-				if (Files.isDirectory(aFilePath)) {
-					continue;
-				} 
-				if (filename.contains("DS_Store")) {
-					continue;
-				}
-				if (filename.endsWith(".html") || filename.endsWith(".htm")
-						|| iDirectory.getName().endsWith("_files")) {
-					continue;
-				}
-				if (!iDirectory.getName().startsWith("_+")) {
-					if (j > FILES_PER_DIR_LIMIT) {
-						break;
-					}
-				}
-				System.out.print("f");
-				String thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + filename + ".jpg";
-				JSONObject fileEntryJson;
-				_2: {
-					JSONObject rFileEntryJson = new JSONObject();
-					rFileEntryJson
-							.put("location", iDirectory.getAbsolutePath());
-					rFileEntryJson.put("fileSystem", fileAbsolutePath);
-					rFileEntryJson
-							.put("httpUrl", httpLinkFor(fileAbsolutePath));
-					rFileEntryJson.put("thumbnailUrl",
-							httpLinkFor(thumbnailFileAbsolutePath));
-					fileEntryJson = rFileEntryJson;
-					++j;
-				}
-				if (filename.matches("(?i).*jpg")) {
-					JSONObject exifJson = getExifData(aFilePath);
-					fileEntryJson.put("exif", exifJson);
-				}
-				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
-			}
-			subdirectoryStream.close();
+		};
 			
+		private static final int SUBDIRS_LIMIT = 20;
+		private static final int FILES_PER_DIR_LIMIT = 20;
+		
+		private static final Predicate<Path> IS_DIRECTORY = new Predicate<Path>() {
+			@Override
+			public boolean apply(Path iPath) {
+				return iPath.toFile().isDirectory();
+			}
+		};
+		@SuppressWarnings("unused")
+		private static JSONObject getContentsAsJsonRecursive(File iDirectory, int iLevelToRecurse)
+				throws IOException {
+			int levelToRecurse = iLevelToRecurse - 1;
+			JSONObject dirsJson = new JSONObject();
+			_1: {
+				System.out.println();
+				System.out.println("getContentsAsJsonRecursive() - "
+						+ iDirectory.toString());
+				int i = 0;
+				DirectoryStream<Path> directoryStreamRecursive = getDirectoryStreamRecursive(iDirectory);
+//			for (Path aFilePath : directoryStreamRecursive) {
+//				if (!Files.isDirectory(aFilePath)) {
+//					continue;
+//				}
+//				System.out.print("d");
+//				if (levelToRecurse > 0 || aFilePath.getFileName().toString().startsWith("_")) {
+////					if (i > SUBDIRS_LIMIT) {
+////						break;
+////					}
+//					dirsJson.put(
+//							aFilePath.toAbsolutePath().toString(),
+//							getContentsAsJsonRecursive(aFilePath.toFile(),
+//									levelToRecurse));
+//					++i;
+//				}
+//			}
+				Set<Map.Entry<String, JSONObject>> directoryContents = FluentIterable
+						.from(directoryStreamRecursive).filter(IS_DIRECTORY)
+						.transform(DIR_PATH_TO_JSON_DIR).toSet();
+				directoryStreamRecursive.close();
+				for (Map.Entry<String, JSONObject> pair : directoryContents) {
+					dirsJson.put(pair.getKey(), pair.getValue());
+				}
+			}
+			System.out.println();
+			JSONObject rFilesInLocationJson = new JSONObject();
+			rFilesInLocationJson.put("dirs", dirsJson);
+			_3: {
+				int j = 0;
+				DirectoryStream<Path> subdirectoryStream = getSubdirectoryStream(iDirectory);
+				
+//				for (Path aFilePath : subdirectoryStream) {
+//					String filename = aFilePath.getFileName().toString();
+//					String fileAbsolutePath = aFilePath.toAbsolutePath()
+//							.toString();
+//					if (Files.isDirectory(aFilePath)) {
+//						continue;
+//					}
+//					if (filename.contains("DS_Store")) {
+//						continue;
+//					}
+//					if (filename.endsWith(".html") || filename.endsWith(".htm")
+//							|| iDirectory.getName().endsWith("_files")) {
+//						continue;
+//					}
+//					if (!iDirectory.getName().startsWith("_+")) {
+//						if (j > FILES_PER_DIR_LIMIT) {
+//							break;
+//						}
+//					}
+//					System.out.print("f");
+//					String thumbnailFileAbsolutePath = iDirectory
+//							.getAbsolutePath()
+//							+ "/_thumbnails/"
+//							+ filename
+//							+ ".jpg";
+//					JSONObject fileEntryJson;
+//					_2: {
+//						JSONObject rFileEntryJson = new JSONObject();
+//						rFileEntryJson.put("location",
+//								iDirectory.getAbsolutePath());
+//						rFileEntryJson.put("fileSystem", fileAbsolutePath);
+//						rFileEntryJson.put("httpUrl",
+//								httpLinkFor(fileAbsolutePath));
+//						rFileEntryJson.put("thumbnailUrl",
+//								httpLinkFor(thumbnailFileAbsolutePath));
+//						fileEntryJson = rFileEntryJson;
+//						++j;
+//					}
+//					if (filename.matches("(?i).*jpg")) {
+//						JSONObject exifJson = getExifData(aFilePath);
+//						fileEntryJson.put("exif", exifJson);
+//					}
+//					rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
+//				}
+				Set<JSONObject> filesJson = FluentIterable
+						.from(subdirectoryStream).filter(IS_DISPLAYABLE).transform(PATH_TO_JSON_ITEM)
+						.toSet();
+				subdirectoryStream.close();
+				for (JSONObject fileEntryJson : filesJson) {
+					rFilesInLocationJson.put(fileEntryJson.getString("fileSystem"), fileEntryJson);
+				}
+			}
 			return rFilesInLocationJson;
 		}
 
-		private JSONObject getExifData(Path aFilePath) throws IOException {
+		private static JSONObject getExifData(Path aFilePath) throws IOException {
 			JSONObject exifJson = new JSONObject();
 			exifJson.put("datetime",
 					getTag(aFilePath, TiffTagConstants.TIFF_TAG_DATE_TIME));
@@ -887,7 +945,7 @@ public class Coagulate {
 		// TODO: I think this is slow.
 		// See if you can predetermine cases where you will get an Exception
 		// We may have to limit the depth (or breadth) which I'd rather not do.
-		private String getTag(Path aFilePath,
+		private static String getTag(Path aFilePath,
 				TagInfo tagInfo) {
 			String ret = "";
 			try {
@@ -912,7 +970,7 @@ public class Coagulate {
 			return ret;
 		}
 
-		private Map<String, String> getPair(JpegImageMetadata jpegMetadata,
+		private static Map<String, String> getPair(JpegImageMetadata jpegMetadata,
 				TagInfo tagInfo2) {
 			String name = tagInfo2.name;
 			String value = jpegMetadata.findEXIFValueWithExactMatch(tagInfo2).getValueDescription();
@@ -928,7 +986,7 @@ public class Coagulate {
 		}
 
 		
-		private DirectoryStream<Path> getSubdirectoryStream(File aDirectory)
+		private static DirectoryStream<Path> getSubdirectoryStream(File aDirectory)
 				throws IOException {
 			String absolutePath = aDirectory.getAbsolutePath();
 			Path aDirectoryPath = Paths.get(absolutePath);
@@ -943,14 +1001,14 @@ public class Coagulate {
 			return getDirectoryStream(aDirectoryPath);
 		}
 		
-		private DirectoryStream<Path> getDirectoryStreamRecursive(File aDirectory)
+		private static DirectoryStream<Path> getDirectoryStreamRecursive(File aDirectory)
 				throws IOException {
 			String absolutePath = aDirectory.getAbsolutePath();
 			Path aDirectoryPath = Paths.get(absolutePath);
 			return getSubdirectoryStreamRecursive(aDirectoryPath);
 		}
 
-		private DirectoryStream<Path> getSubdirectoryStreamRecursive(Path iDirectoryPath)
+		private static DirectoryStream<Path> getSubdirectoryStreamRecursive(Path iDirectoryPath)
 				throws IOException {
 			DirectoryStream<Path> rDirectoryStream = Files
 					.newDirectoryStream(iDirectoryPath,

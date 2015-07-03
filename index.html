@@ -225,11 +225,13 @@ function dirObjToHtmlWithButtons(val, dir) {
 	html += "</span></td></tr>";
 		
 	var files3 = preDirLimit;	
-	for (var i = 0; i < dirnames.length; i++) {
-		var dirname =  dirnames[i];
-		if (lastPartOf(dirname).lastIndexOf('_-',0) == 0) {
-			var dirObj = val.dirs[dirname];
-			html += dirObjToHtmlWithButtons(dirObj, dirname);
+	if (dirnames != null) {
+		for (var i = 0; i < dirnames.length; i++) {
+			var dirname =  dirnames[i];
+			if (lastPartOf(dirname).lastIndexOf('_-',0) == 0) {
+				var dirObj = val.dirs[dirname];
+				html += dirObjToHtmlWithButtons(dirObj, dirname);
+			}
 		}
 	}
 	return html;
@@ -278,14 +280,14 @@ function dirObjToHtml(val, dir) {
 	}
 	// TODO: make the other createThumbnailItemHtml() calls be done via map reduce
 	html += pairs.map(pairVal).reduce(createThumbnailItemHtml, "");
-
-
 	var files3 = preDirLimit;	
-	for (var i = 0; i < dirnames.length; i++) {
-		var dirname =  dirnames[i];
-		if (lastPartOf(dirname).lastIndexOf('_-',0) == 0) {
-			var dirObj = val.dirs[dirname];
-			html += dirObjToHtml(dirObj, dirname);
+	if (dirnames != null) {
+		for (var i = 0; i < dirnames.length; i++) {
+			var dirname =  dirnames[i];
+			if (lastPartOf(dirname).lastIndexOf('_-',0) == 0) {
+				var dirObj = val.dirs[dirname];
+				html += dirObjToHtml(dirObj, dirname);
+			}
 		}
 	}
 	return html;
