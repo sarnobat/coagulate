@@ -100,6 +100,7 @@ public class Coagulate {
 					.of("/media/sarnobat/Large/Videos/",
 							"/media/sarnobat/Unsorted/images/",
 							"/media/sarnobat/Unsorted/Videos/",
+							"/media/sarnobat/d/Videos",
 							"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/",
 							"/e/new/",
 							"/media/sarnobat/e/Drive J/",
@@ -284,20 +285,18 @@ public class Coagulate {
 			System.out.println("list() - begin");
 			JSONObject response;
 			try {
-				response = createListJson(iDirectoryPathsString
-						.split("\\n"));
+				response = createListJson(iDirectoryPathsString.split("\\n"));
+				System.out.println("list() - end");
+				return Response.ok().header("Access-Control-Allow-Origin", "*")
+						.entity(response.toString(4)).type("application/json")
+						.build();
 			} catch (Exception e) {
 				e.printStackTrace();
 				return Response.serverError()
 						.header("Access-Control-Allow-Origin", "*")
-						.entity("{ 'foo' : " + e.getMessage() + " }").type("application/json")
-						.build();
+						.entity("{ 'foo' : " + e.getMessage() + " }")
+						.type("application/json").build();
 			}
-			System.out.println("list() - end");
-			return Response.ok()
-					.header("Access-Control-Allow-Origin", "*")
-					.entity(response.toString(4)).type("application/json")
-					.build();
 		}
 
 		// TODO: use javax.json.JsonObject . It allows you to use fluent style.
@@ -305,7 +304,7 @@ public class Coagulate {
 				throws IOException {
 			JSONObject rResponse = new JSONObject();
 			rResponse.put("itemsRecursive", Recursive.createFilesJsonRecursive(iDirectoryPathStrings));
-			rResponse.put("items", createFilesJson(iDirectoryPathStrings));
+			//rResponse.put("items", createFilesJson(iDirectoryPathStrings));
 			rResponse.put("subdirectories",
 					createSubdirectoriesJson(iDirectoryPathStrings));
 			System.out.println("createListJson() - end");
@@ -1297,6 +1296,8 @@ public class Coagulate {
 			rFileEntryJson.put("thumbnailUrl",
 					Mappings.httpLinkFor(iDirectory.getAbsolutePath()
 							+ "/_thumbnails/" + filename + ".jpg"));
+			System.out.println("thumbnail 2 : " + Mappings.httpLinkFor(iDirectory.getAbsolutePath()
+					+ "/_thumbnails/" + filename + ".jpg"));
 			return rFileEntryJson;
 		}
 		
@@ -1304,7 +1305,7 @@ public class Coagulate {
 			@Override
 			public JsonObject apply(Path iPath) {
 				System.out.print("f");
-				JsonObject j = Json
+				return Json
 						.createObjectBuilder()
 						.add("location",
 								iPath.getParent().toFile().getAbsolutePath()
@@ -1314,10 +1315,6 @@ public class Coagulate {
 								httpLinkFor(iPath.toAbsolutePath().toString()))
 						.add("thumbnailUrl", httpLinkFor(thumbnailFor(iPath)))
 						.build();
-				if (iPath.toAbsolutePath().toString().length() < 10) {
-					throw new RuntimeException("Path not added correctly 3");
-				}
-				return j;
 			}
 		};
 
@@ -1327,9 +1324,7 @@ public class Coagulate {
 		}
 
 		private static String thumbnailFor(Path iPath) {
-			return iPath.getParent().toFile().getAbsolutePath()
-					+ "/_thumbnails/" + iPath.getFileName().getFileName()
-					+ ".jpg";
+			return iPath.getParent().toFile().getAbsolutePath() + "/_thumbnails/" + iPath.getFileName().getFileName() + ".jpg";
 		}
 
 		private static final Function<Path, Map.Entry<String, JsonObject>> DIR_PATH_TO_JSON_DIR = new Function<Path, Map.Entry<String, JsonObject>>() {
@@ -1402,7 +1397,6 @@ public class Coagulate {
 		};
 
 		static boolean shouldGetContents(String iDirectoryPathString) {
-			System.out.println("3 " + iDirectoryPathString);
 			if (iDirectoryPathString.startsWith("#")) {
 				return false;
 			}
@@ -1440,9 +1434,7 @@ public class Coagulate {
 					throw new RuntimeException("Path not added correctly");
 				}
 			}
-			JsonObject build = rFilesInLocationJson.build();
-//			System.out.println("\ngetContentsAsJson() - end: " + build);
-			return build;
+			return rFilesInLocationJson.build();
 		}
 		
 		static DirectoryStream<Path> getDirectoryStream(File aDirectory)

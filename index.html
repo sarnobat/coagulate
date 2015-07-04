@@ -401,6 +401,9 @@ function createThumbnailItemHtml(accumulator, fileObj) {
 		var toBeAppended = accumulator;
 		var httpUrl = fileObj.httpUrl;
 		var thumbnailUrl = fileObj.thumbnailUrl;
+
+		var width = "250px";
+		var height = "100px";
 		
 		// Images
 		{
@@ -413,8 +416,6 @@ function createThumbnailItemHtml(accumulator, fileObj) {
 				}
 				// height ensures buttons don't jump left and right between items for 
 				// easier mass sorting. But it's not as nice to view.
-				var width = "250px";
-				var height = "100px";
 				toBeAppended += '<img class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'"/>';
 				toBeAppended += '</a>';
 			}
