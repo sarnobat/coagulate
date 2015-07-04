@@ -84,36 +84,17 @@ public class Coagulate {
 			if (sourceFilePathString.endsWith("htm") || sourceFilePathString.endsWith(".html")) {
 				throw new RuntimeException("Need to move the _files folder too");
 			}
-			doMoveToParent(sourceFilePathString);
+			Operations.doMoveToParent(sourceFilePathString);
 			return Response.ok()
 					.header("Access-Control-Allow-Origin", "*")
 					.entity(new JSONObject().toString(4)).type("application/json")
 					.build();
 		}
 
-		private void doMoveToParent(String sourceFilePathString)
-				throws IllegalAccessError {
-			Path sourceFilePath = Paths.get(sourceFilePathString);
-			Path destinationFile = getDestinationFilePathAvoidingExisting(sourceFilePath);
-			doMove(sourceFilePath, destinationFile);
-		}
-
-		private Path getDestinationFilePathAvoidingExisting(Path sourceFile)
-				throws IllegalAccessError {
-			String filename = sourceFile.getFileName().toString();
-			Path parent = sourceFile.getParent().getParent().toAbsolutePath();
-			String parentPath = parent.toAbsolutePath().toString();
-			String destinationFilePath = parentPath + "/" + filename;
-			return determineDestinationPathAvoidingExisting(destinationFilePath);
-		}
-
 		@GET
 		@javax.ws.rs.Path("static2/{absolutePath : .+}")
 		@Produces("application/json")
 		public Response getFileSsh(@PathParam("absolutePath") String absolutePathWithSlashMissing, @Context HttpHeaders header){
-			System.out.println("getFileSsh() - begin\t" + absolutePathWithSlashMissing);
-			Object entity = "{ 'foo' : 'bar' }";
-			String mimeType = "application/json";
 			final String absolutePath = "/" +absolutePathWithSlashMissing;
 			final List<String> whitelisted = ImmutableList
 					.of("/media/sarnobat/Large/Videos/",
@@ -123,7 +104,7 @@ public class Coagulate {
 							"/e/new/",
 							"/media/sarnobat/e/Drive J/",
 							"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
-			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(IS_UNDER(absolutePath))){
+			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(Predicates.IS_UNDER(absolutePath))){
 				try {
 					final SftpClient sftp = getClient();
 					final InputStream is = sftp.read(absolutePath);
@@ -160,7 +141,7 @@ public class Coagulate {
 			}
 			return Response.serverError()
 					.header("Access-Control-Allow-Origin", "*")
-					.entity(entity).type(mimeType)
+					.entity("{ 'foo' : 'bar' }").type("application/json")
 					.build();
 		}
 
@@ -195,29 +176,10 @@ public class Coagulate {
 			return "";
 		}
 		
-		private static Predicate<String> IS_UNDER(final String absolutePath) {
-			Predicate<String> IS_UNDER = new Predicate<String>() {
-				@Override
-				public boolean apply(@Nullable String permittedDirectory) {
-					if (absolutePath.startsWith(permittedDirectory)) {
-						return true;
-					}
-					if (absolutePath.startsWith(permittedDirectory.replace("/media/sarnobat",""))) {
-						return true;
-					}
-					if (absolutePath.replace("/media/sarnobat","").startsWith(permittedDirectory)) {
-						return true;
-					}
-					return false;
-				}};
-			return IS_UNDER;
-		}
-		
 		@GET
 		@javax.ws.rs.Path("static/{absolutePath : .+}")
 		@Produces("application/json")
 		public Response getFile(@PathParam("absolutePath") String absolutePath, @Context HttpHeaders header){
-//			System.out.println("getFile() - begin\t" + absolutePath);
 			Object entity = "{ 'foo' : 'bar' }";
 			String mimeType = "application/json";
 			final String absolutePath2 = "/" +absolutePath;
@@ -249,9 +211,7 @@ public class Coagulate {
 					Coagulate.FileServerGroovy.Response r = FileServerGroovy
 							.serveFile(absolutePath, new Properties(),
 									Paths.get("/").toFile(), true);
-					//System.out.println(r.mimeType);
 					mimeType = r.mimeType;
-					//System.out.println(header);
 					entity = r.data;
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -278,7 +238,7 @@ public class Coagulate {
 			}
 
 			try {
-				copyFileToFolder(iFilePath, iDestinationDirPath);
+				Operations.copyFileToFolder(iFilePath, iDestinationDirPath);
 			} catch (Exception e) {
 				e.printStackTrace();
 				throw new RuntimeException(e);
@@ -287,22 +247,6 @@ public class Coagulate {
 					.header("Access-Control-Allow-Origin", "*")
 					.entity(new JSONObject().toString(4)).type("application/json")
 					.build();
-		}
-
-		private static void copyFileToFolder(String filePath,
-				String iDestinationDirPath) throws IllegalAccessError, IOException {
-			Path sourceFilePath = Paths.get(filePath);
-			if (!Files.exists(sourceFilePath)) {
-				throw new RuntimeException("No such source file");
-			}
-			String string = sourceFilePath.getFileName().toString();
-			Path destinationDir = Paths.get(iDestinationDirPath);
-			doCopy(sourceFilePath, getUnconflictedDestinationFilePath(destinationDir, string));
-		}
-
-		private static Path getUnconflictedDestinationFilePath (Path destinationDir, String sourceFileSimpleName) {
-			Path rDestinationFile = allocateFile(destinationDir, sourceFileSimpleName);
-			return rDestinationFile;
 		}
 
 		@GET
@@ -321,7 +265,7 @@ public class Coagulate {
 				throw new RuntimeException("dir name is wrong: " + iDestinationDirSimpleName);
 			}
 			try {
-				moveFileToSubfolder(iFilePath, iDestinationDirSimpleName);
+				Operations.moveFileToSubfolder(iFilePath, iDestinationDirSimpleName);
 			} catch (Exception e) {
 				e.printStackTrace();
 				throw new RuntimeException(e);
@@ -330,121 +274,6 @@ public class Coagulate {
 					.header("Access-Control-Allow-Origin", "*")
 					.entity(new JSONObject().toString(4)).type("application/json")
 					.build();
-		}
-
-		private static void moveFileToSubfolder(String filePath,
-				String iSubfolderSimpleName) throws IllegalAccessError, IOException {
-			System.out.println("moveFileToSubfolder() - begin");
-			Path sourceFilePath = Paths.get(filePath);
-			if (!Files.exists(sourceFilePath)) {
-				throw new RuntimeException("No such source file");
-			}
-			Path targetDir = Paths.get(sourceFilePath.getParent().toString()
-					+ "/" + iSubfolderSimpleName);
-			if (!Files.exists(targetDir)) {
-				System.out.println("moveFileToSubfolder() - creating dir " + targetDir.toString());
-				Files.createDirectory(targetDir);
-			} else if (!Files.isDirectory(targetDir)) {
-				throw new RuntimeException("Target is an existing file");
-			}
-			if (fileAlreadyInDesiredSubdir(iSubfolderSimpleName, sourceFilePath)) {
-				//System.out.println("Not moving to self");
-				return;
-			}
-			doMove(sourceFilePath, getUnconflictedDestinationFilePath(iSubfolderSimpleName, sourceFilePath));
-
-		}
-
-		private static boolean fileAlreadyInDesiredSubdir(
-				String subfolderSimpleName, Path sourceFilePath) {
-			return subfolderSimpleName.equals(sourceFilePath.getParent().getFileName().toString());
-		}
-
-		private static Path getUnconflictedDestinationFilePath(String folderName, Path path)
-				throws IllegalAccessError, IOException {
-			String parentDirPath = path.getParent().toAbsolutePath().toString();
-			String destinationFolderPath = parentDirPath + "/" + folderName;
-			Path subfolder = getOrCreateDestinationFolder(destinationFolderPath);
-			return allocateFile(path, subfolder);
-		}
-
-		private static void doMove(Path path, Path destinationFile)
-				throws IllegalAccessError {
-			try {
-				Files.move(path, destinationFile);// By default, it won't
-													// overwrite existing
-				System.out.println("Success: file now at " + destinationFile.toAbsolutePath());
-			} catch (IOException e) {
-				e.printStackTrace();
-				throw new IllegalAccessError("Moving did not work");
-			}
-		}
-
-		private static void doCopy(Path sourceFilePath, Path destinationFilePath) {
-			try {
-				Files.copy(sourceFilePath, destinationFilePath);// By default, it won't
-													// overwrite existing
-				System.out.println("Success: copied file now at " + destinationFilePath.toAbsolutePath());
-			} catch (IOException e) {
-				e.printStackTrace();
-				throw new IllegalAccessError("Copying did not work");
-			}
-		}
-
-		private static Path allocateFile(Path folder, String fileSimpleName)
-				throws IllegalAccessError {
-			// if destination file exists, rename the file to be moved(while
-			// loop)
-			String destinationFilePath = folder.normalize().toAbsolutePath()
-					.toString() + "/" + fileSimpleName;
-
-			Path rDestinationFile = determineDestinationPathAvoidingExisting(destinationFilePath);
-			return rDestinationFile;
-		}
-
-		private static Path allocateFile(Path imageFile, Path subfolder)
-				throws IllegalAccessError {
-			// if destination file exists, rename the file to be moved(while
-			// loop)
-			String destinationFilePath = subfolder.normalize().toAbsolutePath()
-					.toString() + "/" + imageFile.getFileName().toString();
-
-			Path rDestinationFile = determineDestinationPathAvoidingExisting(destinationFilePath);
-			return rDestinationFile;
-		}
-
-		private static Path determineDestinationPathAvoidingExisting(
-				String destinationFilePath) throws IllegalAccessError {
-			String destinationFilePathWithoutExtension = destinationFilePath
-					.substring(0, destinationFilePath.lastIndexOf('.'));
-			String extension = FilenameUtils.getExtension(destinationFilePath);
-			Path rDestinationFile = Paths.get(destinationFilePath);
-			while (Files.exists(rDestinationFile)) {
-				destinationFilePathWithoutExtension += "1";
-				destinationFilePath = destinationFilePathWithoutExtension + "."	+ extension;
-				rDestinationFile = Paths.get(destinationFilePath);
-			}
-			if (Files.exists(rDestinationFile)) {
-				throw new IllegalAccessError(
-						"an existing file will get overwritten");
-			}
-			return rDestinationFile;
-		}
-
-		private static java.nio.file.Path getOrCreateDestinationFolder(
-				String destinationFolderPath) throws IllegalAccessError,
-				IOException {
-			java.nio.file.Path rSubfolder = Paths.get(destinationFolderPath);
-			// if the subfolder does not exist, create it
-			if (!Files.exists(rSubfolder)) {
-				Files.createDirectory(rSubfolder);
-			}
-			if (!Files.isDirectory(rSubfolder)) {
-				throw new IllegalAccessError(
-						"Developer Error: not a directory - "
-								+ rSubfolder.toAbsolutePath());
-			}
-			return rSubfolder;
 		}
 
 		@GET
@@ -471,6 +300,7 @@ public class Coagulate {
 					.build();
 		}
 
+		// TODO: use javax.json.JsonObject . It allows you to use fluent style.
 		private JSONObject createListJson(String[] iDirectoryPathStrings)
 				throws IOException {
 			JSONObject rResponse = new JSONObject();
@@ -482,6 +312,7 @@ public class Coagulate {
 			return rResponse;
 		}
 
+		// TODO: rewrite with map and fold
 		private JSONObject createSubdirectoriesJson(
 				String[] iDirectoryPathStrings) {
 			JSONObject rItemsJson = new JSONObject();
@@ -491,7 +322,7 @@ public class Coagulate {
 				}
 				try {
 					rItemsJson.put(aDirectoryPathString,
-							createSubdirDetailsJson2(aDirectoryPathString));
+							Mappings.createSubdirDetailsJson2(aDirectoryPathString));
 				} catch (JSONException e) {
 					e.printStackTrace();
 				} catch (IOException e) {
@@ -501,140 +332,25 @@ public class Coagulate {
 			return rItemsJson;
 		}
 
-		private JSONObject createSubdirDetailsJson2(String iDirectoryPathString) throws IOException {
-			return getSubdirsAsJson2(new File(iDirectoryPathString));
-		}
-
-		private JSONObject getSubdirsAsJson2(File iDirectory)
+		@Deprecated // The client should stop relying on this
+		private static JSONObject createFilesJson(String[] iDirectoryPathStrings)
 				throws IOException {
-			DirectoryStream<Path> subdirectoryStream = getSubdirectoryStream2(iDirectory);
-			Set<Path> files = FluentIterable.from(subdirectoryStream).filter(Predicates.IS_DISPLAYABLE).toSet();
-			subdirectoryStream.close();
-			return dirToJson(files);
-		}
-
-		private JSONObject createFilesJson(String[] iDirectoryPathStrings)
-				throws IOException {
-			System.out.println("createFilesJson() - begin");
 			JSONObject rItemsJson = new JSONObject();
+			// TODO: rewrite with map and fold
 			for (String aDirectoryPathString : iDirectoryPathStrings) {
 				if (!Predicates.shouldGetContents(aDirectoryPathString)) {
 					continue;
 				}
 				rItemsJson.put(aDirectoryPathString,
-						createItemDetailsJson(aDirectoryPathString));
+						Utils.createItemDetailsJson(aDirectoryPathString));
 			}
-			System.out.println("createFilesJson() - end");
 			return rItemsJson;
-		}
-
-		private JsonObject createItemDetailsJson(String iDirectoryPathString)
-				throws IOException {
-			return Utils.getContentsAsJson(new File(iDirectoryPathString));
-		}
-		
-		private JSONObject dirToJson(Set<Path> files) {
-			JSONObject rFilesInLocationJson = new JSONObject();
-			for (Path file : files) {
-				rFilesInLocationJson.put(
-						file.toAbsolutePath().toString(),
-						createFileItemJson(file.getParent().toFile(), file.getFileName()
-								.toString(), file.toAbsolutePath().toString()));
-			}
-			return rFilesInLocationJson;
-		}
-
-		private JSONObject createFileItemJson(File iDirectory, String filename,
-				String fileAbsolutePath) {
-			JSONObject rFileEntryJson = new JSONObject();
-			rFileEntryJson.put("location", iDirectory.getAbsolutePath());
-			rFileEntryJson.put("fileSystem", fileAbsolutePath);
-			rFileEntryJson.put("httpUrl", Mappings.httpLinkFor(fileAbsolutePath));
-			rFileEntryJson.put("thumbnailUrl",
-					Mappings.httpLinkFor(iDirectory.getAbsolutePath()
-							+ "/_thumbnails/" + filename + ".jpg"));
-			return rFileEntryJson;
 		}
 		
 		@SuppressWarnings("unused")
 		private static final int SUBDIRS_LIMIT = 20;
 		@SuppressWarnings("unused")
 		private static final int FILES_PER_DIR_LIMIT = 20;
-
-		@SuppressWarnings("unused")
-		private static JSONObject getExifData(Path aFilePath) throws IOException {
-			JSONObject exifJson = new JSONObject();
-			exifJson.put("datetime",
-					getTag(aFilePath, TiffTagConstants.TIFF_TAG_DATE_TIME));
-			exifJson.put("orientation",
-					getTag(aFilePath, TiffTagConstants.TIFF_TAG_ORIENTATION));
-			exifJson.put("latitude_ref",
-					getTag(aFilePath, GpsTagConstants.GPS_TAG_GPS_LATITUDE_REF));
-			exifJson.put("latitude",
-					getTag(aFilePath, GpsTagConstants.GPS_TAG_GPS_LATITUDE));
-			exifJson.put(
-					"longitude_ref",
-					getTag(aFilePath, GpsTagConstants.GPS_TAG_GPS_LONGITUDE_REF));
-			exifJson.put("longitude",
-					getTag(aFilePath, GpsTagConstants.GPS_TAG_GPS_LONGITUDE));
-			return exifJson;
-		}
-
-		// TODO: I think this is slow.
-		// See if you can predetermine cases where you will get an Exception
-		// We may have to limit the depth (or breadth) which I'd rather not do.
-		private static String getTag(Path aFilePath,
-				TagInfo tagInfo) {
-			String ret = "";
-			try {
-				IImageMetadata metadata = Imaging.getMetadata(aFilePath.toFile());
-
-				if (metadata instanceof JpegImageMetadata) {
-					JpegImageMetadata jpegMetadata = (JpegImageMetadata) metadata;
-					
-					TiffField field = jpegMetadata.findEXIFValueWithExactMatch(tagInfo);
-					if (field == null) {
-					} else {
-						Map<String, String> m = getPair(jpegMetadata, tagInfo);
-						String firstkey = m.keySet().toArray(new String[0])[0];
-						ret = m.get(firstkey);
-					}
-				}
-			} catch (ImageReadException e) {
-				System.out.print("!");
-			} catch (IOException e) {
-				System.out.println(e);
-			}
-			return ret;
-		}
-
-		private static Map<String, String> getPair(JpegImageMetadata jpegMetadata,
-				TagInfo tagInfo2) {
-			String name = tagInfo2.name;
-			String value = jpegMetadata.findEXIFValueWithExactMatch(tagInfo2).getValueDescription();
-			Map<String, String> m = ImmutableMap.of(name,value);
-			return m;
-		}
-		
-		private DirectoryStream<Path> getSubdirectoryStream2(File aDirectory)
-				throws IOException {
-			String absolutePath = aDirectory.getAbsolutePath();
-			Path aDirectoryPath = Paths.get(absolutePath);
-			return getDirectoryStream2(aDirectoryPath);
-		}
-		
-		private DirectoryStream<Path> getDirectoryStream2(Path iDirectoryPath)
-				throws IOException {
-			DirectoryStream<Path> rDirectoryStream = Files
-					.newDirectoryStream(iDirectoryPath,
-							new DirectoryStream.Filter<Path>() {
-								public boolean accept(Path entry)
-										throws IOException {
-									return Files.isDirectory(entry);
-								}
-							});
-			return rDirectoryStream;
-		}
 		
 		@SuppressWarnings("unused")
 		@Deprecated // This info is only useful for whitelist info
@@ -690,7 +406,6 @@ public class Coagulate {
 		// ==================================================
 		// API parts
 		// ==================================================
-
 
 		/**
 		 * HTTP response.
@@ -1199,8 +914,6 @@ public class Coagulate {
 			return fis;
 		}
 
-
-
 		private static String listDirectoryAsHtml(String uri, File directory, String[] files) {
 			String msg = "<html><body><h1>Directory " + uri + "</h1><br/>";
 
@@ -1330,10 +1043,7 @@ public class Coagulate {
 	}
 	
 	private static class Recursive {
-		
-
-		
-		private static JSONObject createFilesJsonRecursive(String[] iDirectoryPathStrings)
+		static JSONObject createFilesJsonRecursive(String[] iDirectoryPathStrings)
 				throws IOException {
 			System.out.println("createFilesJsonRecursive() - begin");
 			JSONObject rItemsJson = new JSONObject();
@@ -1533,6 +1243,63 @@ public class Coagulate {
 
 	private static class Mappings {
 
+		static JSONObject createSubdirDetailsJson2(String iDirectoryPathString) throws IOException {
+			return Mappings.getSubdirsAsJson2(new File(iDirectoryPathString));
+		}
+
+		private static JSONObject getSubdirsAsJson2(File iDirectory)
+				throws IOException {
+			DirectoryStream<Path> subdirectoryStream = getSubdirectoryStream2(iDirectory);
+			Set<Path> files = FluentIterable.from(subdirectoryStream).filter(Predicates.IS_DISPLAYABLE).toSet();
+			subdirectoryStream.close();
+			return dirToJson(files);
+		}
+		
+
+		private static DirectoryStream<Path> getSubdirectoryStream2(File aDirectory)
+				throws IOException {
+			String absolutePath = aDirectory.getAbsolutePath();
+			Path aDirectoryPath = Paths.get(absolutePath);
+			return getDirectoryStream2(aDirectoryPath);
+		}
+		
+		private static DirectoryStream<Path> getDirectoryStream2(Path iDirectoryPath)
+				throws IOException {
+			DirectoryStream<Path> rDirectoryStream = Files
+					.newDirectoryStream(iDirectoryPath,
+							new DirectoryStream.Filter<Path>() {
+								public boolean accept(Path entry)
+										throws IOException {
+									return Files.isDirectory(entry);
+								}
+							});
+			return rDirectoryStream;
+		}
+		
+		private static JSONObject dirToJson(Set<Path> files) {
+			JSONObject rFilesInLocationJson = new JSONObject();
+			for (Path file : files) {
+				rFilesInLocationJson.put(
+						file.toAbsolutePath().toString(),
+						createFileItemJson(file.getParent().toFile(), file.getFileName()
+								.toString(), file.toAbsolutePath().toString()));
+			}
+			return rFilesInLocationJson;
+		}
+		
+		@Deprecated // This only needs 1 parameter
+		private static JSONObject createFileItemJson(File iDirectory, String filename,
+				String fileAbsolutePath) {
+			JSONObject rFileEntryJson = new JSONObject();
+			rFileEntryJson.put("location", iDirectory.getAbsolutePath());
+			rFileEntryJson.put("fileSystem", fileAbsolutePath);
+			rFileEntryJson.put("httpUrl", Mappings.httpLinkFor(fileAbsolutePath));
+			rFileEntryJson.put("thumbnailUrl",
+					Mappings.httpLinkFor(iDirectory.getAbsolutePath()
+							+ "/_thumbnails/" + filename + ".jpg"));
+			return rFileEntryJson;
+		}
+		
 		private static final Function<Path, JsonObject> PATH_TO_JSON_ITEM = new Function<Path, JsonObject>() {
 			@Override
 			public JsonObject apply(Path iPath) {
@@ -1588,6 +1355,25 @@ public class Coagulate {
 		};
 	}
 	private static class Predicates {
+
+		static Predicate<String> IS_UNDER(final String absolutePath) {
+			Predicate<String> IS_UNDER = new Predicate<String>() {
+				@Override
+				public boolean apply(@Nullable String permittedDirectory) {
+					if (absolutePath.startsWith(permittedDirectory)) {
+						return true;
+					}
+					if (absolutePath.startsWith(permittedDirectory.replace("/media/sarnobat",""))) {
+						return true;
+					}
+					if (absolutePath.replace("/media/sarnobat","").startsWith(permittedDirectory)) {
+						return true;
+					}
+					return false;
+				}};
+			return IS_UNDER;
+		}
+		
 		private static final Predicate<Path> IS_DISPLAYABLE = new Predicate<Path>() {
 			@Override
 			public boolean apply(Path iPath) {
@@ -1615,7 +1401,7 @@ public class Coagulate {
 			}
 		};
 
-		private static boolean shouldGetContents(String iDirectoryPathString) {
+		static boolean shouldGetContents(String iDirectoryPathString) {
 			System.out.println("3 " + iDirectoryPathString);
 			if (iDirectoryPathString.startsWith("#")) {
 				return false;
@@ -1632,10 +1418,14 @@ public class Coagulate {
 	}
 	
 	private static class Utils {
-		
-		private static JsonObject getContentsAsJson(File iDirectory)
+
+		static JsonObject createItemDetailsJson(String iDirectoryPathString)
 				throws IOException {
-//			System.out.println("getContentsAsJson() - begin");
+			return Utils.getContentsAsJson(new File(iDirectoryPathString));
+		}
+		
+		static JsonObject getContentsAsJson(File iDirectory)
+				throws IOException {
 			JsonObjectBuilder rFilesInLocationJson = Json.createObjectBuilder();
 			DirectoryStream<Path> directoryStream = Utils.getDirectoryStream(iDirectory);
 			Set<JsonObject> filesInLocation = FluentIterable
@@ -1655,7 +1445,7 @@ public class Coagulate {
 			return build;
 		}
 		
-		private static DirectoryStream<Path> getDirectoryStream(File aDirectory)
+		static DirectoryStream<Path> getDirectoryStream(File aDirectory)
 				throws IOException {
 			String absolutePath = aDirectory.getAbsolutePath();
 			Path aDirectoryPath = Paths.get(absolutePath);
@@ -1664,7 +1454,7 @@ public class Coagulate {
 
 		private static DirectoryStream<Path> getDirectoryStream(Path iDirectoryPath)
 				throws IOException {
-			DirectoryStream<Path> rDirectoryStream = Files
+			return Files
 					.newDirectoryStream(iDirectoryPath,
 							new DirectoryStream.Filter<Path>() {
 								public boolean accept(Path entry)
@@ -1672,7 +1462,226 @@ public class Coagulate {
 									return !Files.isDirectory(entry);
 								}
 							});
-			return rDirectoryStream;
+		}
+	}
+
+	@SuppressWarnings("unused")
+	private static class Exif {
+		static JSONObject getExifData(Path aFilePath)
+				throws IOException {
+			JSONObject exifJson = new JSONObject();
+			exifJson.put("datetime",
+					getTag(aFilePath, TiffTagConstants.TIFF_TAG_DATE_TIME));
+			exifJson.put(
+					"orientation",
+					getTag(aFilePath, TiffTagConstants.TIFF_TAG_ORIENTATION));
+			exifJson.put(
+					"latitude_ref",
+					getTag(aFilePath,
+							GpsTagConstants.GPS_TAG_GPS_LATITUDE_REF));
+			exifJson.put("latitude",
+					getTag(aFilePath, GpsTagConstants.GPS_TAG_GPS_LATITUDE));
+			exifJson.put(
+					"longitude_ref",
+					getTag(aFilePath,
+							GpsTagConstants.GPS_TAG_GPS_LONGITUDE_REF));
+			exifJson.put(
+					"longitude",
+					getTag(aFilePath, GpsTagConstants.GPS_TAG_GPS_LONGITUDE));
+			return exifJson;
+		}
+
+		// TODO: I think this is slow.
+		// See if you can predetermine cases where you will get an Exception
+		// We may have to limit the depth (or breadth) which I'd rather not
+		// do.
+		private static String getTag(Path aFilePath, TagInfo tagInfo) {
+			String ret = "";
+			try {
+				IImageMetadata metadata = Imaging.getMetadata(aFilePath
+						.toFile());
+
+				if (metadata instanceof JpegImageMetadata) {
+					JpegImageMetadata jpegMetadata = (JpegImageMetadata) metadata;
+
+					TiffField field = jpegMetadata
+							.findEXIFValueWithExactMatch(tagInfo);
+					if (field == null) {
+					} else {
+						Map<String, String> m = getPair(jpegMetadata,
+								tagInfo);
+						String firstkey = m.keySet().toArray(new String[0])[0];
+						ret = m.get(firstkey);
+					}
+				}
+			} catch (ImageReadException e) {
+				System.out.print("!");
+			} catch (IOException e) {
+				System.out.println(e);
+			}
+			return ret;
+		}
+
+		private static Map<String, String> getPair(
+				JpegImageMetadata jpegMetadata, TagInfo tagInfo2) {
+			String name = tagInfo2.name;
+			String value = jpegMetadata.findEXIFValueWithExactMatch(
+					tagInfo2).getValueDescription();
+			return ImmutableMap.of(name, value);
+		}
+	}
+	
+	private static class Operations {
+
+		private static boolean fileAlreadyInDesiredSubdir(
+				String subfolderSimpleName, Path sourceFilePath) {
+			return subfolderSimpleName.equals(sourceFilePath.getParent().getFileName().toString());
+		}
+
+		private static Path getUnconflictedDestinationFilePath(String folderName, Path path)
+				throws IllegalAccessError, IOException {
+			String parentDirPath = path.getParent().toAbsolutePath().toString();
+			String destinationFolderPath = parentDirPath + "/" + folderName;
+			Path subfolder = getOrCreateDestinationFolder(destinationFolderPath);
+			return Operations.allocateFile(path, subfolder);
+		}
+
+		private static java.nio.file.Path getOrCreateDestinationFolder(
+				String destinationFolderPath) throws IllegalAccessError,
+				IOException {
+			java.nio.file.Path rSubfolder = Paths.get(destinationFolderPath);
+			// if the subfolder does not exist, create it
+			if (!Files.exists(rSubfolder)) {
+				Files.createDirectory(rSubfolder);
+			}
+			if (!Files.isDirectory(rSubfolder)) {
+				throw new IllegalAccessError(
+						"Developer Error: not a directory - "
+								+ rSubfolder.toAbsolutePath());
+			}
+			return rSubfolder;
+		}
+		
+		static void moveFileToSubfolder(String filePath,
+				String iSubfolderSimpleName) throws IllegalAccessError, IOException {
+			System.out.println("moveFileToSubfolder() - begin");
+			Path sourceFilePath = Paths.get(filePath);
+			if (!Files.exists(sourceFilePath)) {
+				throw new RuntimeException("No such source file");
+			}
+			Path targetDir = Paths.get(sourceFilePath.getParent().toString()
+					+ "/" + iSubfolderSimpleName);
+			if (!Files.exists(targetDir)) {
+				System.out.println("moveFileToSubfolder() - creating dir " + targetDir.toString());
+				Files.createDirectory(targetDir);
+			} else if (!Files.isDirectory(targetDir)) {
+				throw new RuntimeException("Target is an existing file");
+			}
+			if (fileAlreadyInDesiredSubdir(iSubfolderSimpleName, sourceFilePath)) {
+				//System.out.println("Not moving to self");
+				return;
+			}
+			Operations.doMove(sourceFilePath, getUnconflictedDestinationFilePath(iSubfolderSimpleName, sourceFilePath));
+
+		}
+		private static void doCopy(Path sourceFilePath, Path destinationFilePath) {
+			try {
+				Files.copy(sourceFilePath, destinationFilePath);// By default, it won't
+													// overwrite existing
+				System.out.println("Success: copied file now at " + destinationFilePath.toAbsolutePath());
+			} catch (IOException e) {
+				e.printStackTrace();
+				throw new IllegalAccessError("Copying did not work");
+			}
+		}
+		
+		static void copyFileToFolder(String filePath,
+				String iDestinationDirPath) throws IllegalAccessError, IOException {
+			Path sourceFilePath = Paths.get(filePath);
+			if (!Files.exists(sourceFilePath)) {
+				throw new RuntimeException("No such source file");
+			}
+			String string = sourceFilePath.getFileName().toString();
+			Path destinationDir = Paths.get(iDestinationDirPath);
+			doCopy(sourceFilePath, getUnconflictedDestinationFilePath(destinationDir, string));
+		}
+
+		private static Path getUnconflictedDestinationFilePath (Path destinationDir, String sourceFileSimpleName) {
+			Path rDestinationFile = allocateFile(destinationDir, sourceFileSimpleName);
+			return rDestinationFile;
+		}
+		
+		private static Path allocateFile(Path folder, String fileSimpleName)
+				throws IllegalAccessError {
+			// if destination file exists, rename the file to be moved(while
+			// loop)
+			return Operations.determineDestinationPathAvoidingExisting(folder
+					.normalize().toAbsolutePath().toString()
+					+ "/" + fileSimpleName);
+		}
+		
+		private static void doMove(Path path, Path destinationFile)
+				throws IllegalAccessError {
+			try {
+				Files.move(path, destinationFile);// By default, it won't
+													// overwrite existing
+				System.out.println("Success: file now at " + destinationFile.toAbsolutePath());
+			} catch (IOException e) {
+				e.printStackTrace();
+				throw new IllegalAccessError("Moving did not work");
+			}
+		}
+		
+		static void doMoveToParent(String sourceFilePathString)
+				throws IllegalAccessError {
+			Path sourceFilePath = Paths.get(sourceFilePathString);
+			Path destinationFile = getDestinationFilePathAvoidingExisting(sourceFilePath);
+			doMove(sourceFilePath, destinationFile);
+		}
+
+		private static Path getDestinationFilePathAvoidingExisting(Path sourceFile)
+				throws IllegalAccessError {
+			String filename = sourceFile.getFileName().toString();
+			Path parent = sourceFile.getParent().getParent().toAbsolutePath();
+			String parentPath = parent.toAbsolutePath().toString();
+			String destinationFilePath = parentPath + "/" + filename;
+			return determineDestinationPathAvoidingExisting(destinationFilePath);
+		}
+
+		private static Path allocateFile(Path imageFile, Path subfolder)
+				throws IllegalAccessError {
+			// if destination file exists, rename the file to be moved(while
+			// loop)
+			return determineDestinationPathAvoidingExisting(subfolder
+					.normalize().toAbsolutePath().toString()
+					+ "/" + imageFile.getFileName().toString());
+		}
+
+		private static Path determineDestinationPathAvoidingExisting(
+				String destinationFilePath) throws IllegalAccessError {
+			String destinationFilePathWithoutExtension = destinationFilePath
+					.substring(0, destinationFilePath.lastIndexOf('.'));
+			String extension = FilenameUtils
+					.getExtension(destinationFilePath);
+			Path rDestinationFile = Paths.get(destinationFilePath);
+			while (Files.exists(rDestinationFile)) {
+				destinationFilePathWithoutExtension += "1";
+				destinationFilePath = destinationFilePathWithoutExtension
+						+ "." + extension;
+				rDestinationFile = Paths.get(destinationFilePath);
+			}
+			if (Files.exists(rDestinationFile)) {
+				throw new IllegalAccessError(
+						"an existing file will get overwritten");
+			}
+			return rDestinationFile;
+		}
+	}
+
+	private static void disableSshLogging() {
+		Handler[] handlers = Logger.getLogger("").getHandlers();
+		for (int index = 0; index < handlers.length; index++) {
+			handlers[index].setLevel(Level.SEVERE);
 		}
 	}
 
@@ -1686,14 +1695,6 @@ public class Coagulate {
 					MyResource.class));
 		} catch (Exception e) {
 			System.out.println("Port already listened on.");
-		}
-	}
-
-
-	private static void disableSshLogging() {
-		Handler[] handlers = Logger.getLogger("").getHandlers();
-		for (int index = 0; index < handlers.length; index++) {
-			handlers[index].setLevel(Level.SEVERE);
 		}
 	}
 }
