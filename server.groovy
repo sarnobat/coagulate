@@ -33,7 +33,6 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.ws.rs.GET;
 import javax.ws.rs.PathParam;
-
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
@@ -61,7 +60,6 @@ import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.json.JSONWriter;
 
 import com.google.api.client.util.IOUtils;
 import com.google.common.base.Function;
@@ -69,7 +67,6 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.thoughtworks.xstream.io.json.JsonWriter;
 
 public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
@@ -579,7 +576,7 @@ public class Coagulate {
 			return true;
 		}
 
-		@SuppressWarnings("unused")
+		// TODO: Convert this to map and fold
 		private JSONObject getSubdirsAsJson2(File iDirectory)
 				throws IOException {
 			JSONObject rFilesInLocationJson = new JSONObject();
@@ -587,6 +584,9 @@ public class Coagulate {
 			for (Path aFilePath : subdirectoryStream2) {
 				String filename = aFilePath.getFileName().toString();
 				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
+				if (filename.contains(".txt")) {
+					continue;
+				}
 				if (filename.contains("DS_Store")) {
 					continue;
 				}
@@ -594,32 +594,28 @@ public class Coagulate {
 						|| iDirectory.getName().endsWith("_files")) {
 					continue;
 				}
-				String thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + filename + ".jpg";
-				JSONObject fileEntryJson ;
-				_2: {
-					JSONObject rFileEntryJson = new JSONObject();
-					rFileEntryJson
-							.put("location", iDirectory.getAbsolutePath());
-					rFileEntryJson.put("fileSystem", fileAbsolutePath);
-					rFileEntryJson
-							.put("httpUrl", httpLinkFor(fileAbsolutePath));
-					rFileEntryJson.put("thumbnailUrl",
-							httpLinkFor(thumbnailFileAbsolutePath));
-					fileEntryJson = rFileEntryJson;
-					if (fileAbsolutePath.length() < 10) {
-						throw new RuntimeException("Path not added correctly");
-					}
-				}
-				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
+				rFilesInLocationJson.put(fileAbsolutePath, createFileItemJson(iDirectory,
+						filename, fileAbsolutePath));
 			}
 			subdirectoryStream2.close();
 			return rFilesInLocationJson;
 		}
-		
+
+		private JSONObject createFileItemJson(File iDirectory, String filename,
+				String fileAbsolutePath) {
+			JSONObject rFileEntryJson = new JSONObject();
+			rFileEntryJson.put("location", iDirectory.getAbsolutePath());
+			rFileEntryJson.put("fileSystem", fileAbsolutePath);
+			rFileEntryJson.put("httpUrl", httpLinkFor(fileAbsolutePath));
+			rFileEntryJson.put("thumbnailUrl",
+					httpLinkFor(iDirectory.getAbsolutePath()
+							+ "/_thumbnails/" + filename + ".jpg"));
+			return rFileEntryJson;
+		}
 		
 		private static JsonObject getContentsAsJson(File iDirectory)
 				throws IOException {
-			System.out.println("getContentsAsJson() - begin");
+//			System.out.println("getContentsAsJson() - begin");
 			JsonObjectBuilder rFilesInLocationJson = Json.createObjectBuilder();
 			DirectoryStream<Path> directoryStream = getDirectoryStream(iDirectory);
 			Set<JsonObject> filesInLocation = FluentIterable
@@ -646,6 +642,9 @@ public class Coagulate {
 					return false;
 				}
 				String filename = iPath.getFileName().toString();
+				if (filename.contains(".txt")) {
+					return false;
+				}
 				if (filename.contains("DS_Store")) {
 					return false;
 				}
@@ -697,9 +696,6 @@ public class Coagulate {
 			for (JsonObject fileEntryJson : getFilesJson(iDirectory)) {
 				rFilesInLocationJson.put(fileEntryJson.getString("fileSystem"),
 						new JSONObject(fileEntryJson.toString()));
-				if (fileEntryJson.toString().length() < 10) {
-					throw new RuntimeException("Path not added correctly 2");
-				}
 			}
 			return rFilesInLocationJson;
 		}
