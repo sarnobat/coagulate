@@ -330,21 +330,6 @@ public class Coagulate {
 			}
 			return rItemsJson;
 		}
-
-		@Deprecated // The client should stop relying on this
-		private static JSONObject createFilesJson(String[] iDirectoryPathStrings)
-				throws IOException {
-			JSONObject rItemsJson = new JSONObject();
-			// TODO: rewrite with map and fold
-			for (String aDirectoryPathString : iDirectoryPathStrings) {
-				if (!Predicates.shouldGetContents(aDirectoryPathString)) {
-					continue;
-				}
-				rItemsJson.put(aDirectoryPathString,
-						Utils.createItemDetailsJson(aDirectoryPathString));
-			}
-			return rItemsJson;
-		}
 		
 		@SuppressWarnings("unused")
 		private static final int SUBDIRS_LIMIT = 20;
@@ -1412,11 +1397,6 @@ public class Coagulate {
 	}
 	
 	private static class Utils {
-
-		static JsonObject createItemDetailsJson(String iDirectoryPathString)
-				throws IOException {
-			return Utils.getContentsAsJson(new File(iDirectoryPathString));
-		}
 		
 		static JsonObject getContentsAsJson(File iDirectory)
 				throws IOException {
