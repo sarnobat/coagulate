@@ -67,6 +67,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
@@ -304,29 +305,19 @@ public class Coagulate {
 				throws IOException {
 			JSONObject rResponse = new JSONObject();
 			rResponse.put("itemsRecursive", Recursive.createFilesJsonRecursive(iDirectoryPathStrings));
-			//rResponse.put("items", createFilesJson(iDirectoryPathStrings));
 			rResponse.put("subdirectories",
 					createSubdirectoriesJson(iDirectoryPathStrings));
-			System.out.println("createListJson() - end");
 			return rResponse;
 		}
 
-		// TODO: rewrite with map and fold
 		private JSONObject createSubdirectoriesJson(
 				String[] iDirectoryPathStrings) {
 			JSONObject rItemsJson = new JSONObject();
-			for (String aDirectoryPathString : iDirectoryPathStrings) {
-				if (!Predicates.shouldGetContents(aDirectoryPathString)) {
-					continue;
-				}
-				try {
-					rItemsJson.put(aDirectoryPathString,
-							Mappings.createSubdirDetailsJson2(aDirectoryPathString));
-				} catch (JSONException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+			for (Map.Entry<String, JSONObject> aDirJson : FluentIterable
+					.from(ImmutableSet.copyOf(iDirectoryPathStrings))
+					.filter(Predicates.SHOULD_GET_CONTENTS)
+					.transform(Mappings.DIR_TO_JSON).toSet()) {
+				rItemsJson.put(aDirJson.getKey(), aDirJson.getValue());
 			}
 			return rItemsJson;
 		}
@@ -1227,7 +1218,23 @@ public class Coagulate {
 
 	private static class Mappings {
 
-		static JSONObject createSubdirDetailsJson2(String iDirectoryPathString) throws IOException {
+		static final Function<String, Map.Entry<String, JSONObject>> DIR_TO_JSON = new Function<String, Map.Entry<String, JSONObject>>() {
+			@Override
+			@Nullable
+			public Map.Entry<String, JSONObject> apply(@Nullable String iDirectoryPathString) {
+				try {
+					return new AbstractMap.SimpleEntry<String, JSONObject>(
+							iDirectoryPathString,
+							createSubdirDetailsJson2(iDirectoryPathString));
+				} catch (Exception e) {
+					e.printStackTrace();
+					throw new RuntimeException(e);
+				}
+			}
+		};
+		
+		@Deprecated // Use a function
+		private static JSONObject createSubdirDetailsJson2(String iDirectoryPathString) throws IOException {
 			return Mappings.getSubdirsAsJson2(new File(iDirectoryPathString));
 		}
 
@@ -1381,6 +1388,14 @@ public class Coagulate {
 			}
 		};
 
+		static Predicate<String> SHOULD_GET_CONTENTS = new Predicate<String>() {
+
+			@Override
+			public boolean apply(@Nullable String iDirectoryPathString) {
+				return shouldGetContents(iDirectoryPathString);
+			}
+		};
+		@Deprecated // Use a function
 		static boolean shouldGetContents(String iDirectoryPathString) {
 			if (iDirectoryPathString.startsWith("#")) {
 				return false;
