@@ -474,7 +474,7 @@ public class Coagulate {
 		private JSONObject createListJson(String[] iDirectoryPathStrings)
 				throws IOException {
 			JSONObject rResponse = new JSONObject();
-			rResponse.put("itemsRecursive", createFilesJsonRecursive(iDirectoryPathStrings));
+			rResponse.put("itemsRecursive", Recursive.createFilesJsonRecursive(iDirectoryPathStrings));
 			rResponse.put("items", createFilesJson(iDirectoryPathStrings));
 			rResponse.put("subdirectories",
 					createSubdirectoriesJson(iDirectoryPathStrings));
@@ -486,7 +486,7 @@ public class Coagulate {
 				String[] iDirectoryPathStrings) {
 			JSONObject rItemsJson = new JSONObject();
 			for (String aDirectoryPathString : iDirectoryPathStrings) {
-				if (!shouldGetContents(aDirectoryPathString)) {
+				if (!Predicates.shouldGetContents(aDirectoryPathString)) {
 					continue;
 				}
 				try {
@@ -505,19 +505,12 @@ public class Coagulate {
 			return getSubdirsAsJson2(new File(iDirectoryPathString));
 		}
 
-		private JSONObject createFilesJsonRecursive(String[] iDirectoryPathStrings)
+		private JSONObject getSubdirsAsJson2(File iDirectory)
 				throws IOException {
-			System.out.println("createFilesJsonRecursive() - begin");
-			JSONObject rItemsJson = new JSONObject();
-			for (String aDirectoryPathString : iDirectoryPathStrings) {
-				if (!shouldGetContents(aDirectoryPathString)) {
-					continue;
-				}
-				rItemsJson.put(aDirectoryPathString,
-						createItemDetailsJsonRecursive(aDirectoryPathString));
-			}
-			System.out.println("createFilesJsonRecursive() - end");
-			return rItemsJson;
+			DirectoryStream<Path> subdirectoryStream = getSubdirectoryStream2(iDirectory);
+			Set<Path> files = FluentIterable.from(subdirectoryStream).filter(Predicates.IS_DISPLAYABLE).toSet();
+			subdirectoryStream.close();
+			return dirToJson(files);
 		}
 
 		private JSONObject createFilesJson(String[] iDirectoryPathStrings)
@@ -525,7 +518,7 @@ public class Coagulate {
 			System.out.println("createFilesJson() - begin");
 			JSONObject rItemsJson = new JSONObject();
 			for (String aDirectoryPathString : iDirectoryPathStrings) {
-				if (!shouldGetContents(aDirectoryPathString)) {
+				if (!Predicates.shouldGetContents(aDirectoryPathString)) {
 					continue;
 				}
 				rItemsJson.put(aDirectoryPathString,
@@ -537,67 +530,17 @@ public class Coagulate {
 
 		private JsonObject createItemDetailsJson(String iDirectoryPathString)
 				throws IOException {
-			return getContentsAsJson(new File(iDirectoryPathString));
+			return Utils.getContentsAsJson(new File(iDirectoryPathString));
 		}
 		
-		private JSONObject createItemDetailsJsonRecursive(String iDirectoryPathString)
-				throws IOException {
-			return getContentsAsJsonRecursive(new File(iDirectoryPathString), 2);
-		}
-		
-		@SuppressWarnings("unused")
-		private JSONObject createLocationDetailsJson(String iDirectoryPathString) throws IOException {
-			JSONObject rLocationDetailsJson = new JSONObject();
-			_1: {
-				File aDirectory = new File(iDirectoryPathString);
-				_2: {
-					Collection<String> dirsWithBoundKey = addKeyBindings(
-							iDirectoryPathString,
-							rLocationDetailsJson);
-					addDirs(aDirectory, rLocationDetailsJson,
-							dirsWithBoundKey);
-				}
-			}
-			return rLocationDetailsJson;
-		}
-
-		private boolean shouldGetContents(String iDirectoryPathString) {
-			System.out.println("3 " + iDirectoryPathString);
-			if (iDirectoryPathString.startsWith("#")) {
-				return false;
-			}
-			File aDirectory = new File(iDirectoryPathString);
-			if (!aDirectory.exists()) {
-				return false;
-			}
-			if (!aDirectory.isDirectory()) {
-				return false;
-			}
-			return true;
-		}
-
-		// TODO: Convert this to map and fold
-		private JSONObject getSubdirsAsJson2(File iDirectory)
-				throws IOException {
+		private JSONObject dirToJson(Set<Path> files) {
 			JSONObject rFilesInLocationJson = new JSONObject();
-			DirectoryStream<Path> subdirectoryStream2 = getSubdirectoryStream2(iDirectory);
-			for (Path aFilePath : subdirectoryStream2) {
-				String filename = aFilePath.getFileName().toString();
-				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
-				if (filename.contains(".txt")) {
-					continue;
-				}
-				if (filename.contains("DS_Store")) {
-					continue;
-				}
-				if (filename.endsWith(".html") || filename.endsWith(".htm")
-						|| iDirectory.getName().endsWith("_files")) {
-					continue;
-				}
-				rFilesInLocationJson.put(fileAbsolutePath, createFileItemJson(iDirectory,
-						filename, fileAbsolutePath));
+			for (Path file : files) {
+				rFilesInLocationJson.put(
+						file.toAbsolutePath().toString(),
+						createFileItemJson(file.getParent().toFile(), file.getFileName()
+								.toString(), file.toAbsolutePath().toString()));
 			}
-			subdirectoryStream2.close();
 			return rFilesInLocationJson;
 		}
 
@@ -606,160 +549,17 @@ public class Coagulate {
 			JSONObject rFileEntryJson = new JSONObject();
 			rFileEntryJson.put("location", iDirectory.getAbsolutePath());
 			rFileEntryJson.put("fileSystem", fileAbsolutePath);
-			rFileEntryJson.put("httpUrl", httpLinkFor(fileAbsolutePath));
+			rFileEntryJson.put("httpUrl", Mappings.httpLinkFor(fileAbsolutePath));
 			rFileEntryJson.put("thumbnailUrl",
-					httpLinkFor(iDirectory.getAbsolutePath()
+					Mappings.httpLinkFor(iDirectory.getAbsolutePath()
 							+ "/_thumbnails/" + filename + ".jpg"));
 			return rFileEntryJson;
 		}
 		
-		private static JsonObject getContentsAsJson(File iDirectory)
-				throws IOException {
-//			System.out.println("getContentsAsJson() - begin");
-			JsonObjectBuilder rFilesInLocationJson = Json.createObjectBuilder();
-			DirectoryStream<Path> directoryStream = getDirectoryStream(iDirectory);
-			Set<JsonObject> filesInLocation = FluentIterable
-					.from(directoryStream).filter(IS_DISPLAYABLE)
-					.transform(PATH_TO_JSON_ITEM).toSet();
-			directoryStream.close();
-			for (JsonObject fileEntryJson : filesInLocation) {
-				rFilesInLocationJson.add(fileEntryJson.getString("fileSystem"),
-						fileEntryJson);
-				if (fileEntryJson.toString().length() < 10) {
-					System.out.println("Path not added correctly 1");
-					throw new RuntimeException("Path not added correctly");
-				}
-			}
-			JsonObject build = rFilesInLocationJson.build();
-//			System.out.println("\ngetContentsAsJson() - end: " + build);
-			return build;
-		}
-
-		private static final Predicate<Path> IS_DISPLAYABLE = new Predicate<Path>() {
-			@Override
-			public boolean apply(Path iPath) {
-				if (iPath.toFile().isDirectory()) {
-					return false;
-				}
-				String filename = iPath.getFileName().toString();
-				if (filename.contains(".txt")) {
-					return false;
-				}
-				if (filename.contains("DS_Store")) {
-					return false;
-				}
-				if (filename.endsWith(".html") || filename.endsWith(".htm")) {
-					return false;
-				}
-				return true;
-			}
-		};
-
-		private static final Function<Path, Map.Entry<String, JsonObject>> DIR_PATH_TO_JSON_DIR = new Function<Path, Map.Entry<String, JsonObject>>() {
-			@Override
-			@Nullable
-			public AbstractMap.SimpleEntry<String, JsonObject> apply(
-					@Nullable Path dir) {
-				if (!dir.toFile().isDirectory()) {
-					throw new RuntimeException("not a dir: "
-							+ dir.toAbsolutePath());
-				}
-				System.out.print("d");
-				JsonObject dirJson;
-				try {
-					dirJson = getContentsAsJson(dir.toFile());
-				} catch (IOException e) {
-					e.printStackTrace();
-					throw new RuntimeException(e);
-				}
-				return new AbstractMap.SimpleEntry<String, JsonObject>(dir.toAbsolutePath().toString(),
-						dirJson);
-			}
-		};
-			
 		@SuppressWarnings("unused")
 		private static final int SUBDIRS_LIMIT = 20;
 		@SuppressWarnings("unused")
 		private static final int FILES_PER_DIR_LIMIT = 20;
-		
-		private static final Predicate<Path> IS_DIRECTORY = new Predicate<Path>() {
-			@Override
-			public boolean apply(Path iPath) {
-				return iPath.toFile().isDirectory();
-			}
-		};
-
-		private static JSONObject getContentsAsJsonRecursive(File iDirectory, int iLevelToRecurse)
-				throws IOException {
-			JSONObject rFilesInLocationJson = new JSONObject();
-			rFilesInLocationJson.put("dirs", new JSONObject(getDirsJson(iDirectory).toString()));
-			for (JsonObject fileEntryJson : getFilesJson(iDirectory)) {
-				rFilesInLocationJson.put(fileEntryJson.getString("fileSystem"),
-						new JSONObject(fileEntryJson.toString()));
-			}
-			return rFilesInLocationJson;
-		}
-
-		private static Set<JsonObject> getFilesJson(File iDirectory)
-				throws IOException {
-			DirectoryStream<Path> subdirectoryStream = getSubdirectoryStream(iDirectory);
-			Set<JsonObject> filesJson = FluentIterable
-					.from(subdirectoryStream).filter(IS_DISPLAYABLE).transform(PATH_TO_JSON_ITEM)
-					.toSet();
-			subdirectoryStream.close();
-			return filesJson;
-		}
-
-		private static JsonObject getDirsJson(File iDirectory)
-				throws IOException {
-			System.out.println();
-			System.out.println("getContentsAsJsonRecursive() - "
-					+ iDirectory.toString());
-			JsonObjectBuilder builder = Json.createObjectBuilder();
-			for (Map.Entry<String, JsonObject> pair : getDirContents(iDirectory)) {
-				builder.add(pair.getKey(), pair.getValue());
-			}
-			return builder.build();
-		}
-
-		private static Set<Map.Entry<String, JsonObject>> getDirContents(
-				File iDirectory) throws IOException {
-			DirectoryStream<Path> directoryStreamRecursive = getDirectoryStreamRecursive(iDirectory);
-			Set<Map.Entry<String, JsonObject>> directoryContents = FluentIterable
-					.from(directoryStreamRecursive).filter(IS_DIRECTORY)
-					.transform(DIR_PATH_TO_JSON_DIR).toSet();
-			directoryStreamRecursive.close();
-			return directoryContents;
-		}
-
-		private static final Function<Path, JsonObject> PATH_TO_JSON_ITEM = new Function<Path, JsonObject>() {
-			@Override
-			public JsonObject apply(Path iPath) {
-				System.out.print("f");
-				JsonObject j = Json
-						.createObjectBuilder()
-						.add("location",
-								iPath.getParent().toFile().getAbsolutePath().toString())
-						.add("fileSystem", iPath.toAbsolutePath().toString())
-						.add("httpUrl",
-								httpLinkFor(iPath.toAbsolutePath().toString()))
-						.add("thumbnailUrl", httpLinkFor(thumbnailFor(iPath)))
-						.build();
-				if (iPath.toAbsolutePath().toString().length() < 10) {
-					throw new RuntimeException("Path not added correctly 3");
-				}
-				return j;
-			}
-
-		};
-
-		private static String thumbnailFor(Path iPath) {
-			return iPath.getParent().toFile()
-					.getAbsolutePath()
-					+ "/_thumbnails/"
-					+ iPath.getFileName().getFileName()
-					+ ".jpg";
-		}
 
 		@SuppressWarnings("unused")
 		private static JSONObject getExifData(Path aFilePath) throws IOException {
@@ -822,46 +622,6 @@ public class Coagulate {
 			Path aDirectoryPath = Paths.get(absolutePath);
 			return getDirectoryStream2(aDirectoryPath);
 		}
-
-		
-		private static DirectoryStream<Path> getSubdirectoryStream(File aDirectory)
-				throws IOException {
-			String absolutePath = aDirectory.getAbsolutePath();
-			Path aDirectoryPath = Paths.get(absolutePath);
-			return getDirectoryStream(aDirectoryPath);
-		}
-
-		
-		private static DirectoryStream<Path> getDirectoryStream(File aDirectory)
-				throws IOException {
-			String absolutePath = aDirectory.getAbsolutePath();
-			Path aDirectoryPath = Paths.get(absolutePath);
-			return getDirectoryStream(aDirectoryPath);
-		}
-		
-		private static DirectoryStream<Path> getDirectoryStreamRecursive(File aDirectory)
-				throws IOException {
-			String absolutePath = aDirectory.getAbsolutePath();
-			Path aDirectoryPath = Paths.get(absolutePath);
-			return getSubdirectoryStreamRecursive(aDirectoryPath);
-		}
-
-		private static DirectoryStream<Path> getSubdirectoryStreamRecursive(Path iDirectoryPath)
-				throws IOException {
-			DirectoryStream<Path> rDirectoryStream = Files
-					.newDirectoryStream(iDirectoryPath,
-							new DirectoryStream.Filter<Path>() {
-								public boolean accept(Path entry)
-										throws IOException {
-									if (entry.endsWith("_thumbnails")) {
-										return false;
-									}
-									return Files.isDirectory(entry);
-
-								}
-							});
-			return rDirectoryStream;
-		}
 		
 		private DirectoryStream<Path> getDirectoryStream2(Path iDirectoryPath)
 				throws IOException {
@@ -875,25 +635,6 @@ public class Coagulate {
 							});
 			return rDirectoryStream;
 		}
-		
-		private static DirectoryStream<Path> getDirectoryStream(Path iDirectoryPath)
-				throws IOException {
-			DirectoryStream<Path> rDirectoryStream = Files
-					.newDirectoryStream(iDirectoryPath,
-							new DirectoryStream.Filter<Path>() {
-								public boolean accept(Path entry)
-										throws IOException {
-									return !Files.isDirectory(entry);
-								}
-							});
-			return rDirectoryStream;
-		}
-
-		private static String httpLinkFor(String iAbsolutePath) {
-			String prefix = "http://192.168.1.2:4451/cmsfs/static2/";
-			return prefix + iAbsolutePath;
-		}
-
 		
 		@SuppressWarnings("unused")
 		@Deprecated // This info is only useful for whitelist info
@@ -943,99 +684,6 @@ public class Coagulate {
 
 			return rHttpUrl;
 		}
-
-		@Deprecated // TODO: bad. Do not use output parameters. Return it instead.
-		private void addDirs(File iDir, JSONObject oLocationDetails,
-				Collection<String> iDirsWithBoundKey) throws JSONException {
-			JSONObject containedDirsJson = new JSONObject();
-
-			for (File file : getDirectories(iDir)) {
-				if (file.getName().endsWith("_files")) {
-					continue;
-				}
-				if (iDirsWithBoundKey.contains(file.getName())) {
-					// continue;
-				}
-				containedDirsJson.put(file.getName(), "");
-			}
-			oLocationDetails.put("dirs", containedDirsJson);
-		}
-
-		private Collection<String> addKeyBindings(String location,
-				JSONObject locationDetails) throws IOException, JSONException {
-			Collection<String> dirsWithBoundKey = new HashSet<String>();
-				JSONObject fileBindingsJson = new JSONObject();
-				File f = new File(location + "/" + "categories.txt");
-				File f2 = new File(location + "/" + "photoSorter.txt");
-				File categoriesFile = null;
-				if (f.exists()) {
-					categoriesFile = f;
-				}
-				if (f2.exists()) {
-					categoriesFile = f2;
-				}
-				if (categoriesFile != null) {
-					List<String> allCategoriesInFile = FileUtils
-							.readLines(categoriesFile);
-					for (String aBindingLine : allCategoriesInFile) {
-						// Ignore comments
-						if (aBindingLine.trim().startsWith("#")) {
-							continue;
-						}
-						try {
-							char keyCode = getKeyCode(aBindingLine);
-							String folderName = getFolderName(aBindingLine);
-							fileBindingsJson.put(String.valueOf(keyCode),
-									folderName);
-							dirsWithBoundKey.add(folderName);
-						} catch (RuntimeException e) {
-							e.printStackTrace();
-							System.err.println("Exception: " + e.getMessage()
-									+ ": " + aBindingLine);
-						}
-					}
-					locationDetails.put("keys", fileBindingsJson);
-				}
-			return dirsWithBoundKey;
-		}
-
-		private static String getFolderName(String uncommentedBindingLine)
-				throws RuntimeException {
-			String rightSide = parseBindingLine(uncommentedBindingLine)[1];
-			if (rightSide.length() < 1) {
-				throw new IllegalAccessError("Developer error");
-			}
-			return rightSide;
-		}
-
-		private static char getKeyCode(String uncommentedBindingLine)
-				throws RuntimeException {
-
-			String leftSide = parseBindingLine(uncommentedBindingLine)[0];
-			if (leftSide.length() != 1) {
-				throw new IllegalAccessError("Developer error");
-			}
-			char keyCode = leftSide.charAt(0);
-			return keyCode;
-		}
-
-		private static String[] parseBindingLine(String aBindingLine)
-				throws RuntimeException {
-			if (aBindingLine.trim().startsWith("#")) {
-				throw new IllegalAccessError("Developer error");
-			}
-			String[] pair = aBindingLine.split("=");
-			if (pair.length != 2) {
-				throw new RuntimeException(pair.toString());
-			}
-			return pair;
-		}
-
-		private File[] getDirectories(File loc) {
-			return loc.listFiles((FileFilter) FileFilterUtils
-					.directoryFileFilter());
-		}
-
 	}
 
 	private static class FileServerGroovy {
@@ -1681,6 +1329,352 @@ public class Coagulate {
 		}
 	}
 	
+	private static class Recursive {
+		
+
+		
+		private static JSONObject createFilesJsonRecursive(String[] iDirectoryPathStrings)
+				throws IOException {
+			System.out.println("createFilesJsonRecursive() - begin");
+			JSONObject rItemsJson = new JSONObject();
+			for (String aDirectoryPathString : iDirectoryPathStrings) {
+				if (!Predicates.shouldGetContents(aDirectoryPathString)) {
+					continue;
+				}
+				rItemsJson.put(aDirectoryPathString,
+						createItemDetailsJsonRecursive(aDirectoryPathString));
+			}
+			System.out.println("createFilesJsonRecursive() - end");
+			return rItemsJson;
+		}
+		
+		private static JSONObject createItemDetailsJsonRecursive(String iDirectoryPathString)
+				throws IOException {
+			return getContentsAsJsonRecursive(new File(iDirectoryPathString), 2);
+		}
+		
+		@SuppressWarnings("unused")
+		private JSONObject createLocationDetailsJson(String iDirectoryPathString) throws IOException {
+			JSONObject rLocationDetailsJson = new JSONObject();
+			_1: {
+				File aDirectory = new File(iDirectoryPathString);
+				_2: {
+					Collection<String> dirsWithBoundKey = addKeyBindings(
+							iDirectoryPathString,
+							rLocationDetailsJson);
+					addDirs(aDirectory, rLocationDetailsJson,
+							dirsWithBoundKey);
+				}
+			}
+			return rLocationDetailsJson;
+		}
+		
+		@Deprecated // TODO: bad. Do not use output parameters. Return it instead.
+		private void addDirs(File iDir, JSONObject oLocationDetails,
+				Collection<String> iDirsWithBoundKey) throws JSONException {
+			JSONObject containedDirsJson = new JSONObject();
+
+			for (File file : getDirectories(iDir)) {
+				if (file.getName().endsWith("_files")) {
+					continue;
+				}
+				if (iDirsWithBoundKey.contains(file.getName())) {
+					// continue;
+				}
+				containedDirsJson.put(file.getName(), "");
+			}
+			oLocationDetails.put("dirs", containedDirsJson);
+		}
+
+		private File[] getDirectories(File loc) {
+			return loc.listFiles((FileFilter) FileFilterUtils
+					.directoryFileFilter());
+		}
+		
+		private Collection<String> addKeyBindings(String location,
+				JSONObject locationDetails) throws IOException, JSONException {
+			Collection<String> dirsWithBoundKey = new HashSet<String>();
+				JSONObject fileBindingsJson = new JSONObject();
+				File f = new File(location + "/" + "categories.txt");
+				File f2 = new File(location + "/" + "photoSorter.txt");
+				File categoriesFile = null;
+				if (f.exists()) {
+					categoriesFile = f;
+				}
+				if (f2.exists()) {
+					categoriesFile = f2;
+				}
+				if (categoriesFile != null) {
+					List<String> allCategoriesInFile = FileUtils
+							.readLines(categoriesFile);
+					for (String aBindingLine : allCategoriesInFile) {
+						// Ignore comments
+						if (aBindingLine.trim().startsWith("#")) {
+							continue;
+						}
+						try {
+							char keyCode = getKeyCode(aBindingLine);
+							String folderName = getFolderName(aBindingLine);
+							fileBindingsJson.put(String.valueOf(keyCode),
+									folderName);
+							dirsWithBoundKey.add(folderName);
+						} catch (RuntimeException e) {
+							e.printStackTrace();
+							System.err.println("Exception: " + e.getMessage()
+									+ ": " + aBindingLine);
+						}
+					}
+					locationDetails.put("keys", fileBindingsJson);
+				}
+			return dirsWithBoundKey;
+		}
+		
+
+		private static String getFolderName(String uncommentedBindingLine)
+				throws RuntimeException {
+			String rightSide = parseBindingLine(uncommentedBindingLine)[1];
+			if (rightSide.length() < 1) {
+				throw new IllegalAccessError("Developer error");
+			}
+			return rightSide;
+		}
+
+		private static char getKeyCode(String uncommentedBindingLine)
+				throws RuntimeException {
+
+			String leftSide = parseBindingLine(uncommentedBindingLine)[0];
+			if (leftSide.length() != 1) {
+				throw new IllegalAccessError("Developer error");
+			}
+			char keyCode = leftSide.charAt(0);
+			return keyCode;
+		}
+		
+		private static String[] parseBindingLine(String aBindingLine)
+				throws RuntimeException {
+			if (aBindingLine.trim().startsWith("#")) {
+				throw new IllegalAccessError("Developer error");
+			}
+			String[] pair = aBindingLine.split("=");
+			if (pair.length != 2) {
+				throw new RuntimeException(pair.toString());
+			}
+			return pair;
+		}
+		
+		private static JSONObject getContentsAsJsonRecursive(File iDirectory, int iLevelToRecurse)
+				throws IOException {
+			JSONObject rFilesInLocationJson = new JSONObject();
+			rFilesInLocationJson.put("dirs", new JSONObject(getDirsJson(iDirectory).toString()));
+			for (JsonObject fileEntryJson : getFilesJson(iDirectory)) {
+				rFilesInLocationJson.put(fileEntryJson.getString("fileSystem"),
+						new JSONObject(fileEntryJson.toString()));
+			}
+			return rFilesInLocationJson;
+		}
+
+		private static Set<JsonObject> getFilesJson(File iDirectory)
+				throws IOException {
+			DirectoryStream<Path> subdirectoryStream = Utils.getDirectoryStream(iDirectory);
+			Set<JsonObject> filesJson = FluentIterable
+					.from(subdirectoryStream).filter(Predicates.IS_DISPLAYABLE).transform(Mappings.PATH_TO_JSON_ITEM)
+					.toSet();
+			subdirectoryStream.close();
+			return filesJson;
+		}
+
+		private static JsonObject getDirsJson(File iDirectory)
+				throws IOException {
+			System.out.println();
+			System.out.println("getContentsAsJsonRecursive() - "
+					+ iDirectory.toString());
+			JsonObjectBuilder builder = Json.createObjectBuilder();
+			for (Map.Entry<String, JsonObject> pair : getDirContents(iDirectory)) {
+				builder.add(pair.getKey(), pair.getValue());
+			}
+			return builder.build();
+		}
+
+		private static Set<Map.Entry<String, JsonObject>> getDirContents(
+				File iDirectory) throws IOException {
+			DirectoryStream<Path> directoryStreamRecursive = getDirectoryStreamRecursive(iDirectory);
+			Set<Map.Entry<String, JsonObject>> directoryContents = FluentIterable
+					.from(directoryStreamRecursive).filter(Predicates.IS_DIRECTORY)
+					.transform(Mappings.DIR_PATH_TO_JSON_DIR).toSet();
+			directoryStreamRecursive.close();
+			return directoryContents;
+		}
+		
+		private static DirectoryStream<Path> getDirectoryStreamRecursive(File aDirectory)
+				throws IOException {
+			String absolutePath = aDirectory.getAbsolutePath();
+			Path aDirectoryPath = Paths.get(absolutePath);
+			return getSubdirectoryStreamRecursive(aDirectoryPath);
+		}
+		
+		private static DirectoryStream<Path> getSubdirectoryStreamRecursive(Path iDirectoryPath)
+				throws IOException {
+			DirectoryStream<Path> rDirectoryStream = Files
+					.newDirectoryStream(iDirectoryPath,
+							new DirectoryStream.Filter<Path>() {
+								public boolean accept(Path entry)
+										throws IOException {
+									if (entry.endsWith("_thumbnails")) {
+										return false;
+									}
+									return Files.isDirectory(entry);
+
+								}
+							});
+			return rDirectoryStream;
+		}
+	}
+	
+
+	private static class Mappings {
+
+		private static final Function<Path, JsonObject> PATH_TO_JSON_ITEM = new Function<Path, JsonObject>() {
+			@Override
+			public JsonObject apply(Path iPath) {
+				System.out.print("f");
+				JsonObject j = Json
+						.createObjectBuilder()
+						.add("location",
+								iPath.getParent().toFile().getAbsolutePath()
+										.toString())
+						.add("fileSystem", iPath.toAbsolutePath().toString())
+						.add("httpUrl",
+								httpLinkFor(iPath.toAbsolutePath().toString()))
+						.add("thumbnailUrl", httpLinkFor(thumbnailFor(iPath)))
+						.build();
+				if (iPath.toAbsolutePath().toString().length() < 10) {
+					throw new RuntimeException("Path not added correctly 3");
+				}
+				return j;
+			}
+		};
+
+		private static String httpLinkFor(String iAbsolutePath) {
+			String prefix = "http://192.168.1.2:4451/cmsfs/static2/";
+			return prefix + iAbsolutePath;
+		}
+
+		private static String thumbnailFor(Path iPath) {
+			return iPath.getParent().toFile().getAbsolutePath()
+					+ "/_thumbnails/" + iPath.getFileName().getFileName()
+					+ ".jpg";
+		}
+
+		private static final Function<Path, Map.Entry<String, JsonObject>> DIR_PATH_TO_JSON_DIR = new Function<Path, Map.Entry<String, JsonObject>>() {
+			@Override
+			@Nullable
+			public AbstractMap.SimpleEntry<String, JsonObject> apply(
+					@Nullable Path dir) {
+				if (!dir.toFile().isDirectory()) {
+					throw new RuntimeException("not a dir: "
+							+ dir.toAbsolutePath());
+				}
+				System.out.print("d");
+				JsonObject dirJson;
+				try {
+					dirJson = Utils.getContentsAsJson(dir.toFile());
+				} catch (IOException e) {
+					e.printStackTrace();
+					throw new RuntimeException(e);
+				}
+				return new AbstractMap.SimpleEntry<String, JsonObject>(dir
+						.toAbsolutePath().toString(), dirJson);
+			}
+		};
+	}
+	private static class Predicates {
+		private static final Predicate<Path> IS_DISPLAYABLE = new Predicate<Path>() {
+			@Override
+			public boolean apply(Path iPath) {
+				if (iPath.toFile().isDirectory()) {
+					return false;
+				}
+				String filename = iPath.getFileName().toString();
+				if (filename.contains(".txt")) {
+					return false;
+				}
+				if (filename.contains("DS_Store")) {
+					return false;
+				}
+				if (filename.endsWith(".html") || filename.endsWith(".htm")) {
+					return false;
+				}
+				return true;
+			}
+		};
+		
+		private static final Predicate<Path> IS_DIRECTORY = new Predicate<Path>() {
+			@Override
+			public boolean apply(Path iPath) {
+				return iPath.toFile().isDirectory();
+			}
+		};
+
+		private static boolean shouldGetContents(String iDirectoryPathString) {
+			System.out.println("3 " + iDirectoryPathString);
+			if (iDirectoryPathString.startsWith("#")) {
+				return false;
+			}
+			File aDirectory = new File(iDirectoryPathString);
+			if (!aDirectory.exists()) {
+				return false;
+			}
+			if (!aDirectory.isDirectory()) {
+				return false;
+			}
+			return true;
+		}
+	}
+	
+	private static class Utils {
+		
+		private static JsonObject getContentsAsJson(File iDirectory)
+				throws IOException {
+//			System.out.println("getContentsAsJson() - begin");
+			JsonObjectBuilder rFilesInLocationJson = Json.createObjectBuilder();
+			DirectoryStream<Path> directoryStream = Utils.getDirectoryStream(iDirectory);
+			Set<JsonObject> filesInLocation = FluentIterable
+					.from(directoryStream).filter(Predicates.IS_DISPLAYABLE)
+					.transform(Mappings.PATH_TO_JSON_ITEM).toSet();
+			directoryStream.close();
+			for (JsonObject fileEntryJson : filesInLocation) {
+				rFilesInLocationJson.add(fileEntryJson.getString("fileSystem"),
+						fileEntryJson);
+				if (fileEntryJson.toString().length() < 10) {
+					System.out.println("Path not added correctly 1");
+					throw new RuntimeException("Path not added correctly");
+				}
+			}
+			JsonObject build = rFilesInLocationJson.build();
+//			System.out.println("\ngetContentsAsJson() - end: " + build);
+			return build;
+		}
+		
+		private static DirectoryStream<Path> getDirectoryStream(File aDirectory)
+				throws IOException {
+			String absolutePath = aDirectory.getAbsolutePath();
+			Path aDirectoryPath = Paths.get(absolutePath);
+			return Utils.getDirectoryStream(aDirectoryPath);
+		}
+
+		private static DirectoryStream<Path> getDirectoryStream(Path iDirectoryPath)
+				throws IOException {
+			DirectoryStream<Path> rDirectoryStream = Files
+					.newDirectoryStream(iDirectoryPath,
+							new DirectoryStream.Filter<Path>() {
+								public boolean accept(Path entry)
+										throws IOException {
+									return !Files.isDirectory(entry);
+								}
+							});
+			return rDirectoryStream;
+		}
+	}
 
 	public static void main(String[] args) throws URISyntaxException {
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
