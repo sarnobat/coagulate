@@ -477,8 +477,8 @@ public class Coagulate {
 		private JSONObject createListJson(String[] iDirectoryPathStrings)
 				throws IOException {
 			JSONObject rResponse = new JSONObject();
-			rResponse.put("items", createFilesJson(iDirectoryPathStrings));
 			rResponse.put("itemsRecursive", createFilesJsonRecursive(iDirectoryPathStrings));
+			rResponse.put("items", createFilesJson(iDirectoryPathStrings));
 			rResponse.put("subdirectories",
 					createSubdirectoriesJson(iDirectoryPathStrings));
 			System.out.println("createListJson() - end");
@@ -628,7 +628,7 @@ public class Coagulate {
 			directoryStream.close();
 			for (JsonObject fileEntryJson : filesInLocation) {
 				rFilesInLocationJson.add(fileEntryJson.getString("fileSystem"),
-						fileEntryJson.toString());
+						fileEntryJson);
 				if (fileEntryJson.toString().length() < 10) {
 					System.out.println("Path not added correctly 1");
 					throw new RuntimeException("Path not added correctly");
@@ -694,10 +694,10 @@ public class Coagulate {
 				throws IOException {
 //			Json.createObjectBuilder().add("dirs", getDirsJson(iDirectory));
 			JSONObject rFilesInLocationJson = new JSONObject();
-			rFilesInLocationJson.put("dirs", getDirsJson(iDirectory));
+			rFilesInLocationJson.put("dirs", new JSONObject(getDirsJson(iDirectory).toString()));
 			for (JsonObject fileEntryJson : getFilesJson(iDirectory)) {
 				rFilesInLocationJson.put(fileEntryJson.getString("fileSystem"),
-						fileEntryJson.toString());
+						new JSONObject(fileEntryJson.toString()));
 				//System.out.println("++++++ " + fileEntryJson.toString());
 				if (fileEntryJson.toString().length() < 10) {
 					throw new RuntimeException("Path not added correctly 2");
