@@ -435,7 +435,7 @@ function createThumbnailItemHtml(accumulator, fileObj) {
 			}
 		}
 		toBeAppended = "<span id='thumbnail-"+fileSystem+"'><a href='" +httpUrl+"'>" + toBeAppended + "</a>";
-		toBeAppended += "&nbsp;";
+		toBeAppended += "&nbsp;</span>";
 	}	
 	/*
 	var localLink = "<a href=\"file://" + item2.fileSystem.toString() +"\">" + "Local Link" + "</a>";
@@ -633,6 +633,8 @@ function moveFile(button, filePath, destinationDirSimpleName,id) {
 	$.getJSON(urlBase + "/move?filePath="+encodeURIComponent(filePath) + "&destinationDirSimpleName=" + encodeURIComponent(destinationDirSimpleName),function(response){
 		$("[id='card-" + filePath + "']").remove();
 		$("[id='thumbnail-" + filePath + "']").remove();
+		
+		// TODO: Also remove from pairs global variable so it doesn't keep coming back when we shuffle
 //		$("#" + id).remove();
 	});
 }
