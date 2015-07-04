@@ -179,6 +179,7 @@ public class Coagulate {
 		@GET
 		@javax.ws.rs.Path("static/{absolutePath : .+}")
 		@Produces("application/json")
+		@Deprecated // Use SSH for serving, so we can put the app server on a separate host.
 		public Response getFile(@PathParam("absolutePath") String absolutePath, @Context HttpHeaders header){
 			Object entity = "{ 'foo' : 'bar' }";
 			String mimeType = "application/json";
@@ -256,7 +257,6 @@ public class Coagulate {
 				@QueryParam("filePath") String iFilePath,
 				@QueryParam("destinationDirSimpleName") String iDestinationDirSimpleName)
 				throws JSONException, IOException {
-			//System.out.println("move() - begin");
 			if (iFilePath.endsWith("htm") || iFilePath.endsWith(".html")) {
 				throw new RuntimeException("Need to move the _files folder too");
 			}
@@ -1449,10 +1449,10 @@ public class Coagulate {
 				throws IOException {
 			String absolutePath = aDirectory.getAbsolutePath();
 			Path aDirectoryPath = Paths.get(absolutePath);
-			return Utils.getDirectoryStream(aDirectoryPath);
+			return Utils.getDirectoryStream2(aDirectoryPath);
 		}
 
-		private static DirectoryStream<Path> getDirectoryStream(Path iDirectoryPath)
+		private static DirectoryStream<Path> getDirectoryStream2(Path iDirectoryPath)
 				throws IOException {
 			return Files
 					.newDirectoryStream(iDirectoryPath,
