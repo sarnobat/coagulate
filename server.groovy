@@ -28,6 +28,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.ws.rs.GET;
 import javax.ws.rs.PathParam;
 
@@ -572,7 +575,7 @@ public class Coagulate {
 			return rItemsJson;
 		}
 
-		private JSONObject createItemDetailsJson(String iDirectoryPathString)
+		private JsonObject createItemDetailsJson(String iDirectoryPathString)
 				throws IOException {
 			return getContentsAsJson(new File(iDirectoryPathString));
 		}
@@ -648,21 +651,21 @@ public class Coagulate {
 		}
 		
 		
-		private static JSONObject getContentsAsJson(File iDirectory)
+		private static JsonObject getContentsAsJson(File iDirectory)
 				throws IOException {
 			System.out.println("getContentsAsJson() - begin");
-			JSONObject rFilesInLocationJson = new JSONObject();
+			JsonObjectBuilder rFilesInLocationJson = Json.createObjectBuilder();
 			DirectoryStream<Path> directoryStream = getDirectoryStream(iDirectory);
-			Set<JSONObject> filesInLocation = FluentIterable
+			Set<JsonObject> filesInLocation = FluentIterable
 					.from(directoryStream).filter(IS_DISPLAYABLE)
 					.transform(PATH_TO_JSON_ITEM).toSet();
 			directoryStream.close();
-			for (JSONObject fileEntryJson : filesInLocation) {
-				rFilesInLocationJson.put(fileEntryJson.getString("fileSystem"),
+			for (JsonObject fileEntryJson : filesInLocation) {
+				rFilesInLocationJson.add(fileEntryJson.getString("fileSystem"),
 						fileEntryJson);
 			}
 			System.out.println("getContentsAsJson() - end");
-			return rFilesInLocationJson;
+			return rFilesInLocationJson.build();
 		}
 
 		private static final Predicate<Path> IS_DISPLAYABLE = new Predicate<Path>() {
@@ -684,24 +687,24 @@ public class Coagulate {
 			}
 		};
 
-		private static final Function<Path, Map.Entry<String, JSONObject>> DIR_PATH_TO_JSON_DIR = new Function<Path, Map.Entry<String, JSONObject>>() {
+		private static final Function<Path, Map.Entry<String, JsonObject>> DIR_PATH_TO_JSON_DIR = new Function<Path, Map.Entry<String, JsonObject>>() {
 			@Override
 			@Nullable
-			public AbstractMap.SimpleEntry<String, JSONObject> apply(
+			public AbstractMap.SimpleEntry<String, JsonObject> apply(
 					@Nullable Path dir) {
 				if (!dir.toFile().isDirectory()) {
 					throw new RuntimeException("not a dir: "
 							+ dir.toAbsolutePath());
 				}
 				System.out.print("d");
-				JSONObject dirJson;
+				JsonObject dirJson;
 				try {
 					dirJson = getContentsAsJson(dir.toFile());
 				} catch (IOException e) {
 					e.printStackTrace();
 					throw new RuntimeException(e);
 				}
-				return new AbstractMap.SimpleEntry<String, JSONObject>(dir.toAbsolutePath().toString(),
+				return new AbstractMap.SimpleEntry<String, JsonObject>(dir.toAbsolutePath().toString(),
 						dirJson);
 			}
 		};
@@ -717,61 +720,75 @@ public class Coagulate {
 				return iPath.toFile().isDirectory();
 			}
 		};
-		@SuppressWarnings("unused")
+
 		private static JSONObject getContentsAsJsonRecursive(File iDirectory, int iLevelToRecurse)
 				throws IOException {
-			int levelToRecurse = iLevelToRecurse - 1;
-			JSONObject dirsJson = new JSONObject();
-			_1: {
-				System.out.println();
-				System.out.println("getContentsAsJsonRecursive() - "
-						+ iDirectory.toString());
-				int i = 0;
-				DirectoryStream<Path> directoryStreamRecursive = getDirectoryStreamRecursive(iDirectory);
-				Set<Map.Entry<String, JSONObject>> directoryContents = FluentIterable
-						.from(directoryStreamRecursive).filter(IS_DIRECTORY)
-						.transform(DIR_PATH_TO_JSON_DIR).toSet();
-				directoryStreamRecursive.close();
-				for (Map.Entry<String, JSONObject> pair : directoryContents) {
-					dirsJson.put(pair.getKey(), pair.getValue());
-				}
-			}
-			System.out.println();
+			Json.createObjectBuilder().add("dirs", getDirsJson(iDirectory));
 			JSONObject rFilesInLocationJson = new JSONObject();
-			rFilesInLocationJson.put("dirs", dirsJson);
-			_3: {
-				int j = 0;
-				DirectoryStream<Path> subdirectoryStream = getSubdirectoryStream(iDirectory);
-				Set<JSONObject> filesJson = FluentIterable
-						.from(subdirectoryStream).filter(IS_DISPLAYABLE).transform(PATH_TO_JSON_ITEM)
-						.toSet();
-				subdirectoryStream.close();
-				for (JSONObject fileEntryJson : filesJson) {
-					rFilesInLocationJson.put(fileEntryJson.getString("fileSystem"), fileEntryJson);
-				}
+			rFilesInLocationJson.put("dirs", getDirsJson(iDirectory));
+			for (JsonObject fileEntryJson : getFilesJson(iDirectory)) {
+				rFilesInLocationJson.put(fileEntryJson.getString("fileSystem"),
+						fileEntryJson);
 			}
 			return rFilesInLocationJson;
 		}
 
-		private static final Function<Path, JSONObject> PATH_TO_JSON_ITEM = new Function<Path, JSONObject>() {
-			@Override
-			public JSONObject apply(Path iPath) {
-				System.out.print("f");
-				JSONObject rFileEntryJson = new JSONObject();
-				rFileEntryJson.put("location", iPath.getParent().toFile()
-						.getAbsolutePath());
-				rFileEntryJson.put("fileSystem", iPath.toAbsolutePath()
-						.toString());
-				rFileEntryJson.put("httpUrl", httpLinkFor(iPath
-						.toAbsolutePath().toString()));
-				rFileEntryJson.put("thumbnailUrl", httpLinkFor(iPath
-						.getParent().toFile().getAbsolutePath()
-						+ "/_thumbnails/"
-						+ iPath.getFileName().getFileName()
-						+ ".jpg"));
-				return rFileEntryJson;
+		private static Set<JsonObject> getFilesJson(File iDirectory)
+				throws IOException {
+			DirectoryStream<Path> subdirectoryStream = getSubdirectoryStream(iDirectory);
+			Set<JsonObject> filesJson = FluentIterable
+					.from(subdirectoryStream).filter(IS_DISPLAYABLE).transform(PATH_TO_JSON_ITEM)
+					.toSet();
+			subdirectoryStream.close();
+			return filesJson;
+		}
+
+		private static JsonObject getDirsJson(File iDirectory)
+				throws IOException {
+			System.out.println();
+			System.out.println("getContentsAsJsonRecursive() - "
+					+ iDirectory.toString());
+			JsonObjectBuilder builder = Json.createObjectBuilder();
+			for (Map.Entry<String, JsonObject> pair : getDirContents(iDirectory)) {
+				builder.add(pair.getKey(), pair.getValue());
 			}
+			return builder.build();
+		}
+
+		private static Set<Map.Entry<String, JsonObject>> getDirContents(
+				File iDirectory) throws IOException {
+			DirectoryStream<Path> directoryStreamRecursive = getDirectoryStreamRecursive(iDirectory);
+			Set<Map.Entry<String, JsonObject>> directoryContents = FluentIterable
+					.from(directoryStreamRecursive).filter(IS_DIRECTORY)
+					.transform(DIR_PATH_TO_JSON_DIR).toSet();
+			directoryStreamRecursive.close();
+			return directoryContents;
+		}
+
+		private static final Function<Path, JsonObject> PATH_TO_JSON_ITEM = new Function<Path, JsonObject>() {
+			@Override
+			public JsonObject apply(Path iPath) {
+				System.out.print("f");
+				return Json
+						.createObjectBuilder()
+						.add("location",
+								iPath.getParent().toFile().getAbsolutePath())
+						.add("fileSystem", iPath.toAbsolutePath().toString())
+						.add("httpUrl",
+								httpLinkFor(iPath.toAbsolutePath().toString()))
+						.add("thumbnailUrl", httpLinkFor(thumbnailFor(iPath)))
+						.build();
+			}
+
 		};
+
+		private static String thumbnailFor(Path iPath) {
+			return iPath.getParent().toFile()
+					.getAbsolutePath()
+					+ "/_thumbnails/"
+					+ iPath.getFileName().getFileName()
+					+ ".jpg";
+		}
 
 		@SuppressWarnings("unused")
 		private static JSONObject getExifData(Path aFilePath) throws IOException {
