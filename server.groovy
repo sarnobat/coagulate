@@ -65,61 +65,10 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-//import com.jcraft.jsch.ChannelExec;
-//import com.jcraft.jsch.ChannelSftp;
-//import com.jcraft.jsch.JSch;
-//import com.jcraft.jsch.Session;
-import com.google.common.collect.Maps;
 
 public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
 	public static class MyResource { // Must be public
-//		private static final String SFTPHOST = "netgear.rohidekar.com";
-//		private static final String clientIdRSAPath = "/Users/sarnobat/.ssh/id_rsa";
-//		private static final int SFTPPORT = 22;
-//		private static final String SFTPUSER = "sarnobat";
-		
-//	    private static final JSch jsch = new JSch();
-//	    private static Session session;
-//	    private static synchronized Session getSession() throws Exception {
-//	        try {
-//	        	System.out.println("getSession() - 1" + getSessionStatus(session));
-//	        	
-//	        	ChannelExec testChannel = (ChannelExec) session.openChannel("shell");
-//	        	System.out.println("getSession() - 2" + getSessionStatus(session));
-//	            testChannel.setCommand("true");
-//	        	System.out.println("getSession() - 3" + getSessionStatus(session));
-//	            testChannel.connect();
-//	        	System.out.println("getSession() - 4" + getSessionStatus(session));
-//	            testChannel.disconnect();
-//	        	System.out.println("getSession() - 5" + getSessionStatus(session));
-//	        } catch (Throwable t) {
-//	        	if (session == null) {
-//		            session = jsch.getSession(SFTPUSER, SFTPHOST, SFTPPORT);
-//	        	}
-//	        	if (!Paths.get(clientIdRSAPath).toFile().exists()) {
-//	        		throw new RuntimeException("No such file: " + clientIdRSAPath);
-//	        	}
-//	        	System.out.println("getSession() - 6" + getSessionStatus(session));
-//	        	jsch.addIdentity(clientIdRSAPath);
-//	        	System.out.println("getSession() - 7" + getSessionStatus(session));
-//	            java.util.Properties config = new java.util.Properties();
-//	        	System.out.println("getSession() - 8" + getSessionStatus(session));
-//				config.put("StrictHostKeyChecking", "no");
-//	        	System.out.println("getSession() - 9" + getSessionStatus(session));
-//	            session.setConfig(config);
-//	        	System.out.println("getSession() - 10" + getSessionStatus(session));
-//	            if (!session.isConnected()) {
-//	            	session.connect();
-//		        	System.out.println("getSession() - 11" + getSessionStatus(session));
-//	            }
-//	        }
-//	        return session;
-//	    }
-//	    
-//		private static String getSessionStatus(Session session) {
-//			return "\tsession connected = "+session.isConnected() + "::server alive count max = " + session.getServerAliveCountMax() + "::server alive interval = " + session.getServerAliveInterval();
-//		}
 
 		//
 		// mutators
@@ -232,7 +181,7 @@ public class Coagulate {
 //			ClientSession session ;
 			SftpClient sftp ;
 				client = SshClient.setUpDefaultClient();
-		        client.getProperties().put(ClientFactoryManager.HEARTBEAT_INTERVAL, "500");
+		        client.getProperties().put(ClientFactoryManager.HEARTBEAT_INTERVAL, "50000");
 				client.start();
 				if (session != null && session.isClosed()) {
 					System.out.println("getClient() - too late, was closed");
@@ -838,22 +787,6 @@ public class Coagulate {
 						+ iDirectory.toString());
 				int i = 0;
 				DirectoryStream<Path> directoryStreamRecursive = getDirectoryStreamRecursive(iDirectory);
-//			for (Path aFilePath : directoryStreamRecursive) {
-//				if (!Files.isDirectory(aFilePath)) {
-//					continue;
-//				}
-//				System.out.print("d");
-//				if (levelToRecurse > 0 || aFilePath.getFileName().toString().startsWith("_")) {
-////					if (i > SUBDIRS_LIMIT) {
-////						break;
-////					}
-//					dirsJson.put(
-//							aFilePath.toAbsolutePath().toString(),
-//							getContentsAsJsonRecursive(aFilePath.toFile(),
-//									levelToRecurse));
-//					++i;
-//				}
-//			}
 				Set<Map.Entry<String, JSONObject>> directoryContents = FluentIterable
 						.from(directoryStreamRecursive).filter(IS_DIRECTORY)
 						.transform(DIR_PATH_TO_JSON_DIR).toSet();
@@ -868,51 +801,6 @@ public class Coagulate {
 			_3: {
 				int j = 0;
 				DirectoryStream<Path> subdirectoryStream = getSubdirectoryStream(iDirectory);
-				
-//				for (Path aFilePath : subdirectoryStream) {
-//					String filename = aFilePath.getFileName().toString();
-//					String fileAbsolutePath = aFilePath.toAbsolutePath()
-//							.toString();
-//					if (Files.isDirectory(aFilePath)) {
-//						continue;
-//					}
-//					if (filename.contains("DS_Store")) {
-//						continue;
-//					}
-//					if (filename.endsWith(".html") || filename.endsWith(".htm")
-//							|| iDirectory.getName().endsWith("_files")) {
-//						continue;
-//					}
-//					if (!iDirectory.getName().startsWith("_+")) {
-//						if (j > FILES_PER_DIR_LIMIT) {
-//							break;
-//						}
-//					}
-//					System.out.print("f");
-//					String thumbnailFileAbsolutePath = iDirectory
-//							.getAbsolutePath()
-//							+ "/_thumbnails/"
-//							+ filename
-//							+ ".jpg";
-//					JSONObject fileEntryJson;
-//					_2: {
-//						JSONObject rFileEntryJson = new JSONObject();
-//						rFileEntryJson.put("location",
-//								iDirectory.getAbsolutePath());
-//						rFileEntryJson.put("fileSystem", fileAbsolutePath);
-//						rFileEntryJson.put("httpUrl",
-//								httpLinkFor(fileAbsolutePath));
-//						rFileEntryJson.put("thumbnailUrl",
-//								httpLinkFor(thumbnailFileAbsolutePath));
-//						fileEntryJson = rFileEntryJson;
-//						++j;
-//					}
-//					if (filename.matches("(?i).*jpg")) {
-//						JSONObject exifJson = getExifData(aFilePath);
-//						fileEntryJson.put("exif", exifJson);
-//					}
-//					rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
-//				}
 				Set<JSONObject> filesJson = FluentIterable
 						.from(subdirectoryStream).filter(IS_DISPLAYABLE).transform(PATH_TO_JSON_ITEM)
 						.toSet();
@@ -924,6 +812,7 @@ public class Coagulate {
 			return rFilesInLocationJson;
 		}
 
+		@SuppressWarnings("unused")
 		private static JSONObject getExifData(Path aFilePath) throws IOException {
 			JSONObject exifJson = new JSONObject();
 			exifJson.put("datetime",
