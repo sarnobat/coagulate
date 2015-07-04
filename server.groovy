@@ -513,8 +513,6 @@ public class Coagulate {
 			JSONObject rResponse = new JSONObject();
 			rResponse.put("items", createFilesJson(iDirectoryPathStrings));
 			rResponse.put("itemsRecursive", createFilesJsonRecursive(iDirectoryPathStrings));
-//			rResponse.put("locations",
-//					createLocationsJson(iDirectoryPathStrings));
 			rResponse.put("subdirectories",
 					createSubdirectoriesJson(iDirectoryPathStrings));
 			System.out.println("createListJson() - end");
@@ -572,19 +570,6 @@ public class Coagulate {
 			}
 			System.out.println("createFilesJson() - end");
 			return rItemsJson;
-		}
-
-		private JSONObject createLocationsJson(String[] iDirectoryPathStrings)
-				throws IOException {
-			JSONObject rLocationsJson = new JSONObject();
-			for (String aDirectoryPathString : iDirectoryPathStrings) {
-				if (!shouldGetContents(aDirectoryPathString)) {
-					continue;
-				}
-				rLocationsJson.put(aDirectoryPathString,
-						createLocationDetailsJson(aDirectoryPathString));
-			}
-			return rLocationsJson;
 		}
 
 		private JSONObject createItemDetailsJson(String iDirectoryPathString)
@@ -708,21 +693,19 @@ public class Coagulate {
 			@Override
 			public JSONObject apply(Path iPath) {
 				System.out.print("f");
-				File iDirectory = iPath.getParent().toFile();
-				String fileAbsolutePath = iPath.toAbsolutePath().toString();
-				String thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + iPath.getFileName().getFileName() + ".jpg"; 
-				JSONObject fileEntryJson ;
-				_2: {
-					JSONObject rFileEntryJson = new JSONObject();
-					rFileEntryJson
-							.put("location", iDirectory.getAbsolutePath());
-					rFileEntryJson
-							.put("fileSystem", fileAbsolutePath);
-					rFileEntryJson.put("httpUrl", httpLinkFor(fileAbsolutePath));
-					rFileEntryJson.put("thumbnailUrl", httpLinkFor(thumbnailFileAbsolutePath));
-					fileEntryJson = rFileEntryJson;
-				}
-				return fileEntryJson;
+				JSONObject rFileEntryJson = new JSONObject();
+				rFileEntryJson.put("location", iPath.getParent().toFile()
+						.getAbsolutePath());
+				rFileEntryJson.put("fileSystem", iPath.toAbsolutePath()
+						.toString());
+				rFileEntryJson.put("httpUrl", httpLinkFor(iPath
+						.toAbsolutePath().toString()));
+				rFileEntryJson.put("thumbnailUrl", httpLinkFor(iPath
+						.getParent().toFile().getAbsolutePath()
+						+ "/_thumbnails/"
+						+ iPath.getFileName().getFileName()
+						+ ".jpg"));
+				return rFileEntryJson;
 			}
 		};
 
@@ -767,7 +750,9 @@ public class Coagulate {
 			}
 		};
 			
+		@SuppressWarnings("unused")
 		private static final int SUBDIRS_LIMIT = 20;
+		@SuppressWarnings("unused")
 		private static final int FILES_PER_DIR_LIMIT = 20;
 		
 		private static final Predicate<Path> IS_DIRECTORY = new Predicate<Path>() {
