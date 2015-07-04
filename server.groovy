@@ -656,30 +656,6 @@ public class Coagulate {
 			Set<JSONObject> filesInLocation = FluentIterable
 					.from(directoryStream).filter(IS_DISPLAYABLE)
 					.transform(PATH_TO_JSON_ITEM).toSet();
-//			for (Path aFilePath : directoryStream) {
-//				String filename = aFilePath.getFileName().toString();
-//				String fileAbsolutePath = aFilePath.toAbsolutePath().toString();
-//				if (filename.contains("DS_Store")) {
-//					continue;
-//				}
-//				if (filename.endsWith(".html") || filename.endsWith(".htm")
-//						|| iDirectory.getName().endsWith("_files")) {
-//					continue;
-//				}
-//				String thumbnailFileAbsolutePath = iDirectory.getAbsolutePath() + "/_thumbnails/" + filename + ".jpg"; 
-//				JSONObject fileEntryJson ;
-//				_2: {
-//					JSONObject rFileEntryJson = new JSONObject();
-//					rFileEntryJson
-//							.put("location", iDirectory.getAbsolutePath());
-//					rFileEntryJson
-//							.put("fileSystem", fileAbsolutePath);
-//					rFileEntryJson.put("httpUrl", httpLinkFor(fileAbsolutePath));
-//					rFileEntryJson.put("thumbnailUrl", httpLinkFor(thumbnailFileAbsolutePath));
-//					fileEntryJson = rFileEntryJson;
-//				}
-//				rFilesInLocationJson.put(fileAbsolutePath, fileEntryJson);
-//			}
 			directoryStream.close();
 			for (JSONObject fileEntryJson : filesInLocation) {
 				rFilesInLocationJson.put(fileEntryJson.getString("fileSystem"),
@@ -688,26 +664,6 @@ public class Coagulate {
 			System.out.println("getContentsAsJson() - end");
 			return rFilesInLocationJson;
 		}
-		
-		private static final Function<Path, JSONObject> PATH_TO_JSON_ITEM = new Function<Path, JSONObject>() {
-			@Override
-			public JSONObject apply(Path iPath) {
-				System.out.print("f");
-				JSONObject rFileEntryJson = new JSONObject();
-				rFileEntryJson.put("location", iPath.getParent().toFile()
-						.getAbsolutePath());
-				rFileEntryJson.put("fileSystem", iPath.toAbsolutePath()
-						.toString());
-				rFileEntryJson.put("httpUrl", httpLinkFor(iPath
-						.toAbsolutePath().toString()));
-				rFileEntryJson.put("thumbnailUrl", httpLinkFor(iPath
-						.getParent().toFile().getAbsolutePath()
-						+ "/_thumbnails/"
-						+ iPath.getFileName().getFileName()
-						+ ".jpg"));
-				return rFileEntryJson;
-			}
-		};
 
 		private static final Predicate<Path> IS_DISPLAYABLE = new Predicate<Path>() {
 			@Override
@@ -796,6 +752,26 @@ public class Coagulate {
 			}
 			return rFilesInLocationJson;
 		}
+
+		private static final Function<Path, JSONObject> PATH_TO_JSON_ITEM = new Function<Path, JSONObject>() {
+			@Override
+			public JSONObject apply(Path iPath) {
+				System.out.print("f");
+				JSONObject rFileEntryJson = new JSONObject();
+				rFileEntryJson.put("location", iPath.getParent().toFile()
+						.getAbsolutePath());
+				rFileEntryJson.put("fileSystem", iPath.toAbsolutePath()
+						.toString());
+				rFileEntryJson.put("httpUrl", httpLinkFor(iPath
+						.toAbsolutePath().toString()));
+				rFileEntryJson.put("thumbnailUrl", httpLinkFor(iPath
+						.getParent().toFile().getAbsolutePath()
+						+ "/_thumbnails/"
+						+ iPath.getFileName().getFileName()
+						+ ".jpg"));
+				return rFileEntryJson;
+			}
+		};
 
 		@SuppressWarnings("unused")
 		private static JSONObject getExifData(Path aFilePath) throws IOException {
