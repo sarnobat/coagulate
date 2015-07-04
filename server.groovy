@@ -61,6 +61,7 @@ import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONWriter;
 
 import com.google.api.client.util.IOUtils;
 import com.google.common.base.Function;
@@ -68,6 +69,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.thoughtworks.xstream.io.json.JsonWriter;
 
 public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
@@ -82,13 +84,10 @@ public class Coagulate {
 		@Produces("application/json")
 		public Response moveToParent(@QueryParam("filePath") String sourceFilePathString)
 				throws JSONException {
-//			System.out.println("moveToParent() - begin - " + sourceFilePathString);
 			if (sourceFilePathString.endsWith("htm") || sourceFilePathString.endsWith(".html")) {
 				throw new RuntimeException("Need to move the _files folder too");
 			}
-
 			doMoveToParent(sourceFilePathString);
-			
 			return Response.ok()
 					.header("Access-Control-Allow-Origin", "*")
 					.entity(new JSONObject().toString(4)).type("application/json")
@@ -130,36 +129,28 @@ public class Coagulate {
 			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(IS_UNDER(absolutePath))){
 				try {
 					final SftpClient sftp = getClient();
-					
-//					final ChannelSftp sftp = getChannelSftp();
-//					sftp.cd(Paths.get(absolutePath).getParent().toAbsolutePath().toString());
-//					String fileSimpleName = Paths.get(absolutePath)
-//							.getFileName().toString();
-					System.out.println("getFileSsh() - 1" + getStatus(sftp));
 					final InputStream is = sftp.read(absolutePath);
-					System.out.println("getFileSsh() - 2"+ getStatus(sftp));
 					StreamingOutput stream = new StreamingOutput() {
 					    @Override
-					    public void write(OutputStream os) throws IOException,
-					    WebApplicationException {
-					    	System.out.println("Start");
-					    	System.out.println("getFileSsh() - 3"+ getStatus(sftp));
-					      IOUtils.copy(is, os);
-					      System.out.println("getFileSsh() - 4"+ getStatus(sftp));
-					      is.close();
-					      System.out.println("getFileSsh() - 5"+ getStatus(sftp));
-					      os.close();
-					      System.out.println("getFileSsh() - 6"+ getStatus(sftp));
-//					      sftp.disconnect();
-					      System.out.println("getFileSsh() - 7"+ getStatus(sftp));
-//					      sftp.exit();
-//					      sftp.close();
-//					      client.close();
-//					      session.close(false);
-					      System.out.println("getFileSsh() - 8"+ getStatus(sftp));
-					      System.out.println("getFileSsh() - served\t" + absolutePath);
-					      System.out.println("Done");
-					    }
+						public void write(OutputStream os) throws IOException,
+								WebApplicationException {
+							System.out.println("getFileSsh() - 3"
+									+ getStatus(sftp));
+							IOUtils.copy(is, os);
+							is.close();
+							os.close();
+							System.out.println("getFileSsh() - 6"
+									+ getStatus(sftp));
+							// sftp.disconnect();
+							System.out.println("getFileSsh() - 7"
+									+ getStatus(sftp));
+							// sftp.exit();
+							// sftp.close();
+							// client.close();
+							// session.close(false);
+							System.out.println("getFileSsh() - served\t"
+									+ absolutePath);
+						}
 
 					  };
 					  
@@ -201,12 +192,9 @@ public class Coagulate {
 //			}
 			return sftp;
 		}
-//		private static SshClient client;
 		private static ClientSession session ;
-//		private static SftpClient sftp ;
 
 		private static String getStatus(SftpClient sftp) {
-//			return sftp.isConnected() + "::" + sftp.isClosed();
 			return "";
 		}
 		
@@ -228,26 +216,6 @@ public class Coagulate {
 			return IS_UNDER;
 		}
 		
-//		private static ChannelSftp getChannelSftp() {
-//			System.out.println("getChannelSftp() - begin. Getting session.");
-//			try {
-//				Session session = getSession();
-//				System.out.println("getChannelSftp() - got session, about to open channel");
-//				ChannelSftp openChannel = (ChannelSftp) session.openChannel("sftp");
-//				System.out.println("getChannelSftp() - checking if connected");
-//				if (!openChannel.isConnected()) {
-//					System.out.println("getChannelSftp() - not connected, connecting");
-//					openChannel.connect();
-//					System.out.println("getChannelSftp() - connected");
-//				}
-//				System.out.println("getChannelSftp() - end");
-//				return openChannel;
-//			} catch (Exception e) {
-//				e.printStackTrace();
-//				throw new RuntimeException(e);
-//			}
-//		}
-
 		@GET
 		@javax.ws.rs.Path("static/{absolutePath : .+}")
 		@Produces("application/json")
@@ -327,12 +295,10 @@ public class Coagulate {
 		private static void copyFileToFolder(String filePath,
 				String iDestinationDirPath) throws IllegalAccessError, IOException {
 			Path sourceFilePath = Paths.get(filePath);
-//			System.out.println(filePath);
 			if (!Files.exists(sourceFilePath)) {
 				throw new RuntimeException("No such source file");
 			}
 			String string = sourceFilePath.getFileName().toString();
-//			System.out.println(iDestinationDirPath);
 			Path destinationDir = Paths.get(iDestinationDirPath);
 			doCopy(sourceFilePath, getUnconflictedDestinationFilePath(destinationDir, string));
 		}
@@ -349,16 +315,14 @@ public class Coagulate {
 				@QueryParam("filePath") String iFilePath,
 				@QueryParam("destinationDirSimpleName") String iDestinationDirSimpleName)
 				throws JSONException, IOException {
-			System.out.println("move() - begin");
+			//System.out.println("move() - begin");
 			if (iFilePath.endsWith("htm") || iFilePath.endsWith(".html")) {
 				throw new RuntimeException("Need to move the _files folder too");
 			}
-			System.out.println("move() - 2");
 			if (iDestinationDirSimpleName.equals("_ 1")) {
 				System.out.println("move() - dir name is wrong");
 				throw new RuntimeException("dir name is wrong: " + iDestinationDirSimpleName);
 			}
-//			System.out.println("move() - 3");
 			try {
 				moveFileToSubfolder(iFilePath, iDestinationDirSimpleName);
 			} catch (Exception e) {
@@ -387,7 +351,7 @@ public class Coagulate {
 				throw new RuntimeException("Target is an existing file");
 			}
 			if (fileAlreadyInDesiredSubdir(iSubfolderSimpleName, sourceFilePath)) {
-//				System.out.println("Not moving to self");
+				//System.out.println("Not moving to self");
 				return;
 			}
 			doMove(sourceFilePath, getUnconflictedDestinationFilePath(iSubfolderSimpleName, sourceFilePath));
@@ -512,7 +476,6 @@ public class Coagulate {
 
 		private JSONObject createListJson(String[] iDirectoryPathStrings)
 				throws IOException {
-//			System.out.println("createListJson() - begin");
 			JSONObject rResponse = new JSONObject();
 			rResponse.put("items", createFilesJson(iDirectoryPathStrings));
 			rResponse.put("itemsRecursive", createFilesJsonRecursive(iDirectoryPathStrings));
@@ -664,8 +627,9 @@ public class Coagulate {
 				rFilesInLocationJson.add(fileEntryJson.getString("fileSystem"),
 						fileEntryJson);
 			}
-			System.out.println("getContentsAsJson() - end");
-			return rFilesInLocationJson.build();
+			JsonObject build = rFilesInLocationJson.build();
+			System.out.println("getContentsAsJson() - end: " + new JSONObject(build).toString(2));
+			return build;
 		}
 
 		private static final Predicate<Path> IS_DISPLAYABLE = new Predicate<Path>() {
@@ -678,9 +642,7 @@ public class Coagulate {
 				if (filename.contains("DS_Store")) {
 					return false;
 				}
-				if (filename.endsWith(".html") || filename.endsWith(".htm")
-				// || iDirectory.getName().endsWith("_files")
-				) {
+				if (filename.endsWith(".html") || filename.endsWith(".htm")) {
 					return false;
 				}
 				return true;
@@ -925,6 +887,7 @@ public class Coagulate {
 
 		
 		@SuppressWarnings("unused")
+		@Deprecated // This info is only useful for whitelist info
 		private static String httpLinkForOld(String iAbsolutePath) {
 			//String domain = "http://netgear.rohidekar.com";
 			String domain = "http://192.168.1.2";
@@ -972,7 +935,7 @@ public class Coagulate {
 			return rHttpUrl;
 		}
 
-		// TODO: bad. Do not use output parameters. Return it instead.
+		@Deprecated // TODO: bad. Do not use output parameters. Return it instead.
 		private void addDirs(File iDir, JSONObject oLocationDetails,
 				Collection<String> iDirsWithBoundKey) throws JSONException {
 			JSONObject containedDirsJson = new JSONObject();
