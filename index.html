@@ -44,7 +44,7 @@ $(document).ready(function(){
 			$('#thumbnailItems').append(html);
 				
 		}
-		console.debug('itemsRecursive length = ' + JSON.stringify(response.itemsRecursive).length);
+//		console.debug('itemsRecursive length = ' + JSON.stringify(response.itemsRecursive).length);
 		// Hoist
 		{
 			var html = "";
@@ -53,7 +53,7 @@ $(document).ready(function(){
 			html += pairs.map(rootFolderOnly).reduce(DIR_TO_HTML, "");
 			$('#hoist').append(html);
 		}
-		console.debug('itemsRecursive length = ' + JSON.stringify(response.itemsRecursive).length);
+//		console.debug('itemsRecursive length = ' + JSON.stringify(response.itemsRecursive).length);
 		// Hoist (no buttons)
 		{
 			var html = "";
@@ -314,14 +314,14 @@ var ret = jQuery.extend(true, {}, dirPair);
 			var dirName = subDir.substr(subDir.lastIndexOf('/') + 1);
 			if (dirName.lastIndexOf('_', 0) == 0) {
 				// retain it
-				console.debug('to be retained:' + dirName);
+//				console.debug('to be retained:' + dirName);
 			} else {
 				
-				console.debug('to be deleted:' + dirName);
-				console.debug('before:' + Object.keys(val.dirs).length);
+//				console.debug('to be deleted:' + dirName);
+//				console.debug('before:' + Object.keys(val.dirs).length);
 				delete val.dirs[subDir];
 				//$(val.dirs).removeProp(dirName);
-				console.debug('after:' + Object.keys(val.dirs).length);
+//				console.debug('after:' + Object.keys(val.dirs).length);
 			}
 		}
 	}
@@ -434,7 +434,7 @@ function createThumbnailItemHtml(accumulator, fileObj) {
 				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height='+height+'>';
 			}
 		}
-		toBeAppended = "<a href='" +httpUrl+"'>" + toBeAppended + "</a>";
+		toBeAppended = "<span id='thumbnail-"+fileSystem+"'><a href='" +httpUrl+"'>" + toBeAppended + "</a>";
 		toBeAppended += "&nbsp;";
 	}	
 	/*
@@ -498,7 +498,7 @@ function createItemHtml(response, item, key, unused, fileObj, subDirs)
 	var localLink = "<a href=\"file://" + fileObj.fileSystem.toString() +"\">" + "Local Link" + "</a>";
 
 
-	var idstring = "i" + id;	
+	var idstring = "card-" + fileObj.fileSystem;	
 	id += 1;
 	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
 		+ image + "<td><td>"+createButtonsPanel(item, subDirs, key, idstring)
@@ -631,7 +631,9 @@ function moveToNonExistingFolder(elem, fileToMove, parentDir, idstring) {
 
 function moveFile(button, filePath, destinationDirSimpleName,id) {
 	$.getJSON(urlBase + "/move?filePath="+encodeURIComponent(filePath) + "&destinationDirSimpleName=" + encodeURIComponent(destinationDirSimpleName),function(response){
-		$("#" + id).remove();
+		$("[id='card-" + filePath + "']").remove();
+		$("[id='thumbnail-" + filePath + "']").remove();
+//		$("#" + id).remove();
 	});
 }
 

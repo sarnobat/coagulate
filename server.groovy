@@ -635,7 +635,7 @@ public class Coagulate {
 				}
 			}
 			JsonObject build = rFilesInLocationJson.build();
-			System.out.println("\ngetContentsAsJson() - end: " + build);
+//			System.out.println("\ngetContentsAsJson() - end: " + build);
 			return build;
 		}
 
@@ -692,13 +692,11 @@ public class Coagulate {
 
 		private static JSONObject getContentsAsJsonRecursive(File iDirectory, int iLevelToRecurse)
 				throws IOException {
-//			Json.createObjectBuilder().add("dirs", getDirsJson(iDirectory));
 			JSONObject rFilesInLocationJson = new JSONObject();
 			rFilesInLocationJson.put("dirs", new JSONObject(getDirsJson(iDirectory).toString()));
 			for (JsonObject fileEntryJson : getFilesJson(iDirectory)) {
 				rFilesInLocationJson.put(fileEntryJson.getString("fileSystem"),
 						new JSONObject(fileEntryJson.toString()));
-				//System.out.println("++++++ " + fileEntryJson.toString());
 				if (fileEntryJson.toString().length() < 10) {
 					throw new RuntimeException("Path not added correctly 2");
 				}
@@ -754,7 +752,6 @@ public class Coagulate {
 				if (iPath.toAbsolutePath().toString().length() < 10) {
 					throw new RuntimeException("Path not added correctly 3");
 				}
-				//System.out.println("PATH_TO_JSON_ITEM() - " + new JSONObject(j.toString()).toString(3) );
 				return j;
 			}
 
