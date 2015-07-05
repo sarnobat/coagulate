@@ -95,7 +95,7 @@ public class Coagulate {
 		@GET
 		@javax.ws.rs.Path("static2/{absolutePath : .+}")
 		@Produces("application/json")
-		public Response getFileSsh(@PathParam("absolutePath") String absolutePathWithSlashMissing, @Context HttpHeaders header){
+		public Response getFileSsh(@PathParam("absolutePath") String absolutePathWithSlashMissing, @Context HttpHeaders header, @QueryParam("width") final Integer iWidth){
 			final String absolutePath = "/" +absolutePathWithSlashMissing;
 			final List<String> whitelisted = ImmutableList
 					.of("/media/sarnobat/Large/Videos/",
@@ -116,7 +116,17 @@ public class Coagulate {
 								WebApplicationException {
 							System.out.println("getFileSsh() - 3"
 									+ getStatus(sftp));
-							IOUtils.copy(is, os);
+							// TODO: for most files, a straight copy is wanted. For images, check the file dimensions
+							if (iWidth != null) {
+								try {
+								net.coobird.thumbnailator.Thumbnailator.createThumbnail(is, os, iWidth, iWidth);
+								} catch (Exception e) {
+									System.out.println(e);
+									e.printStackTrace();
+								}
+							} else {
+								IOUtils.copy(is, os);
+							}
 							is.close();
 							os.close();
 							System.out.println("getFileSsh() - 6"
@@ -1667,6 +1677,7 @@ public class Coagulate {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private static void disableSshLogging() {
 		Handler[] handlers = Logger.getLogger("").getHandlers();
 		for (int index = 0; index < handlers.length; index++) {
@@ -1677,7 +1688,7 @@ public class Coagulate {
 	public static void main(String[] args) throws URISyntaxException {
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		// Turn off log4j which sshd spews out (actually this doesn't work)
-		disableSshLogging();
+		// disableSshLogging();
 		try {
 			JdkHttpServerFactory.createHttpServer(new URI(
 					"http://localhost:4451/"), new ResourceConfig(
