@@ -294,9 +294,8 @@ public class Coagulate {
 		public Response list(@QueryParam("dirs") String iDirectoryPathsString)
 				throws JSONException, IOException {
 			System.out.println("list() - begin");
-			JsonObject response;
 			try {
-				response = createListJson(iDirectoryPathsString.split("\\n"));
+				JsonObject response = createListJson(iDirectoryPathsString.split("\\n"));
 				System.out.println("list() - end");
 				return Response.ok().header("Access-Control-Allow-Origin", "*")
 						.entity(response.toString()).type("application/json")
@@ -313,15 +312,12 @@ public class Coagulate {
 		// To create JSONObject, do new JSONObject(aJsonObject.toString). But the other way round I haven't figured out
 		private JsonObject createListJson(String[] iDirectoryPathStrings)
 				throws IOException {
-			JsonObject build = Json
-							.createObjectBuilder()
-							.add("itemsRecursive",
-									Recursive.createFilesJsonRecursive(
-											iDirectoryPathStrings))
-							.add("subdirectories",
-									createSubdirectoriesJson(iDirectoryPathStrings)
-											).build();
-			return build;
+			return Json
+					.createObjectBuilder()
+					.add("itemsRecursive",
+							Recursive
+									.createFilesJsonRecursive(iDirectoryPathStrings))
+					.build();
 		}
 
 		private JsonObject createSubdirectoriesJson(
@@ -333,7 +329,9 @@ public class Coagulate {
 					.transform(Mappings.DIR_TO_JSON).toSet()) {
 				rItemsJson.add(aDirJson.getKey(), aDirJson.getValue());
 			}
-			return rItemsJson.build();
+			JsonObject build = rItemsJson.build();
+			System.out.println("createSubdirectoriesJson() - " + build.toString());
+			return build;
 		}
 		
 		@SuppressWarnings("unused")
@@ -1253,7 +1251,7 @@ public class Coagulate {
 		private static JsonObject getSubdirsAsJson2(File iDirectory)
 				throws IOException {
 			DirectoryStream<Path> subdirectoryStream = getSubdirectoryStream2(iDirectory);
-			Set<Path> files = FluentIterable.from(subdirectoryStream).filter(Predicates.IS_DISPLAYABLE).toSet();
+			Set<Path> files = FluentIterable.from(subdirectoryStream).filter(Predicates.IS_DIRECTORY).toSet();
 			subdirectoryStream.close();
 			return dirToJson(files);
 		}
@@ -1282,6 +1280,7 @@ public class Coagulate {
 		private static JsonObject dirToJson(Set<Path> files) {
 			JsonObjectBuilder rFilesInLocationJson = Json.createObjectBuilder();
 			for (Path file : files) {
+				System.out.println("dirToJson() - " + file.toString());
 				rFilesInLocationJson.add(
 						file.toAbsolutePath().toString(),
 						createFileItemJson(file.getParent().toFile(), file.getFileName()

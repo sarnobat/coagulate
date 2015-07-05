@@ -44,7 +44,6 @@ $(document).ready(function(){
 			$('#thumbnailItems').append(html);
 				
 		}
-//		console.debug('itemsRecursive length = ' + JSON.stringify(response.itemsRecursive).length);
 		// Hoist
 		{
 			var html = "";
@@ -53,7 +52,6 @@ $(document).ready(function(){
 			html += pairs.map(rootFolderOnly).reduce(DIR_TO_HTML, "");
 			$('#hoist').append(html);
 		}
-//		console.debug('itemsRecursive length = ' + JSON.stringify(response.itemsRecursive).length);
 		// Hoist (no buttons)
 		{
 			var html = "";
@@ -194,7 +192,6 @@ function dirObjToHtmlWithButtons(val, dir) {
 	html += "<tr><td><span id='level-" + level +"'>";
 
 	html += "<h3>" + dirName + "</h3>";
-//	html += "<br>";
 	html += "<textarea>" + dir + "</textarea>";
 	html += "<br>";
 	var pairs = toPairs(val);
@@ -299,13 +296,9 @@ function pairVal(pair) {
 
 // also retains ranking dirs
 function rootFolderOnly(dirPair) {
-
-var ret = jQuery.extend(true, {}, dirPair);
-
-//	var ret = {};
+	var ret = jQuery.extend(true, {}, dirPair);
 	var key = Object.keys(dirPair)[0];
 	// Assumption : the right hand side is deep copied.
-//	ret[key] = dirPair[key];
 	val = ret[key];
 	if (val.dirs) {
 		var subDirs = Object.keys(val.dirs);
@@ -314,14 +307,8 @@ var ret = jQuery.extend(true, {}, dirPair);
 			var dirName = subDir.substr(subDir.lastIndexOf('/') + 1);
 			if (dirName.lastIndexOf('_', 0) == 0) {
 				// retain it
-//				console.debug('to be retained:' + dirName);
 			} else {
-				
-//				console.debug('to be deleted:' + dirName);
-//				console.debug('before:' + Object.keys(val.dirs).length);
 				delete val.dirs[subDir];
-				//$(val.dirs).removeProp(dirName);
-//				console.debug('after:' + Object.keys(val.dirs).length);
 			}
 		}
 	}
@@ -362,7 +349,6 @@ function printDirsRecursive(dirItems, response, idIn) {
 		for (var sortedIndex in filesInDirSortedMap) {
 			var filepath = filesInDirSortedMap[sortedIndex];
 			if (filepath.match(/.*(nohup.out$|Thumbs.db|[pP]icasa.ini)/)) {
-				//console.log('Skipping: ' + filepath);
 				continue;
 			}
 			if (filepath == 'dirs') {
@@ -439,31 +425,22 @@ function createThumbnailItemHtml(accumulator, fileObj) {
 		toBeAppended = "<span id='thumbnail-"+fileSystem+"'><a href='" +httpUrl+"'>" + toBeAppended + "</a>";
 		toBeAppended += "&nbsp;</span>";
 	}	
-	/*
-	var localLink = "<a href=\"file://" + item2.fileSystem.toString() +"\">" + "Local Link" + "</a>";
-	
-	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
-		+ toBeAppended + "<td><td>"+createButtonsPanel(item, response, key, idstring)
-		+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
-		+ decodeURIComponent(item)+"</textarea><br>"+lastModified + "</td>"
-		+ "<td><a href='" +httpUrl+"'>" + httpUrl + "</a><br>" +localLink
-		+ "<br></td></tr></table></td></tr>";
-*/
-//	console.debug(toBeAppended);
 	return toBeAppended;
 }
 
 function addSubdirLinks(response) {
-	for(var dirIndex in response.subdirectories) { 
-		var filesInDir = response.subdirectories[dirIndex];
+
+	var subdirectories = Object.keys(response.itemsRecursive);
+	for(var dirIndex in subdirectories) { 
+
+		var filesInDir = Object.keys(response.itemsRecursive[subdirectories[dirIndex]].dirs);
 
 		if (filesInDir.length < 1) {
 			continue;
 		}
 		for (var sortedIndex in filesInDir) {
 			var filepath = filesInDir[sortedIndex];
-			//console.debug(filepath.fileSystem);
-			$('#subdirs').append("<tr><td><a href='/coagulate/?locations=" +encodeURIComponent(filepath.fileSystem)+ "'>"+filepath.fileSystem+"</a></td></tr>");
+			$('#subdirs').append("<tr><td><a href='/coagulate/?locations=" +encodeURIComponent(filepath)+ "'>"+filepath+"</a></td></tr>");
 		}
 	}
 }
@@ -482,9 +459,6 @@ function loadImagesSequentially(i) {
 	$(images[i]).load(a(i));
 
 }
-
-
-
 
 // item = filepath
 // key = dirpath
@@ -555,7 +529,6 @@ function fileObjToHtml(fileObj) {
 		}
 	}
 	
-
 	{
 		var toBeAppended = "";
 		var httpUrl = fileObj.httpUrl;
@@ -635,9 +608,7 @@ function moveFile(button, filePath, destinationDirSimpleName,id) {
 	$.getJSON(urlBase + "/move?filePath="+encodeURIComponent(filePath) + "&destinationDirSimpleName=" + encodeURIComponent(destinationDirSimpleName),function(response){
 		$("[id='card-" + filePath + "']").remove();
 		$("[id='thumbnail-" + filePath + "']").remove();
-		
 		// TODO: Also remove from pairs global variable so it doesn't keep coming back when we shuffle
-//		$("#" + id).remove();
 	});
 }
 
@@ -660,7 +631,7 @@ function getColorForDir(dirName) {
 	 else if (dirName == 'legs') {
 		color = 'yellow';
 	}  else if (dirName == 'navel') {
-		color = 'purple';
+		color = 'lightpurple';
 	}  else if (dirName == 'teen') {
 		color = 'lavender';
 	} else if (dirName.match(/soccer/i)) {
@@ -684,7 +655,6 @@ function moveFileToParent(filePath, id) {
 
 function copyFileToFolder(filePath, destinationDirPath, id, button) {
 	$.getJSON(urlBase + "/copyToFolder?filePath="+encodeURIComponent(filePath) + "&destinationDirPath=" + encodeURIComponent(destinationDirPath), function(response){
-//		$("#" + id).css('background-color','green');
 		$(button).css('background-color','green');
 		$("#" + id).css('color','white');
 	});
