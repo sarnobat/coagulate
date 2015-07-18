@@ -15,8 +15,9 @@
 <script>
 
 
-var urlBase = "http://192.168.1.2:4451/cmsfs/";
+var urlBase = "http://netgear.rohidekar.com:4451/cmsfs/";
 var limit;
+var limitRoot = 50;
 var preDirLimit;
 var pairs;
 
@@ -31,6 +32,7 @@ $(document).ready(function(){
 	updateURLIfEmpty();
 
 	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response) {
+	        $('#status').append("File list obtained. Creating tags...");
 		$('#items').empty();
 		addSubdirLinks(response);
 		pairs = toPairs(response.itemsRecursive);
@@ -40,9 +42,8 @@ $(document).ready(function(){
 		}
 		// Thumbnails
 		{
-			var html = printDirsRecursive(response.itemsRecursive, response);
+			var html = printDirsRecursive(response.itemsRecursive, response, "thumbnail2", limitRoot);
 			$('#thumbnailItems').append(html);
-				
 		}
 		// Hoist
 		{
@@ -60,7 +61,9 @@ $(document).ready(function(){
 			html += pairs.map(rootFolderOnly).reduce(DIR_TO_HTML_WITH_BUTTONS, "");
 			$('#hoist_with_buttons').append(html);
 		}
+	        $('#status').append("Tags created. Loading screenshots...");
 		loadImagesSequentially(0);
+	        $('#status').append("Completed.");
 	})
 	.fail(function() {
 		console.debug( "error" );
@@ -241,15 +244,18 @@ function up(field,id, currentLevelId) {
 		// TODO: handle the case where target level doesn't exist
 		var elem = $("#"+id).remove();
 		$("#level-" + targetLevel).append(elem);
+		removeImageElement(field);
 	});
 }
 
 function down(field,id, currentLevelId) {
 	$.getJSON("http://netgear.rohidekar.com:4463/helloworld/moveDown?path=" + encodeURIComponent(field),function(result){
 		var targetLevel = currentLevelId - 1;
+		removeImageElement(field);
 		// TODO: handle the case where target level doesn't exist
 		var elem = $("#"+id).remove();
 		$("#level-" + targetLevel).append(elem);
+		removeImageElement(field);
     });
 }
 
@@ -327,7 +333,7 @@ function filesOnly(anObj) {
 }
 
 // For thumbnails
-function printDirsRecursive(dirItems, response, idIn) {
+function printDirsRecursive(dirItems, response, idIn, iLimit) {
 	var html = "";
 	var items = dirItems;
 
@@ -354,7 +360,7 @@ function printDirsRecursive(dirItems, response, idIn) {
 			if (filepath == 'dirs') {
 			} else {
 				++id;
-				if (id > limit) {
+				if (id > iLimit) {
 					continue;
 				}
 				html += createThumbnailItemHtml("", filesInDir[filepath]);
@@ -365,7 +371,7 @@ function printDirsRecursive(dirItems, response, idIn) {
 			var filepath = filesInDirSortedMap[sortedIndex];
 			if (filepath == 'dirs') {
 				var subdirItems = filesInDir['dirs'];
-				html += printDirsRecursive(subdirItems, response, idIn + "-" + id);
+				html += printDirsRecursive(subdirItems, response, idIn + "-" + id, limit);
 			} else {
 			}
 		}
@@ -403,13 +409,15 @@ function createThumbnailItemHtml(accumulator, fileObj) {
 				}
 				// height ensures buttons don't jump left and right between items for 
 				// easier mass sorting. But it's not as nice to view.
-				toBeAppended += '<img class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl + "?width=" + widthInt) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'"/>';
+				// The server-side thumbnailator reorients the image correctly
+				toBeAppended += '<img class="myimage" src="http://netgear.rohidekar.com/static/icons/Orb_Icons_001.png" data-src="' + encodeURI(httpUrl + "?width=" + widthInt) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'"/>';
+				//data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
 				toBeAppended += '</a>';
 			}
 		}
 		// Videos
 		{
-			var matchesVideo = fileSystem.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi))/gi);
+			var matchesVideo = fileSystem.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi)|(mts))/gi);
 			if (matchesVideo != null) {
 				var simpleName = fileObj.httpUrl.split('/').pop();
 				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height="'+height+'" title="'+ simpleName +'">';
@@ -505,7 +513,7 @@ function createButtonsPanel(item, subdirs, key, idstring) {
 				}
 				var dirPath = subdirsArray[dir];				
 				var dirName = dirPath.substr(dirPath.lastIndexOf('/') + 1);
-				buttons += "<button onmousedown='button.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
+				buttons += "<button onmousedown='this.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
 			}
 		}
 	}
@@ -519,7 +527,8 @@ function createButtonsPanel(item, subdirs, key, idstring) {
 
 function fileObjToHtml(fileObj) {
 	// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
-	var width = "250px";
+	var widthInt = 250;
+	var width = widthInt + "px";
 	var height = "300px";
 	var item = fileObj.fileSystem;
 	{
@@ -544,13 +553,13 @@ function fileObjToHtml(fileObj) {
 					if (fileObj.exif) {
 						degreesToOrient = 90*(parseInt(fileObj.exif.orientation) - 1);
 					}
-					toBeAppended += '<img width="'+width+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
+					toBeAppended += '<img width="'+width+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl) +'?width=' + widthInt + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
 					toBeAppended += '</a>';
 				}
 			}
 		}
 		{
-			var matchesVideo = item.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi))/gi);
+			var matchesVideo = item.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi)|(mts))/gi);
 			if (matchesVideo != null) {
 				toBeAppended += '<img src=\"' +thumbnailUrl+'\">';
 			}
@@ -573,7 +582,7 @@ function dirToHtmlCards(dirObj) {
 	var html = "";
 	//console.debug(dirObj);
 	var dir = Object.keys(dirObj);
-	var files = shuffle(toPairs(dirObj[dir])).slice(0, limit).filter(filesOnly);
+	var files = shuffle(toPairs(dirObj[dir])).slice(0, limitRoot).filter(filesOnly);
 	var subdirs = dirObj[dir].dirs;
 	html += files.map(fileToHtmlParameterized(subdirs)).join('');
 	return html;
@@ -606,10 +615,14 @@ function moveToNonExistingFolder(elem, fileToMove, parentDir, idstring) {
 
 function moveFile(button, filePath, destinationDirSimpleName,id) {
 	$.getJSON(urlBase + "/move?filePath="+encodeURIComponent(filePath) + "&destinationDirSimpleName=" + encodeURIComponent(destinationDirSimpleName),function(response){
-		$("[id='card-" + filePath + "']").remove();
-		$("[id='thumbnail-" + filePath + "']").remove();
+		removeImageElement(filePath);
 		// TODO: Also remove from pairs global variable so it doesn't keep coming back when we shuffle
 	});
+}
+
+function removeImageElement(filePath) {
+		$("[id='card-" + filePath + "']").remove();
+		$("[id='thumbnail-" + filePath + "']").remove();
 }
 
 function sortFunction(a, b) {
@@ -638,7 +651,6 @@ function getColorForDir(dirName) {
 		color = 'green';
 	} else if (dirName == 'ind') {
 		color = 'orange';
-		console.debug('found ind');
 	}
 	return color
 }
@@ -649,7 +661,8 @@ function addslashes( str ) {
 
 function moveFileToParent(filePath, id) {
 	$.getJSON(urlBase + "/moveToParent?filePath="+encodeURIComponent(filePath), function(response){
-		$("#" + id).remove();
+		removeImageElement(filePath);
+		//$("#" + id).remove();
 	});
 }
 
@@ -704,7 +717,9 @@ function shuffle(array) {
 
 Todo: Create a tab for simply viewing the images in a directory (no sorting). e.g. for "favorites". Otherwise you have to manually add links to yurl
 <br>
-<a href="http://netgear.rohidekar.com/coagulate">Reset Locations</a><br>
+<a href="/coagulate">Reset Locations</a><br>
+<a href="/coagulate?locations=%2Fmedia%2Fsarnobat%2Fe%2FDrive%20J%2Fpictures%2FOther%20(new)%2Fpictures%2Fmisc_sync_master%2F">Other</a><br>
+<a href="/coagulate?locations=%2FUnsorted%2FVideos%2F%0A%2FLarge%2FVideos%0A%2Fe%2Fnew%2Fvideo%0A%2Fe%2FVideos%0A%2Fd%2FVideos%0A%2Fmedia%2Fsarnobat%2Fc%2FDocuments%20and%20Settings%2FSridhar.SRIDHAR-E5FA83A%2FDesktop%2Fvideos%2F%0A%2FLarge%2FVideos_Home%2FAVCHD%2FAVCHD%2FBDMV%2FSTREAM%0A%2Fmedia%2Fsarnobat%2FRecord%2FVideos_Home%2FHome%20Video%2Fhome%20movies%20(high-definition)%0A%2Fmedia%2Fsarnobat%2FRecord%2FVideos_Home%2FHome%20Video%2Fsmall%20videos%20(non%20HD%20camcorder)">Videos</a><br>
 <div id="status"></div>
 
 <div id="tabs">
@@ -753,12 +768,15 @@ Key bindings<br>
 ## Videos
 ##
 
-/media/sarnobat/Unsorted/Videos/
-/media/sarnobat/Large/Videos
+/Unsorted/Videos/
+/Large/Videos
 /e/new/video
 /e/Videos
 /d/Videos
 /media/sarnobat/c/Documents and Settings/Sridhar.SRIDHAR-E5FA83A/Desktop/videos/
+/Large/Videos_Home/AVCHD/AVCHD/BDMV/STREAM
+/media/sarnobat/Record/Videos_Home/Home Video/home movies (high-definition)
+/media/sarnobat/Record/Videos_Home/Home Video/small videos (non HD camcorder)
 #/d/Flashget
 #/d/Flashget/Done
 #/e/Flashget

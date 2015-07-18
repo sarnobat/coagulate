@@ -9,11 +9,15 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.spi.FileSystemProvider;
 import java.util.AbstractMap;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
@@ -68,6 +72,7 @@ import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.pastdev.jsch.DefaultSessionFactory;
 
 public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
@@ -99,12 +104,14 @@ public class Coagulate {
 			final String absolutePath = "/" +absolutePathWithSlashMissing;
 			final List<String> whitelisted = ImmutableList
 					.of("/media/sarnobat/Large/Videos/",
+						"/media/sarnobat/Record/Videos_Home/",
 							"/media/sarnobat/Unsorted/images/",
 							"/media/sarnobat/Unsorted/Videos/",
 							"/media/sarnobat/d/Videos",
 							"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/",
 							"/e/new/",
 							"/media/sarnobat/e/Drive J/",
+							"/media/sarnobat/Large/Videos_Home/AVCHD/AVCHD/BDMV/STREAM",
 							"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
 			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(Predicates.IS_UNDER(absolutePath))){
 				try {
@@ -132,14 +139,10 @@ public class Coagulate {
 							System.out.println("getFileSsh() - 6"
 									+ getStatus(sftp));
 							// sftp.disconnect();
-							System.out.println("getFileSsh() - 7"
-									+ getStatus(sftp));
 							// sftp.exit();
 							// sftp.close();
 							// client.close();
 							// session.close(false);
-							System.out.println("getFileSsh() - served\t"
-									+ absolutePath);
 						}
 
 					  };
@@ -155,6 +158,121 @@ public class Coagulate {
 					.header("Access-Control-Allow-Origin", "*")
 					.entity("{ 'foo' : 'bar' }").type("application/json")
 					.build();
+		}
+
+		/**
+		 * Use asynchronous IO for SSH. Maybe this will allow more parallel connections and higher throughput 
+		 */
+		@GET
+		@javax.ws.rs.Path("static3/{absolutePath : .+}")
+		@Produces("application/json")
+		public Response getFileSshNio(@PathParam("absolutePath") String absolutePathWithSlashMissing, @Context HttpHeaders header, @QueryParam("width") final Integer iWidth){
+			final String absolutePath = "/" +absolutePathWithSlashMissing;
+			final List<String> whitelisted = ImmutableList
+					.of("/media/sarnobat/Large/Videos/",
+							"/media/sarnobat/Unsorted/images/",
+							"/media/sarnobat/Unsorted/Videos/",
+							"/media/sarnobat/d/Videos",
+							"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/",
+							"/e/new/",
+							"/media/sarnobat/e/Drive J/",
+							"/media/sarnobat/Large/Videos_Home/AVCHD/AVCHD/BDMV/STREAM",
+							"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
+			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(Predicates.IS_UNDER(absolutePath))){
+				try {
+
+					System.out.println("getFileSshNio() - 1");
+					final FileSystem client = getAsyncClient();
+
+					System.out.println("getFileSshNio() - 2");
+					Path path = client.getPath(absolutePath);
+
+					System.out.println("getFileSshNio() - 3");
+					FileSystemProvider provider = path.getFileSystem().provider();
+
+					System.out.println("getFileSshNio() - 4");
+					final InputStream is = provider.newInputStream(path);
+
+					System.out.println("getFileSshNio() - 5");
+					StreamingOutput stream = new StreamingOutput() {
+					    @Override
+						public void write(OutputStream os) throws IOException,
+								WebApplicationException {
+							System.out.println("getFileSshNio() - 6");
+							// TODO: for most files, a straight copy is wanted. For images, check the file dimensions
+							if (iWidth != null) {
+								try {
+								net.coobird.thumbnailator.Thumbnailator.createThumbnail(is, os, iWidth, iWidth);
+								} catch (Exception e) {
+									System.out.println(e);
+									e.printStackTrace();
+								}
+							} else {
+
+								System.out.println("getFileSshNio() - 7");
+								IOUtils.copy(is, os);
+							}
+
+							System.out.println("getFileSshNio() - 8");
+							is.close();
+							os.close();
+//							System.out.println("getFileSshNio() - 6"
+//									+ getStatus(sftp));
+							// sftp.disconnect();
+							// sftp.exit();
+							// sftp.close();
+							// client.close();
+							// session.close(false);
+						}
+
+					  };
+					  
+					return Response.ok().entity(stream).type(FileServerGroovy.getMimeType(absolutePath)).build();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} else {
+				System.out.println("Not whitelisted: " + absolutePath);
+			}
+			return Response.serverError()
+					.header("Access-Control-Allow-Origin", "*")
+					.entity("{ 'foo' : 'bar' }").type("application/json")
+					.build();
+		}
+
+		private FileSystem getAsyncClient() {
+			DefaultSessionFactory defaultSessionFactory;
+			try {
+				defaultSessionFactory = new DefaultSessionFactory("sarnobat", "192.168.1.2", 22);
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new RuntimeException(e);
+			}
+			try {
+//				defaultSessionFactory.setKnownHosts("/Users/sarnobat.reincarnated/.ssh/known_hosts");
+//				defaultSessionFactory.setIdentityFromPrivateKey("/Users/sarnobat.reincarnated/.ssh/id_rsa");
+				defaultSessionFactory.setKnownHosts("/home/sarnobat/.ssh/known_hosts");
+				defaultSessionFactory.setIdentityFromPrivateKey("/home/sarnobat/.ssh/id_rsa");
+//			    defaultSessionFactory.setConfig( "StrictHostKeyChecking", "no" );
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.exit(-1);
+			}
+			Map<String, Object> environment = new HashMap<String, Object>();
+			environment.put("defaultSessionFactory", defaultSessionFactory);
+			URI uri;
+			try {
+				uri = new URI("ssh.unix://sarnobat@192.168.1.2:22/home/sarnobat");
+			} catch (URISyntaxException e) {
+				throw new RuntimeException(e);
+			}
+			FileSystem sshfs;
+			try {
+				sshfs = FileSystems.newFileSystem(uri, environment);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			return sshfs;
 		}
 
 		private static synchronized SftpClient getClient() throws InterruptedException,
@@ -330,7 +448,6 @@ public class Coagulate {
 				rItemsJson.add(aDirJson.getKey(), aDirJson.getValue());
 			}
 			JsonObject build = rItemsJson.build();
-			System.out.println("createSubdirectoriesJson() - " + build.toString());
 			return build;
 		}
 		
@@ -493,8 +610,10 @@ public class Coagulate {
 		 *
 		 * Serves file from homeDir and its' subdirectories (only).
 		 * Uses only URI, ignores all headers and HTTP parameters.
+		 * 
+		 * @deprecated - Use {@link MyResource#getFileSsh}
 		 */
-		@Deprecated // This only works for local files. We should serve files through SSH.
+		@Deprecated 
 		public static Response serveFile(String url, Properties header, File homeDir,
 				boolean allowDirectoryListing) {
 
@@ -1322,7 +1441,7 @@ public class Coagulate {
 		};
 
 		private static String httpLinkFor(String iAbsolutePath) {
-			String prefix = "http://192.168.1.2:4451/cmsfs/static2/";
+			String prefix = "http://netgear.rohidekar.com:4451/cmsfs/static2/";
 			return prefix + iAbsolutePath;
 		}
 
