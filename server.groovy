@@ -1,3 +1,5 @@
+@Grab(group='com.pastdev', module='jsch-nio', version='0.1.5')
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileFilter;
@@ -104,7 +106,6 @@ public class Coagulate {
 			final String absolutePath = "/" +absolutePathWithSlashMissing;
 			final List<String> whitelisted = ImmutableList
 					.of("/media/sarnobat/Large/Videos/",
-						"/media/sarnobat/Record/Videos_Home/",
 							"/media/sarnobat/Unsorted/images/",
 							"/media/sarnobat/Unsorted/Videos/",
 							"/media/sarnobat/d/Videos",
@@ -214,8 +215,10 @@ public class Coagulate {
 							}
 
 							System.out.println("getFileSshNio() - 8");
-							is.close();
+														os.flush();
+							System.out.println("getFileSshNio() - 9");
 							os.close();
+//							is.close();
 //							System.out.println("getFileSshNio() - 6"
 //									+ getStatus(sftp));
 							// sftp.disconnect();
@@ -253,7 +256,7 @@ public class Coagulate {
 //				defaultSessionFactory.setIdentityFromPrivateKey("/Users/sarnobat.reincarnated/.ssh/id_rsa");
 				defaultSessionFactory.setKnownHosts("/home/sarnobat/.ssh/known_hosts");
 				defaultSessionFactory.setIdentityFromPrivateKey("/home/sarnobat/.ssh/id_rsa");
-//			    defaultSessionFactory.setConfig( "StrictHostKeyChecking", "no" );
+			    defaultSessionFactory.setConfig( "StrictHostKeyChecking", "no" );
 			} catch (Exception e) {
 				e.printStackTrace();
 				System.exit(-1);
@@ -268,7 +271,7 @@ public class Coagulate {
 			}
 			FileSystem sshfs;
 			try {
-				sshfs = FileSystems.newFileSystem(uri, environment);
+				sshfs = FileSystems.newFileSystem(uri, environment, getClass().getClassLoader());
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
