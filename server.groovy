@@ -1,5 +1,3 @@
-@Grab(group='com.pastdev', module='jsch-nio', version='0.1.5')
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileFilter;
@@ -102,6 +100,7 @@ public class Coagulate {
 		@GET
 		@javax.ws.rs.Path("static2/{absolutePath : .+}")
 		@Produces("application/json")
+		// getFileViaSsh servefileoverssh
 		public Response getFileSsh(@PathParam("absolutePath") String absolutePathWithSlashMissing, @Context HttpHeaders header, @QueryParam("width") final Integer iWidth){
 			final String absolutePath = "/" +absolutePathWithSlashMissing;
 			final List<String> whitelisted = ImmutableList
@@ -215,10 +214,8 @@ public class Coagulate {
 							}
 
 							System.out.println("getFileSshNio() - 8");
-														os.flush();
-							System.out.println("getFileSshNio() - 9");
+							is.close();
 							os.close();
-//							is.close();
 //							System.out.println("getFileSshNio() - 6"
 //									+ getStatus(sftp));
 							// sftp.disconnect();
@@ -246,35 +243,43 @@ public class Coagulate {
 		private FileSystem getAsyncClient() {
 			DefaultSessionFactory defaultSessionFactory;
 			try {
+				System.out.println("getAsyncClient() - a");
 				defaultSessionFactory = new DefaultSessionFactory("sarnobat", "192.168.1.2", 22);
 			} catch (Exception e) {
 				e.printStackTrace();
 				throw new RuntimeException(e);
 			}
+			System.out.println("getAsyncClient() - b");
 			try {
-//				defaultSessionFactory.setKnownHosts("/Users/sarnobat.reincarnated/.ssh/known_hosts");
-//				defaultSessionFactory.setIdentityFromPrivateKey("/Users/sarnobat.reincarnated/.ssh/id_rsa");
-				defaultSessionFactory.setKnownHosts("/home/sarnobat/.ssh/known_hosts");
-				defaultSessionFactory.setIdentityFromPrivateKey("/home/sarnobat/.ssh/id_rsa");
-			    defaultSessionFactory.setConfig( "StrictHostKeyChecking", "no" );
+				defaultSessionFactory.setKnownHosts("/Users/sarnobat.reincarnated/.ssh/known_hosts");
+				System.out.println("getAsyncClient() - c");
+				defaultSessionFactory.setIdentityFromPrivateKey("/Users/sarnobat.reincarnated/.ssh/id_rsa");
+//				defaultSessionFactory.setKnownHosts("/home/sarnobat/.ssh/known_hosts");
+//				defaultSessionFactory.setIdentityFromPrivateKey("/home/sarnobat/.ssh/id_rsa");
+//			    defaultSessionFactory.setConfig( "StrictHostKeyChecking", "no" );
 			} catch (Exception e) {
 				e.printStackTrace();
 				System.exit(-1);
 			}
+			System.out.println("getAsyncClient() - d");
 			Map<String, Object> environment = new HashMap<String, Object>();
 			environment.put("defaultSessionFactory", defaultSessionFactory);
 			URI uri;
+			System.out.println("getAsyncClient() - e");
 			try {
 				uri = new URI("ssh.unix://sarnobat@192.168.1.2:22/home/sarnobat");
+				//uri = new URI("ssh.unix://sarnobat@192.168.1.2:22/home/sarnobat");
 			} catch (URISyntaxException e) {
 				throw new RuntimeException(e);
 			}
+			System.out.println("getAsyncClient() - f");
 			FileSystem sshfs;
 			try {
-				sshfs = FileSystems.newFileSystem(uri, environment, getClass().getClassLoader());
+				sshfs = FileSystems.newFileSystem(uri, environment);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
+			System.out.println("getAsyncClient() - g");
 			return sshfs;
 		}
 
@@ -1687,7 +1692,7 @@ public class Coagulate {
 			System.out.println("moveFileToSubfolder() - begin");
 			Path sourceFilePath = Paths.get(filePath);
 			if (!Files.exists(sourceFilePath)) {
-				throw new RuntimeException("No such source file");
+				throw new RuntimeException("No such source file: " + sourceFilePath.toAbsolutePath().toString());
 			}
 			Path targetDir = Paths.get(sourceFilePath.getParent().toString()
 					+ "/" + iSubfolderSimpleName);
@@ -1772,9 +1777,9 @@ public class Coagulate {
 				throws IllegalAccessError {
 			// if destination file exists, rename the file to be moved(while
 			// loop)
-			return determineDestinationPathAvoidingExisting(subfolder
-					.normalize().toAbsolutePath().toString()
-					+ "/" + imageFile.getFileName().toString());
+			return determineDestinationPathAvoidingExisting(new StringBuffer()
+					.append(subfolder.normalize().toAbsolutePath().toString()).append("/")
+					.append(imageFile.getFileName().toString()).toString());
 		}
 
 		private static Path determineDestinationPathAvoidingExisting(
@@ -1786,8 +1791,7 @@ public class Coagulate {
 			Path rDestinationFile = Paths.get(destinationFilePath);
 			while (Files.exists(rDestinationFile)) {
 				destinationFilePathWithoutExtension += "1";
-				destinationFilePath = destinationFilePathWithoutExtension
-						+ "." + extension;
+				destinationFilePath = destinationFilePathWithoutExtension + "." + extension;
 				rDestinationFile = Paths.get(destinationFilePath);
 			}
 			if (Files.exists(rDestinationFile)) {
