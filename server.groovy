@@ -136,6 +136,7 @@ public class Coagulate {
 							}
 							is.close();
 							os.close();
+							System.out.println("getFileSsh() - 6: TODO: You must disconnect the session otherwise you'll end up with hundreds of sshd processes");
 							System.out.println("getFileSsh() - 6"
 									+ getStatus(sftp));
 							// sftp.disconnect();
