@@ -45,6 +45,8 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
+import net.coobird.thumbnailator.Thumbnailator;
+
 import org.apache.commons.imaging.ImageReadException;
 import org.apache.commons.imaging.Imaging;
 import org.apache.commons.imaging.common.IImageMetadata;
@@ -115,7 +117,10 @@ public class Coagulate {
 							"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
 			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(Predicates.IS_UNDER(absolutePath))){
 				try {
-					final SftpClient sftp = getClient();
+//					final SftpClient sftp = getSftpClient();
+					final SshClient client = getSshClient();
+					final ClientSession session = getSession(client);
+					final SftpClient sftp = session.createSftpClient();
 					final InputStream is = sftp.read(absolutePath);
 					StreamingOutput stream = new StreamingOutput() {
 					    @Override
@@ -126,7 +131,7 @@ public class Coagulate {
 							// TODO: for most files, a straight copy is wanted. For images, check the file dimensions
 							if (iWidth != null) {
 								try {
-								net.coobird.thumbnailator.Thumbnailator.createThumbnail(is, os, iWidth, iWidth);
+									Thumbnailator.createThumbnail(is, os, iWidth, iWidth);
 								} catch (Exception e) {
 									System.out.println(e);
 									e.printStackTrace();
@@ -136,14 +141,10 @@ public class Coagulate {
 							}
 							is.close();
 							os.close();
-							System.out.println("getFileSsh() - 6: TODO: You must disconnect the session otherwise you'll end up with hundreds of sshd processes");
-							System.out.println("getFileSsh() - 6"
-									+ getStatus(sftp));
-							// sftp.disconnect();
-							// sftp.exit();
-							// sftp.close();
-							// client.close();
-							// session.close(false);
+							sftp.close();
+							session.close(true);
+							client.stop();
+							System.out.println("getFileSsh() - 6: If you try to leave anything open, make sure you don't end up with hundreds of sshd processes");
 						}
 
 					  };
@@ -284,30 +285,46 @@ public class Coagulate {
 			return sshfs;
 		}
 
-		private static synchronized SftpClient getClient() throws InterruptedException,
+		private static synchronized SftpClient getSftpClient() throws InterruptedException,
 				IOException {
-//			if (sftp == null) {
+			// if (sftp == null) {
 
-			SshClient client;
-//			ClientSession session ;
-			SftpClient sftp ;
-				client = SshClient.setUpDefaultClient();
-		        client.getProperties().put(ClientFactoryManager.HEARTBEAT_INTERVAL, "50000");
-				client.start();
-				if (session != null && session.isClosed()) {
-					System.out.println("getClient() - too late, was closed");
-				}
-				session = client
-						.connect("sarnobat", "netgear.rohidekar.com", 22)
-						.await().getSession();
-				// TODO: Use key authentication instead
-				session.addPasswordIdentity("aize2F");
-				session.auth().await();
-				sftp = session.createSftpClient();
-//			} else {
-//				sftp = session.createSftpClient();
-//			}
+			// ClientSession session ;
+			SftpClient sftp = getSftpClient2();
+			
+			// } else {
+			// sftp = session.createSftpClient();
+			// }
 			return sftp;
+		}
+
+		private static SftpClient getSftpClient2() throws InterruptedException, IOException {
+			SshClient client = getSshClient();
+			session = getSession(client);
+			SftpClient sftp = session.createSftpClient();
+			return sftp;
+		}
+
+		private static ClientSession getSession(SshClient client) throws InterruptedException, IOException {
+			ClientSession session; 
+//			if (session != null && session.isClosed()) {
+//				System.out.println("getClient() - too late, was closed");
+//			}
+			session = client.connect("sarnobat", "netgear.rohidekar.com", 22).await().getSession();
+			// TODO: Use key authentication instead
+			session.addPasswordIdentity("aize2F");
+			session.auth().await();
+			return session;
+			
+		}
+
+		private static SshClient getSshClient() {
+			SshClient client;
+			client = SshClient.setUpDefaultClient();
+			// client.getProperties().put(ClientFactoryManager.HEARTBEAT_INTERVAL,
+			// "50000");
+			client.start();
+			return client;
 		}
 		private static ClientSession session ;
 
