@@ -76,6 +76,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.pastdev.jsch.DefaultSessionFactory;
 
+/**
+ * SSHD uses slf4j. So add the api + binding jars, and point to a properties file
+ */
 public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
 	public static class MyResource { // Must be public
@@ -110,6 +113,8 @@ public class Coagulate {
 							"/media/sarnobat/Unsorted/images/",
 							"/media/sarnobat/Unsorted/Videos/",
 							"/media/sarnobat/d/Videos",
+							"/e/Sridhar/Atletico Madrid/",
+							"/e/Sridhar UK/Atletico Madrid/",
 							"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/",
 							"/e/new/",
 							"/media/sarnobat/e/Drive J/",
