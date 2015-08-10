@@ -131,8 +131,7 @@ public class Coagulate {
 					    @Override
 						public void write(OutputStream os) throws IOException,
 								WebApplicationException {
-							System.out.println("getFileSsh() - 3"
-									+ getStatus(sftp));
+							System.out.println("getFileSsh() - file to get: " + absolutePath + ", status = " + getStatus(sftp));
 							// TODO: for most files, a straight copy is wanted. For images, check the file dimensions
 							if (iWidth != null) {
 								try {
@@ -149,7 +148,7 @@ public class Coagulate {
 							sftp.close();
 							session.close(true);
 							client.stop();
-							System.out.println("getFileSsh() - 6: If you try to leave anything open, make sure you don't end up with hundreds of sshd processes");
+							System.out.println("getFileSsh() - Success. (note: if you try to leave anything open, make sure you don't end up with hundreds of sshd processes)");
 						}
 
 					  };
