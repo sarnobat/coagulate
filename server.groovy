@@ -119,6 +119,7 @@ public class Coagulate {
 							"/e/new/",
 							"/media/sarnobat/e/Drive J/",
 							"/media/sarnobat/Large/Videos_Home/AVCHD/AVCHD/BDMV/STREAM",
+							"/media/sarnobat/Record/Videos_Home/Home Video/small videos (non HD camcorder)/",
 							"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
 			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(Predicates.IS_UNDER(absolutePath))){
 				try {
@@ -131,7 +132,7 @@ public class Coagulate {
 					    @Override
 						public void write(OutputStream os) throws IOException,
 								WebApplicationException {
-							System.out.println("getFileSsh() - file to get: " + absolutePath + ", status = " + getStatus(sftp));
+					//		System.out.println("getFileSsh() - file to get: " + absolutePath + ", status = " + getStatus(sftp));
 							// TODO: for most files, a straight copy is wanted. For images, check the file dimensions
 							if (iWidth != null) {
 								try {
@@ -148,14 +149,16 @@ public class Coagulate {
 							sftp.close();
 							session.close(true);
 							client.stop();
-							System.out.println("getFileSsh() - Success. (note: if you try to leave anything open, make sure you don't end up with hundreds of sshd processes)");
+							System.out.print(".");
+					//		System.out.println("getFileSsh() - Success. (note: if you try to leave anything open, make sure you don't end up with hundreds of sshd processes)");
 						}
 
 					  };
 					  
 					return Response.ok().entity(stream).type(FileServerGroovy.getMimeType(absolutePath)).build();
 				} catch (Exception e) {
-					e.printStackTrace();
+				//	e.printStackTrace();
+					System.err.println("getFileSsh() - FAILED: " + absolutePath + ". " + e.toString());
 				}
 			} else {
 				System.out.println("Not whitelisted: " + absolutePath);
