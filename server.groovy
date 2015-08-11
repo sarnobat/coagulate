@@ -120,6 +120,7 @@ public class Coagulate {
 							"/media/sarnobat/e/Drive J/",
 							"/media/sarnobat/Large/Videos_Home/AVCHD/AVCHD/BDMV/STREAM",
 							"/media/sarnobat/Record/Videos_Home/Home Video/small videos (non HD camcorder)/",
+							"/media/sarnobat/Record/Videos_Home/Home Video/home movies (high-definition)/",
 							"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
 			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(Predicates.IS_UNDER(absolutePath))){
 				try {
