@@ -180,57 +180,44 @@ public class Coagulate {
 		@Produces("application/json")
 		public Response getFileSshNio(@PathParam("absolutePath") String absolutePathWithSlashMissing, @Context HttpHeaders header, @QueryParam("width") final Integer iWidth){
 			final String absolutePath = "/" +absolutePathWithSlashMissing;
-//			final List<String> whitelisted = ImmutableList
-//					.of("/media/sarnobat/Large/Videos/",
-//							"/media/sarnobat/Unsorted/images/",
-//							"/media/sarnobat/Unsorted/Videos/",
-//							"/media/sarnobat/d/Videos",
-//							"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/",
-//							"/e/new/",
-//							"/media/sarnobat/e/Drive J/",
-//							"/media/sarnobat/Large/Videos_Home/AVCHD/AVCHD/BDMV/STREAM",
-//							"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
 			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(Predicates.IS_UNDER(absolutePath))){
 				try {
-
-					System.out.println("getFileSshNio() - 1");
+//					System.out.println("getFileSshNio() - 1");
 					final FileSystem client = getAsyncClient();
 
-					System.out.println("getFileSshNio() - 2");
+//					System.out.println("getFileSshNio() - 2");
 					Path path = client.getPath(absolutePath);
 
-					System.out.println("getFileSshNio() - 3");
+//					System.out.println("getFileSshNio() - 3");
 					FileSystemProvider provider = path.getFileSystem().provider();
 
-					System.out.println("getFileSshNio() - 4");
+//					System.out.println("getFileSshNio() - 4");
 					final InputStream is = provider.newInputStream(path);
 
-					System.out.println("getFileSshNio() - 5");
+//					System.out.println("getFileSshNio() - 5");
 					StreamingOutput stream = new StreamingOutput() {
 					    @Override
 						public void write(OutputStream os) throws IOException,
 								WebApplicationException {
-							System.out.println("getFileSshNio() - 6");
+//							System.out.println("getFileSshNio() - 6");
 							// TODO: for most files, a straight copy is wanted. For images, check the file dimensions
 							if (iWidth != null) {
 								try {
-								net.coobird.thumbnailator.Thumbnailator.createThumbnail(is, os, iWidth, iWidth);
+									net.coobird.thumbnailator.Thumbnailator.createThumbnail(is, os, iWidth, iWidth);
 								} catch (Exception e) {
 									System.out.println(e);
 									e.printStackTrace();
+									System.out.println("Failed thumbnailing for " + absolutePath);
 								}
 							} else {
 
-								System.out.println("getFileSshNio() - 7");
+//								System.out.println("getFileSshNio() - 7");
 								IOUtils.copy(is, os);
 							}
-
-							System.out.println("getFileSshNio() - 8");
-							is.close();
-							os.close();
+//							System.out.println("getFileSshNio() - 8");
 							client.close();
-//							System.out.println("getFileSshNio() - 6"
-//									+ getStatus(sftp));
+							is.close();
+//							os.close();
 						}
 
 					  };
@@ -251,16 +238,16 @@ public class Coagulate {
 		private FileSystem getAsyncClient() {
 			DefaultSessionFactory defaultSessionFactory;
 			try {
-				System.out.println("getAsyncClient() - a");
+//				System.out.println("getAsyncClient() - a");
 				defaultSessionFactory = new DefaultSessionFactory("sarnobat", "192.168.1.2", 22);
 			} catch (Exception e) {
 				e.printStackTrace();
 				throw new RuntimeException(e);
 			}
-			System.out.println("getAsyncClient() - b");
+//			System.out.println("getAsyncClient() - b");
 			try {
 				defaultSessionFactory.setKnownHosts(System.getProperty("user.home")  + "/.ssh/known_hosts");
-				System.out.println("getAsyncClient() - c");
+//				System.out.println("getAsyncClient() - c");
 				defaultSessionFactory.setIdentityFromPrivateKey(System.getProperty("user.home")  + "/.ssh/id_rsa");
 //				defaultSessionFactory.setKnownHosts("/home/sarnobat/.ssh/known_hosts");
 //				defaultSessionFactory.setIdentityFromPrivateKey("/home/sarnobat/.ssh/id_rsa");
@@ -269,25 +256,25 @@ public class Coagulate {
 				e.printStackTrace();
 				System.exit(-1);
 			}
-			System.out.println("getAsyncClient() - d");
+//			System.out.println("getAsyncClient() - d");
 			Map<String, Object> environment = new HashMap<String, Object>();
 			environment.put("defaultSessionFactory", defaultSessionFactory);
 			URI uri;
-			System.out.println("getAsyncClient() - e");
+//			System.out.println("getAsyncClient() - e");
 			try {
 				uri = new URI("ssh.unix://sarnobat@192.168.1.2:22/home/sarnobat");
 				//uri = new URI("ssh.unix://sarnobat@192.168.1.2:22/home/sarnobat");
 			} catch (URISyntaxException e) {
 				throw new RuntimeException(e);
 			}
-			System.out.println("getAsyncClient() - f");
+//			System.out.println("getAsyncClient() - f");
 			FileSystem sshfs;
 			try {
 				sshfs = FileSystems.newFileSystem(uri, environment, getClass().getClassLoader());
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
-			System.out.println("getAsyncClient() - g");
+//			System.out.println("getAsyncClient() - g");
 			return sshfs;
 		}
 
