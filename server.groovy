@@ -79,6 +79,7 @@ import com.pastdev.jsch.DefaultSessionFactory;
 /**
  * SSHD uses slf4j. So add the api + binding jars, and point to a properties file
  */
+@Grab(group='com.pastdev', module='jsch-nio', version='0.1.5')
 public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
 	public static class MyResource { // Must be public
@@ -227,13 +228,9 @@ public class Coagulate {
 							System.out.println("getFileSshNio() - 8");
 							is.close();
 							os.close();
+							client.close();
 //							System.out.println("getFileSshNio() - 6"
 //									+ getStatus(sftp));
-							// sftp.disconnect();
-							// sftp.exit();
-							// sftp.close();
-							// client.close();
-							// session.close(false);
 						}
 
 					  };
@@ -262,9 +259,9 @@ public class Coagulate {
 			}
 			System.out.println("getAsyncClient() - b");
 			try {
-				defaultSessionFactory.setKnownHosts("/Users/sarnobat.reincarnated/.ssh/known_hosts");
+				defaultSessionFactory.setKnownHosts(System.getProperty("user.home")  + "/.ssh/known_hosts");
 				System.out.println("getAsyncClient() - c");
-				defaultSessionFactory.setIdentityFromPrivateKey("/Users/sarnobat.reincarnated/.ssh/id_rsa");
+				defaultSessionFactory.setIdentityFromPrivateKey(System.getProperty("user.home")  + "/.ssh/id_rsa");
 //				defaultSessionFactory.setKnownHosts("/home/sarnobat/.ssh/known_hosts");
 //				defaultSessionFactory.setIdentityFromPrivateKey("/home/sarnobat/.ssh/id_rsa");
 //			    defaultSessionFactory.setConfig( "StrictHostKeyChecking", "no" );
@@ -286,7 +283,7 @@ public class Coagulate {
 			System.out.println("getAsyncClient() - f");
 			FileSystem sshfs;
 			try {
-				sshfs = FileSystems.newFileSystem(uri, environment);
+				sshfs = FileSystems.newFileSystem(uri, environment, getClass().getClassLoader());
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -1476,7 +1473,7 @@ public class Coagulate {
 		};
 
 		private static String httpLinkFor(String iAbsolutePath) {
-			String prefix = "http://netgear.rohidekar.com:4451/cmsfs/static2/";
+			String prefix = "http://netgear.rohidekar.com:4451/cmsfs/static3/";
 			return prefix + iAbsolutePath;
 		}
 
