@@ -102,26 +102,27 @@ public class Coagulate {
 					.build();
 		}
 
+		final List<String> whitelisted = ImmutableList
+				.of("/media/sarnobat/Large/Videos/",
+						"/media/sarnobat/Unsorted/images/",
+						"/media/sarnobat/Unsorted/Videos/",
+						"/media/sarnobat/d/Videos",
+						"/e/Sridhar/Atletico Madrid/",
+						"/e/Sridhar UK/Atletico Madrid/",
+						"/e/Sridhar UK/Photos/Cats/",
+						"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/",
+						"/e/new/",
+						"/media/sarnobat/e/Drive J/",
+						"/media/sarnobat/Large/Videos_Home/AVCHD/AVCHD/BDMV/STREAM",
+						"/media/sarnobat/Record/Videos_Home/Home Video/small videos (non HD camcorder)/",
+						"/media/sarnobat/Record/Videos_Home/Home Video/home movies (high-definition)/",
+						"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
 		@GET
 		@javax.ws.rs.Path("static2/{absolutePath : .+}")
 		@Produces("application/json")
 		// getFileViaSsh servefileoverssh
 		public Response getFileSsh(@PathParam("absolutePath") String absolutePathWithSlashMissing, @Context HttpHeaders header, @QueryParam("width") final Integer iWidth){
 			final String absolutePath = "/" +absolutePathWithSlashMissing;
-			final List<String> whitelisted = ImmutableList
-					.of("/media/sarnobat/Large/Videos/",
-							"/media/sarnobat/Unsorted/images/",
-							"/media/sarnobat/Unsorted/Videos/",
-							"/media/sarnobat/d/Videos",
-							"/e/Sridhar/Atletico Madrid/",
-							"/e/Sridhar UK/Atletico Madrid/",
-							"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/",
-							"/e/new/",
-							"/media/sarnobat/e/Drive J/",
-							"/media/sarnobat/Large/Videos_Home/AVCHD/AVCHD/BDMV/STREAM",
-							"/media/sarnobat/Record/Videos_Home/Home Video/small videos (non HD camcorder)/",
-							"/media/sarnobat/Record/Videos_Home/Home Video/home movies (high-definition)/",
-							"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
 			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(Predicates.IS_UNDER(absolutePath))){
 				try {
 //					final SftpClient sftp = getSftpClient();
@@ -178,16 +179,16 @@ public class Coagulate {
 		@Produces("application/json")
 		public Response getFileSshNio(@PathParam("absolutePath") String absolutePathWithSlashMissing, @Context HttpHeaders header, @QueryParam("width") final Integer iWidth){
 			final String absolutePath = "/" +absolutePathWithSlashMissing;
-			final List<String> whitelisted = ImmutableList
-					.of("/media/sarnobat/Large/Videos/",
-							"/media/sarnobat/Unsorted/images/",
-							"/media/sarnobat/Unsorted/Videos/",
-							"/media/sarnobat/d/Videos",
-							"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/",
-							"/e/new/",
-							"/media/sarnobat/e/Drive J/",
-							"/media/sarnobat/Large/Videos_Home/AVCHD/AVCHD/BDMV/STREAM",
-							"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
+//			final List<String> whitelisted = ImmutableList
+//					.of("/media/sarnobat/Large/Videos/",
+//							"/media/sarnobat/Unsorted/images/",
+//							"/media/sarnobat/Unsorted/Videos/",
+//							"/media/sarnobat/d/Videos",
+//							"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/",
+//							"/e/new/",
+//							"/media/sarnobat/e/Drive J/",
+//							"/media/sarnobat/Large/Videos_Home/AVCHD/AVCHD/BDMV/STREAM",
+//							"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
 			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(Predicates.IS_UNDER(absolutePath))){
 				try {
 
