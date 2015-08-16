@@ -1740,18 +1740,8 @@ public class Coagulate {
 		}
 	}
 
-	@SuppressWarnings("unused")
-	private static void disableSshLogging() {
-		Handler[] handlers = Logger.getLogger("").getHandlers();
-		for (int index = 0; index < handlers.length; index++) {
-			handlers[index].setLevel(Level.SEVERE);
-		}
-	}
-
 	public static void main(String[] args) throws URISyntaxException {
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
-		// Turn off log4j which sshd spews out (actually this doesn't work)
-		// disableSshLogging();
 		try {
 			JdkHttpServerFactory.createHttpServer(new URI(
 					"http://localhost:4451/"), new ResourceConfig(

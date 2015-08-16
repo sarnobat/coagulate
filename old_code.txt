@@ -84,3 +84,15 @@
 			}
 			return rLocationDetailsJson;
 		}
+
+
+
+	// Turn off log4j which sshd spews out (actually this doesn't work)
+	@SuppressWarnings("unused")
+	private static void disableSshLogging() {
+		Handler[] handlers = Logger.getLogger("").getHandlers();
+		for (int index = 0; index < handlers.length; index++) {
+			handlers[index].setLevel(Level.SEVERE);
+		}
+	}
+
