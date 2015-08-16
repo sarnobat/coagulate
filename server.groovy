@@ -80,7 +80,7 @@ import com.pastdev.jsch.DefaultSessionFactory;
 /**
  * SSHD uses slf4j. So add the api + binding jars, and point to a properties file
  */
-@Grab(group='com.pastdev', module='jsch-nio', version='0.1.5')
+//@Grab(group='com.pastdev', module='jsch-nio', version='0.1.5')
 public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
 	public static class MyResource { // Must be public
@@ -426,7 +426,7 @@ public class Coagulate {
 					.build();
 		}
 
-		private static finals int LEVELS_TO_RECURSE = 2;
+		private static final int LEVELS_TO_RECURSE = 2;
 
 		@GET
 		@javax.ws.rs.Path("list")
