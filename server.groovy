@@ -1376,7 +1376,7 @@ public class Coagulate {
 		};
 
 		private static String httpLinkFor(String iAbsolutePath) {
-			String prefix = "http://netgear.rohidekar.com:4451/cmsfs/static3/";
+			String prefix = "http://netgear.rohidekar.com:4451/cmsfs/static2/";
 			return prefix + iAbsolutePath;
 		}
 
