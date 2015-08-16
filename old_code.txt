@@ -1,0 +1,70 @@
+	
+		@SuppressWarnings("unused")
+		private static final int SUBDIRS_LIMIT = 20;
+		@SuppressWarnings("unused")
+		private static final int FILES_PER_DIR_LIMIT = 20;
+		
+		@SuppressWarnings("unused")
+		@Deprecated // This info is only useful for whitelist info
+		private static String httpLinkForOld(String iAbsolutePath) {
+			//String domain = "http://netgear.rohidekar.com";
+			String domain = "http://192.168.1.2";
+			// Unsorted
+			String rHttpUrl = iAbsolutePath.replaceFirst("/Volumes/Unsorted/",
+					domain + ":8020/");
+			rHttpUrl = rHttpUrl.replaceFirst("/media/sarnobat/Unsorted/",
+					domain + ":8020/");
+
+			// Record
+                        rHttpUrl = rHttpUrl.replaceFirst("/media/sarnobat/Record/",
+                                        domain + ":8024/");
+                        rHttpUrl = rHttpUrl.replaceFirst("/Volumes/Record/",
+                                        domain + ":8024/");
+                        rHttpUrl = rHttpUrl.replaceFirst("/Record/",
+                                        domain + ":8024/");
+
+			// Large
+			rHttpUrl = rHttpUrl.replaceFirst("/media/sarnobat/Large/",
+					domain + ":8021/");
+			rHttpUrl = rHttpUrl.replaceFirst("/Volumes/Large/",
+					domain + ":8021/");
+
+			rHttpUrl = rHttpUrl.replaceFirst(".*/e/Sridhar/Photos",
+					domain + ":8022/");
+
+			// Books
+			rHttpUrl = rHttpUrl.replaceFirst(".*/e/Sridhar/Books", 
+					domain + ":8023/");
+
+                        rHttpUrl = rHttpUrl.replaceFirst(".*/e/new",
+                                        domain + ":8025/");
+
+   			rHttpUrl = rHttpUrl.replaceFirst(".*/e/Drive J",
+                                        domain + ":8026/");
+
+			// 3TB
+			rHttpUrl = rHttpUrl.replaceFirst("/media/sarnobat/3TB/",
+					domain + ":8027/");
+			rHttpUrl = rHttpUrl.replaceFirst("/3TB/",
+					domain + ":8027/");
+			rHttpUrl = rHttpUrl.replaceFirst("/Volumes/3TB/",
+					domain + ":8027/");
+
+			return rHttpUrl;
+		}
+
+
+
+		private JsonObject createSubdirectoriesJson(
+				String[] iDirectoryPathStrings) {
+			JsonObjectBuilder rItemsJson = Json.createObjectBuilder();
+			for (Map.Entry<String, JsonObject> aDirJson : FluentIterable
+					.from(ImmutableSet.copyOf(iDirectoryPathStrings))
+					.filter(Predicates.SHOULD_GET_CONTENTS)
+					.transform(Mappings.DIR_TO_JSON).toSet()) {
+				rItemsJson.add(aDirJson.getKey(), aDirJson.getValue());
+			}
+			JsonObject build = rItemsJson.build();
+			return build;
+		}
+
