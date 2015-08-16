@@ -435,7 +435,13 @@ public class Coagulate {
 				throws JSONException, IOException {
 			System.out.println("list() - begin");
 			try {
-				JsonObject response = createListJson(iDirectoryPathsString.split("\\n"), LEVELS_TO_RECURSE);
+				// To create JSONObject, do new JSONObject(aJsonObject.toString). But the other way round I haven't figured out
+				JsonObject response = Json
+						.createObjectBuilder()
+						.add("itemsRecursive",
+								Recursive.createFilesJsonRecursive(
+										iDirectoryPathsString.split("\\n"), LEVELS_TO_RECURSE))
+						.build();
 				System.out.println("list() - end");
 				return Response.ok().header("Access-Control-Allow-Origin", "*")
 						.entity(response.toString()).type("application/json")
@@ -447,17 +453,6 @@ public class Coagulate {
 						.entity("{ 'foo' : " + e.getMessage() + " }")
 						.type("application/json").build();
 			}
-		}
-
-		// To create JSONObject, do new JSONObject(aJsonObject.toString). But the other way round I haven't figured out
-		private JsonObject createListJson(String[] iDirectoryPathStrings, int iLevelsToRecurse)
-				throws IOException {
-			return Json
-					.createObjectBuilder()
-					.add("itemsRecursive",
-							Recursive
-									.createFilesJsonRecursive(iDirectoryPathStrings, iLevelsToRecurse))
-					.build();
 		}
 	}
 
