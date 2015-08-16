@@ -426,6 +426,8 @@ public class Coagulate {
 					.build();
 		}
 
+		private static finals int LEVELS_TO_RECURSE = 2;
+
 		@GET
 		@javax.ws.rs.Path("list")
 		@Produces("application/json")
@@ -433,7 +435,7 @@ public class Coagulate {
 				throws JSONException, IOException {
 			System.out.println("list() - begin");
 			try {
-				JsonObject response = createListJson(iDirectoryPathsString.split("\\n"));
+				JsonObject response = createListJson(iDirectoryPathsString.split("\\n"), LEVELS_TO_RECURSE);
 				System.out.println("list() - end");
 				return Response.ok().header("Access-Control-Allow-Origin", "*")
 						.entity(response.toString()).type("application/json")
@@ -448,13 +450,13 @@ public class Coagulate {
 		}
 
 		// To create JSONObject, do new JSONObject(aJsonObject.toString). But the other way round I haven't figured out
-		private JsonObject createListJson(String[] iDirectoryPathStrings)
+		private JsonObject createListJson(String[] iDirectoryPathStrings, int iLevelsToRecurse)
 				throws IOException {
 			return Json
 					.createObjectBuilder()
 					.add("itemsRecursive",
 							Recursive
-									.createFilesJsonRecursive(iDirectoryPathStrings))
+									.createFilesJsonRecursive(iDirectoryPathStrings, iLevelsToRecurse))
 					.build();
 		}
 	}
@@ -1102,21 +1104,21 @@ public class Coagulate {
 	}
 	
 	private static class Recursive {
-		static JsonObject createFilesJsonRecursive(String[] iDirectoryPathStrings)
+		static JsonObject createFilesJsonRecursive(String[] iDirectoryPathStrings, int iLevelsToRecurse)
 				throws IOException {
 			JsonObjectBuilder rItemsJson = Json.createObjectBuilder();
 			for (String aDirectoryPathString : FluentIterable.from(ImmutableSet.copyOf(iDirectoryPathStrings)).filter(Predicates.SHOULD_GET_CONTENTS)) {
 				rItemsJson.add(aDirectoryPathString,
-						createItemDetailsJsonRecursive(aDirectoryPathString));
+						getContentsAsJsonRecursive(Paths.get(aDirectoryPathString).toFile(), iLevelsToRecurse));
 			}
 			return rItemsJson.build();
 		}
 		
-		@Deprecated // We're hardcoding the number of levels to recurse.
-		private static JsonObject createItemDetailsJsonRecursive(String iDirectoryPathString)
-				throws IOException {
-			return getContentsAsJsonRecursive(new File(iDirectoryPathString), 2);
-		}
+//		@Deprecated // We're hardcoding the number of levels to recurse.
+//		private static JsonObject createItemDetailsJsonRecursive(String iDirectoryPathString)
+//				throws IOException {
+//			return getContentsAsJsonRecursive(new File(iDirectoryPathString), 2);
+//		}
 		
 		@Deprecated // TODO: bad. Do not use output parameters. Return it instead.
 		private void addDirs(File iDir, JSONObject oLocationDetails,
