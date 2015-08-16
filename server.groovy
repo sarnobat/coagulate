@@ -1112,6 +1112,7 @@ public class Coagulate {
 			return rItemsJson.build();
 		}
 		
+		@Deprecated // We're hardcoding the number of levels to recurse.
 		private static JsonObject createItemDetailsJsonRecursive(String iDirectoryPathString)
 				throws IOException {
 			return getContentsAsJsonRecursive(new File(iDirectoryPathString), 2);
