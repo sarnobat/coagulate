@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -1565,11 +1566,22 @@ public class Coagulate {
 		static JsonObject getContentsAsJson(File iDirectory)
 				throws IOException {
 			JsonObjectBuilder rFilesInLocationJson = Json.createObjectBuilder();
-			DirectoryStream<Path> directoryStream = Utils.getDirectoryStream(iDirectory);
-			Set<JsonObject> filesInLocation = FluentIterable
-					.from(directoryStream).filter(Predicates.IS_DISPLAYABLE)
-					.transform(Mappings.PATH_TO_JSON_ITEM).toSet();
-			directoryStream.close();
+			
+			DirectoryStream<Path> directoryStream;
+			Set<JsonObject> filesInLocation ;
+			try {
+				directoryStream = Utils.getDirectoryStream(iDirectory);
+				filesInLocation = FluentIterable
+						.from(directoryStream).filter(Predicates.IS_DISPLAYABLE)
+						.transform(Mappings.PATH_TO_JSON_ITEM).toSet();
+				directoryStream.close();
+			}
+			catch (AccessDeniedException e) {
+				System.out.println("Coagulate.Utils.getContentsAsJson() - " + e);
+				filesInLocation = ImmutableSet.of(); 
+			}
+			finally {
+			} 
 			for (JsonObject fileEntryJson : filesInLocation) {
 				rFilesInLocationJson.add(fileEntryJson.getString("fileSystem"),
 						fileEntryJson);
