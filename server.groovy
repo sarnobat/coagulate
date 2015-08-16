@@ -1118,22 +1118,6 @@ public class Coagulate {
 			return getContentsAsJsonRecursive(new File(iDirectoryPathString), 2);
 		}
 		
-		@SuppressWarnings("unused")
-		private JSONObject createLocationDetailsJson(String iDirectoryPathString) throws IOException {
-			JSONObject rLocationDetailsJson = new JSONObject();
-			_1: {
-				File aDirectory = new File(iDirectoryPathString);
-				_2: {
-					Collection<String> dirsWithBoundKey = addKeyBindings(
-							iDirectoryPathString,
-							rLocationDetailsJson);
-					addDirs(aDirectory, rLocationDetailsJson,
-							dirsWithBoundKey);
-				}
-			}
-			return rLocationDetailsJson;
-		}
-		
 		@Deprecated // TODO: bad. Do not use output parameters. Return it instead.
 		private void addDirs(File iDir, JSONObject oLocationDetails,
 				Collection<String> iDirsWithBoundKey) throws JSONException {
@@ -1477,7 +1461,7 @@ public class Coagulate {
 			}
 		};
 		@Deprecated // Use a function
-		static boolean shouldGetContents(String iDirectoryPathString) {
+		private static boolean shouldGetContents(String iDirectoryPathString) {
 			if (iDirectoryPathString.startsWith("#")) {
 				return false;
 			}
