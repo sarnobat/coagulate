@@ -1,3 +1,5 @@
+import static com.google.common.base.Predicates.not;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileFilter;
@@ -6,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StringReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.AccessDeniedException;
@@ -21,21 +24,22 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.json.JsonReader;
+import javax.json.JsonValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -61,7 +65,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.SshClient;
-import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SftpClient;
 import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -75,6 +78,7 @@ import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSet.Builder;
 import com.pastdev.jsch.DefaultSessionFactory;
 
 /**
@@ -427,6 +431,7 @@ public class Coagulate {
 		}
 
 		private static final int LEVELS_TO_RECURSE = 2;
+		private static final int LIMIT = 20;
 
 		@GET
 		@javax.ws.rs.Path("list")
@@ -436,12 +441,7 @@ public class Coagulate {
 			System.out.println("list() - begin");
 			try {
 				// To create JSONObject, do new JSONObject(aJsonObject.toString). But the other way round I haven't figured out
-				JsonObject response = Json
-						.createObjectBuilder()
-						.add("itemsRecursive",
-								Recursive.createFilesJsonRecursive(
-										iDirectoryPathsString.split("\\n"), LEVELS_TO_RECURSE))
-						.build();
+				JsonObject response = getDirectoryHierarchies(iDirectoryPathsString);
 				System.out.println("list() - end");
 				return Response.ok().header("Access-Control-Allow-Origin", "*")
 						.entity(response.toString()).type("application/json")
@@ -453,6 +453,17 @@ public class Coagulate {
 						.entity("{ 'foo' : " + e.getMessage() + " }")
 						.type("application/json").build();
 			}
+		}
+
+		private static JsonObject getDirectoryHierarchies(String iDirectoryPathsString) throws IOException {
+			JsonObject response = Json
+					.createObjectBuilder()
+					.add("itemsRecursive",
+							RecursiveLimitByTotal.createFilesJsonRecursive(
+									iDirectoryPathsString.split("\\n"), 
+									LIMIT, LEVELS_TO_RECURSE))
+					.build();
+			return response;
 		}
 	}
 
@@ -1097,8 +1108,365 @@ public class Coagulate {
 			gmtFrmt.setTimeZone(TimeZone.getTimeZone("GMT"));
 		}
 	}
-	
-	private static class Recursive {
+
+	private static class RecursiveLimitByTotal {
+
+		/**
+		 * Keep adding one more file from each directory (and its subdirectories) 
+		 * until we reach the limit. The intention is to not spend too much time
+		 * walking the file system and it taking such a long time for a response
+		 * to the user. At the same time, we want to spread the returned files all over the hierarchy, not be hogged by one big directory.
+		 */
+		static JsonObject createFilesJsonRecursive(String[] iDirectoryPathStrings, int iLimit, int maxDepth)
+				throws IOException {
+			return fold(createDirecctoryHierarchies(iDirectoryPathStrings, iLimit, 1, maxDepth));
+		}
+
+		private static Set<JsonObject> createDirecctoryHierarchies(String[] iDirectoryPathStrings,
+				int iLimit, int filesPerLevel, int maxDepth) {
+			System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - begin");
+			Set<JsonObject> directoryHierarchies = new HashSet<JsonObject>();
+			Set<String> filesAlreadyObtained = new HashSet<String>();
+			int total = 0;
+			while(total < iLimit){
+				System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - total = " + total);
+				List<String> dirPaths = ImmutableList.copyOf(iDirectoryPathStrings);
+//				printAlreadyObtained(filesAlreadyObtained);
+				Set<JsonObject> oneSwoopThroughDirs = swoopThroughDirs(dirPaths.get(0), dirPaths.subList(1, dirPaths.size()),iLimit, filesPerLevel, filesAlreadyObtained, maxDepth, total);
+				
+				Set<String> files = getFiles(oneSwoopThroughDirs);
+				if (files.size() == 0) {
+					// We didn't hit the limit, but the number of files in the specified dirs doesn't exceed the limit, i.e. there are no more files left that can be gotten.
+					break;
+				}
+				printSwoop(oneSwoopThroughDirs);
+				
+//				System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - pass: " + oneSwoopThroughDirs);
+//				System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - alreadyObtained size = " + filesAlreadyObtained.size());
+				filesAlreadyObtained.addAll(files);
+//				System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - alreadyObtained size = " + filesAlreadyObtained.size());
+//				total += totalFiles(oneSwoopThroughDirs);
+//				System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - out size = " + directoryHierarchies.size());
+				directoryHierarchies.addAll(oneSwoopThroughDirs);
+//				System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - out size = " + directoryHierarchies.size());
+				total = countAllFiles(directoryHierarchies);
+			}
+			System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - end - " + directoryHierarchies);
+			return directoryHierarchies;
+		}
+
+		private static void printSwoop(Set<JsonObject> oneSwoopThroughDirs) {
+			for (JsonObject mergedDip : oneSwoopThroughDirs) {
+				printMergedDips(mergedDip);
+			}
+		}
+
+		private static void printMergedDips(JsonObject mergedDip) {
+			for (String file : getFilesInShard(mergedDip)) {
+				System.out.println("Coagulate.RecursiveLimitByTotal.printMergedDips() - " + file);
+			}
+		}
+
+		// This part works correctly
+		private static int countAllFiles(Set<JsonObject> directoryHierarchies) {
+			int total = 0;
+			for (JsonObject aHierarchy : directoryHierarchies) {
+				total += countFilesInHierarchy(aHierarchy);
+			}
+			return total;
+		}
+
+		private static int countFilesInHierarchy(JsonObject aHierarchy) {
+			int count = FluentIterable.from(aHierarchy.keySet()).filter(not(DIRS)).toSet().size();
+			if (aHierarchy.containsKey("dirs")) {
+				JsonObject dirs = aHierarchy.getJsonObject("dirs");
+				for (String keyInDirs : dirs.keySet()) {
+					JsonObject dirJsonInDirs = dirs.getJsonObject(keyInDirs);
+					count += countFilesInHierarchy(dirJsonInDirs);
+				}
+			}
+			return count;
+		}
+
+		private static final Predicate<String> DIRS = new Predicate<String>() {
+			@Override
+			public boolean apply(String input) {
+				return "dirs".equalsIgnoreCase(input);
+			}
+			
+		};
+
+		private static void printAlreadyObtained(Set<String> alreadyObtained) {
+			for (Iterator iterator = alreadyObtained.iterator(); iterator.hasNext();) {
+				String string = (String) iterator.next();
+				System.out.println("\t" + string);
+			}
+		}
+
+		private static Set<String> getFiles(Set<JsonObject> shards) {
+			ImmutableSet.Builder<String> files = ImmutableSet.builder();
+			for (JsonObject shard : shards) {
+				files.addAll(getFilesInShard(shard));
+			}
+			return files.build();
+		}
+
+		private static Set<String> getFilesInShard(JsonObject shard) {
+			Set<String> keysInShard = new HashSet();
+			keysInShard.addAll(shard.keySet());
+			if (shard.containsKey("dirs")) {
+				keysInShard.remove("dirs");
+				JsonObject jsonObject = shard.getJsonObject("dirs");
+				for(String dirKey : jsonObject.keySet()) {
+					JsonObject dirJson = jsonObject.getJsonObject(dirKey);
+					Set<String> filesInShard = getFilesInShard(dirJson);
+					keysInShard.addAll(filesInShard);
+				}
+			}
+			return keysInShard;
+		}
+
+		private static int totalFiles(Set<JsonObject> shards) {
+			int total = 0;
+			for(JsonObject shard : shards) {
+				total += countFilesInShard(shard);
+			}
+			return total;
+		}
+
+		private static int countFilesInShard(JsonObject shard) {
+//			System.out.println("Coagulate.RecursiveLimitByTotal.countFilesInShard() - begin " + shard);
+			int count = shard.keySet().size();
+			if (shard.containsKey("dirs")) {
+				count -= 1;				
+				count += countFilesInShard(shard.getJsonObject("dirs"));
+			}
+//			System.out.println("Coagulate.RecursiveLimitByTotal.countFilesInShard() - end " + count);
+			return count;
+		}
+
+		private static Set<JsonObject> swoopThroughDirs(String dirPath,
+				List<String> dirPathsRemaining, int iLimit, int filesPerLevel,
+				Set<String> filesAlreadyAdded, int maxDepth, int iTotal) {
+			//
+			// Base case (just 1 dir to swoop through)
+			//
+//			System.out.println("Coagulate.RecursiveLimitByTotal.createShardsRecursive() - begin: " + dirPath);
+			Builder<JsonObject> shardsForDir = ImmutableSet.builder();
+			// just get one file from every subdir
+			JsonObject dirHierarchyJson = dipIntoDir(Paths.get(dirPath), filesPerLevel,
+					filesAlreadyAdded, maxDepth, iTotal, iLimit);
+//			System.out.println("Coagulate.RecursiveLimitByTotal.createShardsRecursive() - shard " + dirHierarchyJson);
+			
+			JsonObjectBuilder dirHierarchyJson2 = Json.createObjectBuilder();
+			dirHierarchyJson2.add(dirPath, dirHierarchyJson);
+			shardsForDir.add(dirHierarchyJson2.build());
+			
+			//
+			// Recursive case
+			//
+			if (dirPathsRemaining.size() == 0) {
+			} else {
+				List<String> tail;
+				if (dirPathsRemaining.size() == 1) {
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal.createShardsRecursive() - remaining 1");
+					tail = ImmutableList.of(dirPathsRemaining.get(0));
+				} else {
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal.createShardsRecursive() - remaining "
+									+ dirPathsRemaining.size());
+					tail = dirPathsRemaining.subList(1, dirPathsRemaining.size());
+				}
+				for (JsonObject shard : swoopThroughDirs(dirPathsRemaining.get(0), tail,
+						iLimit, filesPerLevel, filesAlreadyAdded, maxDepth, iTotal
+								+ countFilesInShard(dirHierarchyJson))) {
+					JsonObjectBuilder ret = Json.createObjectBuilder();
+					ret.add(dirPath, shard);
+					JsonObject shard2 = ret.build();
+					if (shard2.containsKey("dirs")) {
+						throw new RuntimeException(shard2.toString());
+					}
+					shardsForDir.add(shard2);
+				}
+			}
+//			System.out.println("Coagulate.RecursiveLimitByTotal.createShardsRecursive() - end: "
+//					+ dirPath);
+			ImmutableSet<JsonObject> build = shardsForDir.build();
+			return build;
+		}
+
+		// TODO: Move to Predicates
+		private static final DirectoryStream.Filter<Path> isFile = new DirectoryStream.Filter<Path>() {
+			public boolean accept(Path entry) throws IOException {
+				return !Files.isDirectory(entry);
+			}
+		};
+		// TODO: Move to Predicates
+		private static final DirectoryStream.Filter<Path> isDirectory = new DirectoryStream.Filter<Path>() {
+			public boolean accept(Path entry) throws IOException {
+				return Files.isDirectory(entry);
+			}
+		};
+
+		private static JsonObject dipIntoDir(Path iDirectoryPath, int filesPerLevel, Set<String> filesToIgnore, int maxDepth, int iTotalInShardSoFar, int iLimit) {
+//			System.out.println("Coagulate.RecursiveLimitByTotal.getContentsRecursive() - begin " + iDirectoryPath.toAbsolutePath());
+			JsonObjectBuilder dirHierarchyJson = Json.createObjectBuilder();
+			int totalInShardSoFar = iTotalInShardSoFar;
+			// Sanity check
+			if (!iDirectoryPath.toFile().isDirectory()) {
+				throw new RuntimeException("cannot create a shard from a regular file");
+			}
+			// Get one leaf node
+			try {
+				DirectoryStream<Path> filesInDir = Files.newDirectoryStream(iDirectoryPath, isFile);
+				
+				int addedCount = 0;
+				for (Path p : FluentIterable.from(filesInDir).filter(
+						not(new Predicates.Contains(filesToIgnore)))) {
+//					System.out.println("Coagulate.RecursiveLimitByTotal.getContentsRecursive() - ["
+//							+ totalInShardSoFar + "]\t" + p.toAbsolutePath().toString());
+					dirHierarchyJson.add(p.toAbsolutePath().toString(),
+							Mappings.PATH_TO_JSON_ITEM.apply(p));
+					++addedCount;
+					++totalInShardSoFar;
+					if (totalInShardSoFar > iLimit) {
+						break;
+					}
+					if (addedCount >= filesPerLevel) {
+						break;
+					}
+				}
+				filesInDir.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			// For ALL subdirectories, recurse
+			try {
+				JsonObjectBuilder dirsJson = Json.createObjectBuilder();
+				DirectoryStream<Path> subdirectories = Files.newDirectoryStream(iDirectoryPath, isDirectory);
+				for (Path p : subdirectories) {
+//					System.out.print("d");
+					JsonObject contentsRecursive = dipIntoDir(p, filesPerLevel, filesToIgnore, --maxDepth, totalInShardSoFar, iLimit);
+					if (totalInShardSoFar > iLimit) {
+						break;
+					}
+					totalInShardSoFar += countFilesInShard(contentsRecursive);
+					dirsJson.add(p.toAbsolutePath().toString(),contentsRecursive);
+				}
+				Files.newDirectoryStream(iDirectoryPath, isDirectory).close();
+				dirHierarchyJson.add("dirs", dirsJson.build());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+//			System.out.println("Coagulate.RecursiveLimitByTotal.getContentsRecursive() - end " + iDirectoryPath.toAbsolutePath());
+			return dirHierarchyJson.build();
+		}
+
+		private static final Function<Path,String> PATH_TO_STRING = new Function<Path,String>(){
+			@Override
+			public String apply(Path input) {
+				return input.toAbsolutePath().toString();
+			}
+		};
+		
+		// precondition : the directory structure of all members of the input are the same
+		private static JsonObject fold(Set<JsonObject> directoryHierarchies) {
+			validate(directoryHierarchies);
+			if (directoryHierarchies.size() == 0) {
+				return Json.createObjectBuilder().build();
+			}
+			if (directoryHierarchies.size() == 1) {
+				return directoryHierarchies.iterator().next();
+			}
+			List<JsonObject> l = ImmutableList.copyOf(directoryHierarchies);
+			JsonObject head = l.get(0);
+			if (head.containsKey("dirs")) {
+				throw new RuntimeException(head.toString());
+			}
+			List<JsonObject> tail = l.subList(1, l.size());
+			return mergeRecursive(head, tail);
+		}
+
+		private static void validate(Set<JsonObject> directoryHierarchies) {
+			for (Iterator iterator = directoryHierarchies.iterator(); iterator.hasNext();) {
+				JsonObject jsonObject = (JsonObject) iterator.next();
+				// System.out.println("Coagulate.RecursiveLimitByTotal.validate() - "
+				// + jsonObject);
+			}
+		}
+
+		private static JsonObject mergeRecursive(JsonObject accumulated, List<JsonObject> dirs) {
+			if (dirs.size() == 0) {
+				if (accumulated.containsKey("dirs")) {
+					throw new RuntimeException(accumulated.toString());
+				}
+				return accumulated;
+			}
+			JsonObject head = dirs.get(0);
+			if (head .containsKey("dirs")) {
+				throw new RuntimeException(head.toString());
+			}
+			List<JsonObject> tail = dirs.subList(1, dirs.size());
+			return mergeRecursive(mergeDirectoryHierarchies(accumulated, head), tail);
+		}
+
+		private static JsonObject mergeSetsOfDirectoryHierarchies(JsonObject dirs1, JsonObject dirs2) {
+			JsonObjectBuilder ret = Json.createObjectBuilder();
+			for (String key1 : dirs1.keySet()) {
+				JsonObject jsonObject = dirs1.getJsonObject(key1);
+				JsonObject jsonObject2 = dirs2.getJsonObject(key1);
+				int i = countFilesInHierarchy(jsonObject);
+				int j = countFilesInHierarchy(jsonObject2);
+				JsonObject jsonValue = mergeDirectoryHierarchies(jsonObject, jsonObject2);
+				int k = countFilesInHierarchy(jsonValue);
+				if (i + j != k) {
+					throw new RuntimeException("data lost");
+				}
+				ret.add(key1, jsonValue);
+			}
+			JsonObject build = ret.build();
+			return build;
+		}
+
+		private static JsonObject mergeDirectoryHierarchies(JsonObject shard1, JsonObject shard2) {
+			JsonObjectBuilder ret2 = Json.createObjectBuilder();
+			// Merge the leaf nodes contents
+			for (Entry<String, JsonValue> i : shard1.entrySet()) {
+				if ("dirs".equals(i.getKey())){
+					continue;
+				}
+				ret2.add(i.getKey(),i.getValue());
+			}
+			for (Entry<String, JsonValue> i : shard2.entrySet()) {
+				if ("dirs".equals(i.getKey())){
+					continue;
+				}
+				ret2.add(i.getKey(),i.getValue());
+			}
+			JsonObject mergeDirs = mergeDirs(shard1, shard2);
+			if (!mergeDirs.isEmpty()) {
+				ret2.add("dirs", mergeDirs);
+			}
+			JsonObject build = ret2.build();
+			return build;
+		}
+
+		private static JsonObject mergeDirs(JsonObject shard1, JsonObject shard2) {
+			if (shard1.containsKey("dirs") && shard2.containsKey("dirs")) {
+				// TODO: Wrong. We're not in a single directory hierarchy. We need a method called "mergeSetsOfDirectoryHierarchies()" 
+				return mergeSetsOfDirectoryHierarchies(shard1.getJsonObject("dirs"),
+						shard2.getJsonObject("dirs"));
+			} else if (shard1.containsKey("dirs")) {
+				return shard1.getJsonObject("dirs");
+			} else if (shard2.containsKey("dirs")) {
+				return shard2.getJsonObject("dirs");
+			} else {
+				return Json.createObjectBuilder().build();
+			}
+		}
+	}
+	private static class RecursiveLimitByDepth {
 		static JsonObject createFilesJsonRecursive(String[] iDirectoryPathStrings, int iLevelsToRecurse)
 				throws IOException {
 			JsonObjectBuilder rItemsJson = Json.createObjectBuilder();
@@ -1358,7 +1726,7 @@ public class Coagulate {
 		private static final Function<Path, JsonObject> PATH_TO_JSON_ITEM = new Function<Path, JsonObject>() {
 			@Override
 			public JsonObject apply(Path iPath) {
-				System.out.print("f");
+//				System.out.print("f");
 				return Json
 						.createObjectBuilder()
 						.add("location",
@@ -1390,7 +1758,7 @@ public class Coagulate {
 					throw new RuntimeException("not a dir: "
 							+ dir.toAbsolutePath());
 				}
-				System.out.print("d");
+//				System.out.print("d");
 				JsonObject dirJson;
 				try {
 					dirJson = Utils.getContentsAsJson(dir.toFile());
@@ -1404,6 +1772,21 @@ public class Coagulate {
 		};
 	}
 	private static class Predicates {
+
+		static class Contains implements Predicate<Path> {
+
+			private final Collection<String> files ;
+
+			public Contains(Collection<String> files) {
+				this.files = files;
+			}
+
+			@Override
+			public boolean apply(@Nullable Path input) {
+				return files.contains(input.toAbsolutePath().toString());
+			}
+
+		}
 
 		static Predicate<String> IS_UNDER(final String absolutePath) {
 			Predicate<String> IS_UNDER = new Predicate<String>() {
@@ -1486,7 +1869,7 @@ public class Coagulate {
 				filesInLocation = FluentIterable
 						.from(directoryStream).filter(Predicates.IS_DISPLAYABLE)
 						.transform(Mappings.PATH_TO_JSON_ITEM).toSet();
-				directoryStream.close();
+				directoryStream.close();// TODO: can't we close this sooner?
 			}
 			catch (AccessDeniedException e) {
 				System.out.println("Coagulate.Utils.getContentsAsJson() - " + e);
@@ -1505,6 +1888,9 @@ public class Coagulate {
 			return rFilesInLocationJson.build();
 		}
 		
+		/**
+		 * need to close the stream after use
+		 */
 		static DirectoryStream<Path> getDirectoryStream(File aDirectory)
 				throws IOException {
 			String absolutePath = aDirectory.getAbsolutePath();
@@ -1737,7 +2123,20 @@ public class Coagulate {
 		}
 	}
 
-	public static void main(String[] args) throws URISyntaxException {
+	private static JsonObject jsonFromString(String string) {
+		JsonReader jsonReader = Json.createReader(new StringReader(string));
+		JsonObject object = jsonReader.readObject();
+		jsonReader.close();
+		return object;
+	}
+
+	public static void main(String[] args) throws URISyntaxException, IOException {
+//		System.out.println("Coagulate.main() - list test " + RecursiveLimitByTotal.createFilesJsonRecursive(new String[]{"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella"}, 200, 3));
+		System.out.println("Coagulate.main() - " + MyResource.getDirectoryHierarchies("/Unsorted/images/"));
+		if (true) {
+//			System.exit(-1);
+		}
+//		System.out.println("Coagulate.main() - count test: " + RecursiveLimitByTotal.countAllFiles(ImmutableSet.of(jsonFromString("{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/1414371107.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/1414371107.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/1414371107.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/1414371107.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/489.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/489.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/489.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/489.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/tn00144.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/tn00144.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/tn00144.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/tn00144.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Brie-underwear.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Brie-underwear.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Brie-underwear.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/Brie-underwear.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/18_BELLA_01272014_0019.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/18_BELLA_01272014_0019.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/18_BELLA_01272014_0019.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/18_BELLA_01272014_0019.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/gWBwDn8.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/gWBwDn8.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/gWBwDn8.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/gWBwDn8.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/nikki-21-612x350.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/nikki-21-612x350.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/nikki-21-612x350.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/nikki-21-612x350.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/tumblr_n805iwkA6G1tfhqc0o3_250.png\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/tumblr_n805iwkA6G1tfhqc0o3_250.png\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/tumblr_n805iwkA6G1tfhqc0o3_250.png\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/tumblr_n805iwkA6G1tfhqc0o3_250.png.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/pALrw.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/pALrw.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/pALrw.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/pALrw.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Bella-Twins wwe divas.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Bella-Twins wwe divas.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Bella-Twins wwe divas.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/Bella-Twins wwe divas.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/nikki1.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/nikki1.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/nikki1.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/nikki1.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Nikki-Bella-Green.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Nikki-Bella-Green.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Nikki-Bella-Green.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/Nikki-Bella-Green.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Nikki-curves-002.gif\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Nikki-curves-002.gif\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Nikki-curves-002.gif\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/Nikki-curves-002.gif.jpg\"},\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/animated\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/ADocnYZ.gif\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/ADocnYZ.gif\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/ADocnYZ.gif\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/_thumbnails/ADocnYZ.gif.jpg\"},\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/duplicates\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/_+1\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/_-1\":{\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/_-1/_+1\":{\"dirs\":{}}}}}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/btt\":{\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/btt/duplicates\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/btt/_+1\":{\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/btt/_+1/duplicates\":{\"dirs\":{}}}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/btt/_-1\":{\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/btt/_-1/duplicates\":{\"dirs\":{}}}}}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - Brie Bella - White Lightning - Powered by XMB 1.9.6 Nexus (Alpha)_files\":{\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - Brie Bella - White Lightning - Powered by XMB 1.9.6 Nexus (Alpha)_files/btt\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - Brie Bella - White Lightning - Powered by XMB 1.9.6 Nexus (Alpha)_files/legs\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - Brie Bella - White Lightning - Powered by XMB 1.9.6 Nexus (Alpha)_files/not good\":{\"dirs\":{}}}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - The Bella Twins  Bathing Suit Beauties[Diva Focus] - Powered by XMB 1.9.6 Nexus (Alpha)_files\":{\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - The Bella Twins  Bathing Suit Beauties[Diva Focus] - Powered by XMB 1.9.6 Nexus (Alpha)_files/legs\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - The Bella Twins  Bathing Suit Beauties[Diva Focus] - Powered by XMB 1.9.6 Nexus (Alpha)_files/not good\":{\"dirs\":{}}}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - The Bellas   Diva Focus - Powered by XMB 1.9.6 Nexus (Alpha)_files\":{\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - The Bellas   Diva Focus - Powered by XMB 1.9.6 Nexus (Alpha)_files/brst\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - The Bellas   Diva Focus - Powered by XMB 1.9.6 Nexus (Alpha)_files/hips\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - The Bellas   Diva Focus - Powered by XMB 1.9.6 Nexus (Alpha)_files/navel\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - The Bellas   Diva Focus - Powered by XMB 1.9.6 Nexus (Alpha)_files/not good\":{\"dirs\":{}}}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Google Annual Report_files\":{\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Google Annual Report_files/not good\":{\"dirs\":{}}}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/legs\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/navel\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/vg\":{\"dirs\":{}},\"dirs\":{}}}"))));
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
 			JdkHttpServerFactory.createHttpServer(new URI(
