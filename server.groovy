@@ -1123,16 +1123,13 @@ public class Coagulate {
 
 		private static Set<JsonObject> createDirecctoryHierarchies(String[] iDirectoryPathStrings,
 				int iLimit, int filesPerLevel, int maxDepth) {
-//			System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - begin");
 			Set<JsonObject> directoryHierarchies = new HashSet<JsonObject>();
+			// TODO: Mutable state
 			Set<String> filesAlreadyObtained = new HashSet<String>();
 			int total = 0;
-			int swoopNumber = 1;
 			boolean debug = false;
 			while(total < iLimit){
 				List<String> dirPaths = ImmutableList.copyOf(iDirectoryPathStrings);
-//				System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - swoop number " + swoopNumber + ", total = " + total);
-				swoopNumber++;
 				Set<JsonObject> oneSwoopThroughDirs = swoopThroughDirs(dirPaths.get(0), dirPaths.subList(1, dirPaths.size()),iLimit, filesPerLevel, filesAlreadyObtained, maxDepth, total);
 				
 				Set<String> files = getFiles(oneSwoopThroughDirs);
@@ -1141,9 +1138,7 @@ public class Coagulate {
 					// We didn't hit the limit, but the number of files in the specified dirs doesn't exceed the limit, i.e. there are no more files left that can be gotten.
 					break;
 				}
-				System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - files already obtained before = " + filesAlreadyObtained.size());
 				filesAlreadyObtained.addAll(files);
-				System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - files already obtained after = " + filesAlreadyObtained.size());
 				directoryHierarchies.addAll(oneSwoopThroughDirs);
 				total = filesAlreadyObtained.size();//countAllFiles(directoryHierarchies);
 				
@@ -1159,31 +1154,12 @@ public class Coagulate {
 				if (filesAlreadyObtained.size() != countAllFiles) {
 					throw new RuntimeException(countAllFiles + " vs " + filesAlreadyObtained.size());
 				} else {
-					System.out
-							.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - " + countAllFiles + ", " + directoryHierarchies.size());
 				}
 			} else {
-				System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - debug not enabled");
 			}
-			System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - " + filesAlreadyObtained);
-			System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - " + countAllFiles(directoryHierarchies));
-//			System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - end - " + directoryHierarchies);
 			return directoryHierarchies;
 		}
 
-		private static void printSwoop(Set<JsonObject> oneSwoopThroughDirs) {
-			for (JsonObject mergedDip : oneSwoopThroughDirs) {
-				printMergedDips(mergedDip);
-			}
-		}
-
-		private static void printMergedDips(JsonObject mergedDip) {
-			for (String file : getFilesInShard(mergedDip)) {
-				System.out.println("Coagulate.RecursiveLimitByTotal.printMergedDips() - " + file);
-			}
-		}
-
-		@Deprecated // this is wrong. Find out why.
 		private static int countAllFiles(Set<JsonObject> directoryHierarchies) {
 			int total = 0;
 			for (JsonObject aHierarchy : directoryHierarchies) {
@@ -1208,15 +1184,12 @@ public class Coagulate {
 			int count = FluentIterable.from(aHierarchy.keySet()).filter(not(DIRS)).toSet().size();
 			if (aHierarchy.containsKey("dirs")) {
 				JsonObject dirs = aHierarchy.getJsonObject("dirs");
-//				System.out.println("Coagulate.RecursiveLimitByTotal.countFilesInHierarchy() - dirs = " + dirs.toString());
-//				System.out.println("Coagulate.RecursiveLimitByTotal.countFilesInHierarchy() - dirs keys: " + dirs.keySet());
 				for (String keyInDirs : dirs.keySet()) {
 					JsonObject dirJsonInDirs = dirs.getJsonObject(keyInDirs);
 					System.out.println("Coagulate.RecursiveLimitByTotal.countFilesInHierarchy() - getting count for dir: " + dirJsonInDirs);
 					count += countFilesInHierarchy(dirJsonInDirs);
 				}
 			}
-//			System.out.println("Coagulate.RecursiveLimitByTotal.countFilesInHierarchy() - found " + count + " more files in " + aHierarchy.toString());
 			return count;
 		}
 
@@ -1229,7 +1202,7 @@ public class Coagulate {
 		};
 
 		private static void printFiles(Set<String> alreadyObtained) {
-			for (Iterator iterator = alreadyObtained.iterator(); iterator.hasNext();) {
+			for (Iterator<String> iterator = alreadyObtained.iterator(); iterator.hasNext();) {
 				String string = (String) iterator.next();
 				System.out.println("Coagulate.RecursiveLimitByTotal.printFiles() - " + string);
 			}
@@ -1252,8 +1225,7 @@ public class Coagulate {
 		}
 		
 		private static Set<String> getFilesInShard(JsonObject shard) {
-//			System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInShard() - " + shard);
-			Set<String> keysInShard = new HashSet();
+			Set<String> keysInShard = new HashSet<String>();
 			keysInShard.addAll(shard.keySet());
 			if (shard.containsKey("dirs")) {
 				keysInShard.remove("dirs");
@@ -1269,38 +1241,16 @@ public class Coagulate {
 			return keysInShard;
 		}
 
-		private static int totalFiles(Set<JsonObject> shards) {
-			int total = 0;
-			for(JsonObject shard : shards) {
-				total += countFilesInShard(shard);
-			}
-			return total;
-		}
-
-//		private static int countFilesInShard(JsonObject shard) {
-////			System.out.println("Coagulate.RecursiveLimitByTotal.countFilesInShard() - begin " + shard);
-//			int count = shard.keySet().size();
-//			if (shard.containsKey("dirs")) {
-//				count -= 1;				
-//				count += countFilesInShard(shard.getJsonObject("dirs"));
-//			}
-////			System.out.println("Coagulate.RecursiveLimitByTotal.countFilesInShard() - end " + count);
-//			return count;
-//		}
-
 		private static Set<JsonObject> swoopThroughDirs(String dirPath,
 				List<String> dirPathsRemaining, int iLimit, int filesPerLevel,
 				Set<String> filesAlreadyAdded, int maxDepth, int iTotal) {
-//			System.out.println("Coagulate.RecursiveLimitByTotal.swoopThroughDirs() - " + dirPath);
 			//
 			// Base case (just 1 dir to swoop through)
 			//
-//			System.out.println("Coagulate.RecursiveLimitByTotal.createShardsRecursive() - begin: " + dirPath);
 			Builder<JsonObject> shardsForDir = ImmutableSet.builder();
 			// just get one file from every subdir
 			JsonObject dirHierarchyJson = dipIntoDir(Paths.get(dirPath), filesPerLevel,
 					filesAlreadyAdded, maxDepth, iTotal, iLimit);
-//			System.out.println("Coagulate.RecursiveLimitByTotal.createShardsRecursive() - shard " + dirHierarchyJson);
 			
 			JsonObjectBuilder dirHierarchyJson2 = Json.createObjectBuilder();
 			dirHierarchyJson2.add(dirPath, dirHierarchyJson);
@@ -1313,13 +1263,8 @@ public class Coagulate {
 			} else {
 				List<String> tail;
 				if (dirPathsRemaining.size() == 1) {
-					System.out
-							.println("Coagulate.RecursiveLimitByTotal.createShardsRecursive() - remaining 1");
 					tail = ImmutableList.of(dirPathsRemaining.get(0));
 				} else {
-					System.out
-							.println("Coagulate.RecursiveLimitByTotal.createShardsRecursive() - remaining "
-									+ dirPathsRemaining.size());
 					tail = dirPathsRemaining.subList(1, dirPathsRemaining.size());
 				}
 				for (JsonObject shard : swoopThroughDirs(dirPathsRemaining.get(0), tail,
@@ -1334,10 +1279,7 @@ public class Coagulate {
 					shardsForDir.add(shard2);
 				}
 			}
-//			System.out.println("Coagulate.RecursiveLimitByTotal.createShardsRecursive() - end: "
-//					+ dirPath);
-			ImmutableSet<JsonObject> build = shardsForDir.build();
-			return build;
+			return shardsForDir.build();
 		}
 
 		// TODO: Move to Predicates
@@ -1354,9 +1296,7 @@ public class Coagulate {
 		};
 
 		private static JsonObject dipIntoDir(Path iDirectoryPath, int filesPerLevel, Set<String> filesToIgnore, int maxDepth, int iTotalInShardSoFar, int iLimit) {
-//			System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - " + iDirectoryPath.toAbsolutePath().toString());
 			JsonObjectBuilder dirHierarchyJson = Json.createObjectBuilder();
-//			int totalInShardSoFar = iTotalInShardSoFar;
 			// Sanity check
 			if (!iDirectoryPath.toFile().isDirectory()) {
 				throw new RuntimeException("cannot create a shard from a regular file");
@@ -1373,12 +1313,9 @@ public class Coagulate {
 				int addedCount = 0;
 				for (Path p : FluentIterable.from(filesInDir).filter(
 						not(new Predicates.Contains(filesToIgnore)))) {
-//					System.out.println("Coagulate.RecursiveLimitByTotal.getContentsRecursive() - "
-//							+ p.toAbsolutePath().toString());
 					dirHierarchyJson.add(p.toAbsolutePath().toString(),
 							Mappings.PATH_TO_JSON_ITEM.apply(p));
 					++addedCount;
-//					++totalInShardSoFar;
 					filesToIgnore.add(p.toAbsolutePath().toString());
 					System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - files added: " + filesToIgnore.size());
 					if (filesToIgnore.size() > iLimit) {
@@ -1396,12 +1333,10 @@ public class Coagulate {
 				JsonObjectBuilder dirsJson = Json.createObjectBuilder();
 				DirectoryStream<Path> subdirectories = Files.newDirectoryStream(iDirectoryPath, isDirectory);
 				for (Path p : subdirectories) {
-//					System.out.print("d");
 					JsonObject contentsRecursive = dipIntoDir(p, filesPerLevel, filesToIgnore, --maxDepth, -1, iLimit);
 					if (filesToIgnore.size() > iLimit) {
 						break;
 					}
-//					totalInShardSoFar += countFilesInShard(contentsRecursive);
 					dirsJson.add(p.toAbsolutePath().toString(),contentsRecursive);
 				}
 				Files.newDirectoryStream(iDirectoryPath, isDirectory).close();
@@ -1409,20 +1344,11 @@ public class Coagulate {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-//			System.out.println("Coagulate.RecursiveLimitByTotal.getContentsRecursive() - end " + iDirectoryPath.toAbsolutePath());
 			return dirHierarchyJson.build();
 		}
 
-		private static final Function<Path,String> PATH_TO_STRING = new Function<Path,String>(){
-			@Override
-			public String apply(Path input) {
-				return input.toAbsolutePath().toString();
-			}
-		};
-		
 		// precondition : the directory structure of all members of the input are the same
 		private static JsonObject fold(Set<JsonObject> directoryHierarchies) {
-			validate(directoryHierarchies);
 			if (directoryHierarchies.size() == 0) {
 				return Json.createObjectBuilder().build();
 			}
@@ -1436,14 +1362,6 @@ public class Coagulate {
 			}
 			List<JsonObject> tail = l.subList(1, l.size());
 			return mergeRecursive2(head, tail);
-		}
-
-		private static void validate(Set<JsonObject> directoryHierarchies) {
-			for (Iterator iterator = directoryHierarchies.iterator(); iterator.hasNext();) {
-				JsonObject jsonObject = (JsonObject) iterator.next();
-				// System.out.println("Coagulate.RecursiveLimitByTotal.validate() - "
-				// + jsonObject);
-			}
 		}
 
 		private static JsonObject mergeRecursive2(JsonObject accumulated, List<JsonObject> dirs) {
@@ -1462,36 +1380,23 @@ public class Coagulate {
 		};
 
 		private static JsonObject mergeRecursive(JsonObject accumulated, List<JsonObject> dirs) {
-			System.out.println("Coagulate.RecursiveLimitByTotal.mergeRecursive() - accumulated:\t" + accumulated.toString());
 			if (dirs.size() == 0) {
 				return accumulated;
 			}
-			JsonObject head = dirs.get(0);
-			List<JsonObject> tail = dirs.subList(1, dirs.size());
-			return mergeRecursive(mergeDirectoryHierarchies(accumulated, head), tail);
+			return mergeRecursive(mergeDirectoryHierarchies(accumulated, dirs.get(0)),
+					dirs.subList(1, dirs.size()));
 		}
 
 		private static JsonObject mergeSetsOfDirectoryHierarchies(JsonObject dirs1, JsonObject dirs2) {
 			JsonObjectBuilder ret = Json.createObjectBuilder();
 			for (String key1 : dirs1.keySet()) {
-				JsonObject jsonObject = dirs1.getJsonObject(key1);
-				JsonObject jsonObject2 = dirs2.getJsonObject(key1);
-//				int i = countFilesInHierarchy(jsonObject);
-//				int j = countFilesInHierarchy(jsonObject2);
-				JsonObject jsonValue = mergeDirectoryHierarchies(jsonObject, jsonObject2);
-//				int k = countFilesInHierarchy(jsonValue);
-//				if (i + j != k) {
-//					throw new RuntimeException("data lost");
-//				}
-				ret.add(key1, jsonValue);
+				ret.add(key1,
+						mergeDirectoryHierarchies(dirs1.getJsonObject(key1),
+								dirs2.getJsonObject(key1)));
 			}
-			JsonObject build = ret.build();
-			return build;
+			return ret.build();
 		}
 
-		private static JsonObject mergeDirectoryHierarchies2(JsonObject shard1, JsonObject shard2) {
-			return mergeDirectoryHierarchies(getOnlyValue(shard1), getOnlyValue(shard2));
-		}
 		private static JsonObject getOnlyValue(JsonObject shard1) {
 			return shard1.getJsonObject((String)shard1.keySet().toArray()[0]);
 		}
@@ -1557,12 +1462,6 @@ public class Coagulate {
 			}
 			return rItemsJson.build();
 		}
-		
-//		@Deprecated // We're hardcoding the number of levels to recurse.
-//		private static JsonObject createItemDetailsJsonRecursive(String iDirectoryPathString)
-//				throws IOException {
-//			return getContentsAsJsonRecursive(new File(iDirectoryPathString), 2);
-//		}
 		
 		@Deprecated // TODO: bad. Do not use output parameters. Return it instead.
 		private void addDirs(File iDir, JSONObject oLocationDetails,
