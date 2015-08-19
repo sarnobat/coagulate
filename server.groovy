@@ -28,7 +28,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -39,7 +38,6 @@ import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
-import javax.json.JsonValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -72,6 +70,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.google.api.client.util.IOUtils;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
@@ -431,7 +430,7 @@ public class Coagulate {
 		}
 
 		private static final int LEVELS_TO_RECURSE = 2;
-		private static final int LIMIT = 20;
+		private static final int LIMIT = 80;
 
 		@GET
 		@javax.ws.rs.Path("list")
@@ -1124,34 +1123,51 @@ public class Coagulate {
 
 		private static Set<JsonObject> createDirecctoryHierarchies(String[] iDirectoryPathStrings,
 				int iLimit, int filesPerLevel, int maxDepth) {
-			System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - begin");
+//			System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - begin");
 			Set<JsonObject> directoryHierarchies = new HashSet<JsonObject>();
 			Set<String> filesAlreadyObtained = new HashSet<String>();
 			int total = 0;
+			int swoopNumber = 1;
+			boolean debug = false;
 			while(total < iLimit){
-				System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - total = " + total);
 				List<String> dirPaths = ImmutableList.copyOf(iDirectoryPathStrings);
-//				printAlreadyObtained(filesAlreadyObtained);
+//				System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - swoop number " + swoopNumber + ", total = " + total);
+				swoopNumber++;
 				Set<JsonObject> oneSwoopThroughDirs = swoopThroughDirs(dirPaths.get(0), dirPaths.subList(1, dirPaths.size()),iLimit, filesPerLevel, filesAlreadyObtained, maxDepth, total);
 				
 				Set<String> files = getFiles(oneSwoopThroughDirs);
+				printFiles(files);
 				if (files.size() == 0) {
 					// We didn't hit the limit, but the number of files in the specified dirs doesn't exceed the limit, i.e. there are no more files left that can be gotten.
 					break;
 				}
-				printSwoop(oneSwoopThroughDirs);
-				
-//				System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - pass: " + oneSwoopThroughDirs);
-//				System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - alreadyObtained size = " + filesAlreadyObtained.size());
+				System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - files already obtained before = " + filesAlreadyObtained.size());
 				filesAlreadyObtained.addAll(files);
-//				System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - alreadyObtained size = " + filesAlreadyObtained.size());
-//				total += totalFiles(oneSwoopThroughDirs);
-//				System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - out size = " + directoryHierarchies.size());
+				System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - files already obtained after = " + filesAlreadyObtained.size());
 				directoryHierarchies.addAll(oneSwoopThroughDirs);
-//				System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - out size = " + directoryHierarchies.size());
-				total = countAllFiles(directoryHierarchies);
+				total = filesAlreadyObtained.size();//countAllFiles(directoryHierarchies);
+				
+				if (debug) {
+					int countAllFiles = countAllFiles(directoryHierarchies);
+					if (filesAlreadyObtained.size() != countAllFiles) {
+						throw new RuntimeException(countAllFiles + " vs " + filesAlreadyObtained.size());
+					}
+				}
 			}
-			System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - end - " + directoryHierarchies);
+			if (debug) {
+				int countAllFiles = countAllFiles(directoryHierarchies);
+				if (filesAlreadyObtained.size() != countAllFiles) {
+					throw new RuntimeException(countAllFiles + " vs " + filesAlreadyObtained.size());
+				} else {
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - " + countAllFiles + ", " + directoryHierarchies.size());
+				}
+			} else {
+				System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - debug not enabled");
+			}
+			System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - " + filesAlreadyObtained);
+			System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - " + countAllFiles(directoryHierarchies));
+//			System.out.println("Coagulate.RecursiveLimitByTotal.createShards() - end - " + directoryHierarchies);
 			return directoryHierarchies;
 		}
 
@@ -1167,24 +1183,40 @@ public class Coagulate {
 			}
 		}
 
-		// This part works correctly
+		@Deprecated // this is wrong. Find out why.
 		private static int countAllFiles(Set<JsonObject> directoryHierarchies) {
 			int total = 0;
 			for (JsonObject aHierarchy : directoryHierarchies) {
-				total += countFilesInHierarchy(aHierarchy);
+				total += countFilesInHierarchy2(aHierarchy);
 			}
 			return total;
 		}
 
-		private static int countFilesInHierarchy(JsonObject aHierarchy) {
+		private static int countFilesInHierarchy2(JsonObject aHierarchy) {
+			if (aHierarchy.keySet().size() != 1) {
+				throw new RuntimeException("developerError");
+			}
+			JsonObject aDirectory = aHierarchy.getJsonObject((String)aHierarchy.keySet().toArray()[0]);
+			return countFilesInHierarchy(aDirectory);
+		}
+
+		private static int countFilesInShard(JsonObject aShard) {
+			return countFilesInHierarchy(getOnlyValue(aShard));
+		}
+		@VisibleForTesting static int countFilesInHierarchy(JsonObject aHierarchy) {
+			validateIsDirectoryNode(aHierarchy);
 			int count = FluentIterable.from(aHierarchy.keySet()).filter(not(DIRS)).toSet().size();
 			if (aHierarchy.containsKey("dirs")) {
 				JsonObject dirs = aHierarchy.getJsonObject("dirs");
+//				System.out.println("Coagulate.RecursiveLimitByTotal.countFilesInHierarchy() - dirs = " + dirs.toString());
+//				System.out.println("Coagulate.RecursiveLimitByTotal.countFilesInHierarchy() - dirs keys: " + dirs.keySet());
 				for (String keyInDirs : dirs.keySet()) {
 					JsonObject dirJsonInDirs = dirs.getJsonObject(keyInDirs);
+					System.out.println("Coagulate.RecursiveLimitByTotal.countFilesInHierarchy() - getting count for dir: " + dirJsonInDirs);
 					count += countFilesInHierarchy(dirJsonInDirs);
 				}
 			}
+//			System.out.println("Coagulate.RecursiveLimitByTotal.countFilesInHierarchy() - found " + count + " more files in " + aHierarchy.toString());
 			return count;
 		}
 
@@ -1196,22 +1228,31 @@ public class Coagulate {
 			
 		};
 
-		private static void printAlreadyObtained(Set<String> alreadyObtained) {
+		private static void printFiles(Set<String> alreadyObtained) {
 			for (Iterator iterator = alreadyObtained.iterator(); iterator.hasNext();) {
 				String string = (String) iterator.next();
-				System.out.println("\t" + string);
+				System.out.println("Coagulate.RecursiveLimitByTotal.printFiles() - " + string);
 			}
 		}
 
 		private static Set<String> getFiles(Set<JsonObject> shards) {
 			ImmutableSet.Builder<String> files = ImmutableSet.builder();
 			for (JsonObject shard : shards) {
-				files.addAll(getFilesInShard(shard));
+				files.addAll(getFilesInShard2(shard));
 			}
 			return files.build();
 		}
 
+		private static Set<String> getFilesInShard2(JsonObject shard2) {
+			if (shard2.keySet().size() != 1) {
+				throw new RuntimeException("Developer error");
+			}
+			JsonObject shard = shard2.getJsonObject((String)shard2.keySet().toArray()[0]);
+			return getFilesInShard(shard);
+		}
+		
 		private static Set<String> getFilesInShard(JsonObject shard) {
+//			System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInShard() - " + shard);
 			Set<String> keysInShard = new HashSet();
 			keysInShard.addAll(shard.keySet());
 			if (shard.containsKey("dirs")) {
@@ -1222,6 +1263,8 @@ public class Coagulate {
 					Set<String> filesInShard = getFilesInShard(dirJson);
 					keysInShard.addAll(filesInShard);
 				}
+			} else {
+				throw new RuntimeException("You must call this method on a directory node");
 			}
 			return keysInShard;
 		}
@@ -1234,20 +1277,21 @@ public class Coagulate {
 			return total;
 		}
 
-		private static int countFilesInShard(JsonObject shard) {
-//			System.out.println("Coagulate.RecursiveLimitByTotal.countFilesInShard() - begin " + shard);
-			int count = shard.keySet().size();
-			if (shard.containsKey("dirs")) {
-				count -= 1;				
-				count += countFilesInShard(shard.getJsonObject("dirs"));
-			}
-//			System.out.println("Coagulate.RecursiveLimitByTotal.countFilesInShard() - end " + count);
-			return count;
-		}
+//		private static int countFilesInShard(JsonObject shard) {
+////			System.out.println("Coagulate.RecursiveLimitByTotal.countFilesInShard() - begin " + shard);
+//			int count = shard.keySet().size();
+//			if (shard.containsKey("dirs")) {
+//				count -= 1;				
+//				count += countFilesInShard(shard.getJsonObject("dirs"));
+//			}
+////			System.out.println("Coagulate.RecursiveLimitByTotal.countFilesInShard() - end " + count);
+//			return count;
+//		}
 
 		private static Set<JsonObject> swoopThroughDirs(String dirPath,
 				List<String> dirPathsRemaining, int iLimit, int filesPerLevel,
 				Set<String> filesAlreadyAdded, int maxDepth, int iTotal) {
+//			System.out.println("Coagulate.RecursiveLimitByTotal.swoopThroughDirs() - " + dirPath);
 			//
 			// Base case (just 1 dir to swoop through)
 			//
@@ -1310,34 +1354,40 @@ public class Coagulate {
 		};
 
 		private static JsonObject dipIntoDir(Path iDirectoryPath, int filesPerLevel, Set<String> filesToIgnore, int maxDepth, int iTotalInShardSoFar, int iLimit) {
-//			System.out.println("Coagulate.RecursiveLimitByTotal.getContentsRecursive() - begin " + iDirectoryPath.toAbsolutePath());
+//			System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - " + iDirectoryPath.toAbsolutePath().toString());
 			JsonObjectBuilder dirHierarchyJson = Json.createObjectBuilder();
-			int totalInShardSoFar = iTotalInShardSoFar;
+//			int totalInShardSoFar = iTotalInShardSoFar;
 			// Sanity check
 			if (!iDirectoryPath.toFile().isDirectory()) {
 				throw new RuntimeException("cannot create a shard from a regular file");
 			}
 			// Get one leaf node
 			try {
-				DirectoryStream<Path> filesInDir = Files.newDirectoryStream(iDirectoryPath, isFile);
-				
+				DirectoryStream<Path> filesInDir2 = Files.newDirectoryStream(iDirectoryPath, isFile);
+				Set<Path> filesInDir = FluentIterable.from(filesInDir2).transform(new Function<Path, Path>(){
+					@Override
+					public Path apply(Path input) {
+						return input;
+					}}).toSet();
+				filesInDir2.close();
 				int addedCount = 0;
 				for (Path p : FluentIterable.from(filesInDir).filter(
 						not(new Predicates.Contains(filesToIgnore)))) {
-//					System.out.println("Coagulate.RecursiveLimitByTotal.getContentsRecursive() - ["
-//							+ totalInShardSoFar + "]\t" + p.toAbsolutePath().toString());
+//					System.out.println("Coagulate.RecursiveLimitByTotal.getContentsRecursive() - "
+//							+ p.toAbsolutePath().toString());
 					dirHierarchyJson.add(p.toAbsolutePath().toString(),
 							Mappings.PATH_TO_JSON_ITEM.apply(p));
 					++addedCount;
-					++totalInShardSoFar;
-					if (totalInShardSoFar > iLimit) {
+//					++totalInShardSoFar;
+					filesToIgnore.add(p.toAbsolutePath().toString());
+					System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - files added: " + filesToIgnore.size());
+					if (filesToIgnore.size() > iLimit) {
 						break;
 					}
 					if (addedCount >= filesPerLevel) {
 						break;
 					}
 				}
-				filesInDir.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -1347,11 +1397,11 @@ public class Coagulate {
 				DirectoryStream<Path> subdirectories = Files.newDirectoryStream(iDirectoryPath, isDirectory);
 				for (Path p : subdirectories) {
 //					System.out.print("d");
-					JsonObject contentsRecursive = dipIntoDir(p, filesPerLevel, filesToIgnore, --maxDepth, totalInShardSoFar, iLimit);
-					if (totalInShardSoFar > iLimit) {
+					JsonObject contentsRecursive = dipIntoDir(p, filesPerLevel, filesToIgnore, --maxDepth, -1, iLimit);
+					if (filesToIgnore.size() > iLimit) {
 						break;
 					}
-					totalInShardSoFar += countFilesInShard(contentsRecursive);
+//					totalInShardSoFar += countFilesInShard(contentsRecursive);
 					dirsJson.add(p.toAbsolutePath().toString(),contentsRecursive);
 				}
 				Files.newDirectoryStream(iDirectoryPath, isDirectory).close();
@@ -1385,7 +1435,7 @@ public class Coagulate {
 				throw new RuntimeException(head.toString());
 			}
 			List<JsonObject> tail = l.subList(1, l.size());
-			return mergeRecursive(head, tail);
+			return mergeRecursive2(head, tail);
 		}
 
 		private static void validate(Set<JsonObject> directoryHierarchies) {
@@ -1396,17 +1446,27 @@ public class Coagulate {
 			}
 		}
 
+		private static JsonObject mergeRecursive2(JsonObject accumulated, List<JsonObject> dirs) {
+			JsonObjectBuilder ret = Json.createObjectBuilder();
+			ret.add((String) accumulated.keySet().toArray()[0],
+					mergeRecursive(getOnlyValue(accumulated),
+							FluentIterable.from(dirs).transform(GET_ONLY_VALUE).toList()));
+			return ret.build();
+		}
+
+		private static final Function<JsonObject, JsonObject> GET_ONLY_VALUE = new Function<JsonObject,JsonObject>() {
+			@Override
+			public JsonObject apply(JsonObject input) {
+				return getOnlyValue(input);
+			}
+		};
+
 		private static JsonObject mergeRecursive(JsonObject accumulated, List<JsonObject> dirs) {
+			System.out.println("Coagulate.RecursiveLimitByTotal.mergeRecursive() - accumulated:\t" + accumulated.toString());
 			if (dirs.size() == 0) {
-				if (accumulated.containsKey("dirs")) {
-					throw new RuntimeException(accumulated.toString());
-				}
 				return accumulated;
 			}
 			JsonObject head = dirs.get(0);
-			if (head .containsKey("dirs")) {
-				throw new RuntimeException(head.toString());
-			}
 			List<JsonObject> tail = dirs.subList(1, dirs.size());
 			return mergeRecursive(mergeDirectoryHierarchies(accumulated, head), tail);
 		}
@@ -1416,40 +1476,61 @@ public class Coagulate {
 			for (String key1 : dirs1.keySet()) {
 				JsonObject jsonObject = dirs1.getJsonObject(key1);
 				JsonObject jsonObject2 = dirs2.getJsonObject(key1);
-				int i = countFilesInHierarchy(jsonObject);
-				int j = countFilesInHierarchy(jsonObject2);
+//				int i = countFilesInHierarchy(jsonObject);
+//				int j = countFilesInHierarchy(jsonObject2);
 				JsonObject jsonValue = mergeDirectoryHierarchies(jsonObject, jsonObject2);
-				int k = countFilesInHierarchy(jsonValue);
-				if (i + j != k) {
-					throw new RuntimeException("data lost");
-				}
+//				int k = countFilesInHierarchy(jsonValue);
+//				if (i + j != k) {
+//					throw new RuntimeException("data lost");
+//				}
 				ret.add(key1, jsonValue);
 			}
 			JsonObject build = ret.build();
 			return build;
 		}
 
-		private static JsonObject mergeDirectoryHierarchies(JsonObject shard1, JsonObject shard2) {
+		private static JsonObject mergeDirectoryHierarchies2(JsonObject shard1, JsonObject shard2) {
+			return mergeDirectoryHierarchies(getOnlyValue(shard1), getOnlyValue(shard2));
+		}
+		private static JsonObject getOnlyValue(JsonObject shard1) {
+			return shard1.getJsonObject((String)shard1.keySet().toArray()[0]);
+		}
+
+		private static JsonObject mergeDirectoryHierarchies(JsonObject dir1, JsonObject dir2) {
+			if (dir2 == null) {
+				System.out.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - base case");
+				return dir1;
+			}
+			validateIsDirectoryNode(dir1);
+			validateIsDirectoryNode(dir2);
+//			System.out.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - dir1:\t" + dir1);
+//			System.out.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - dir2:\t" + dir2);
 			JsonObjectBuilder ret2 = Json.createObjectBuilder();
+			
 			// Merge the leaf nodes contents
-			for (Entry<String, JsonValue> i : shard1.entrySet()) {
-				if ("dirs".equals(i.getKey())){
-					continue;
-				}
-				ret2.add(i.getKey(),i.getValue());
+			for (String key : FluentIterable.from(dir1.keySet()).filter(not(DIRS)).toSet()) {
+				ret2.add(key, dir1.get(key));
 			}
-			for (Entry<String, JsonValue> i : shard2.entrySet()) {
-				if ("dirs".equals(i.getKey())){
-					continue;
-				}
-				ret2.add(i.getKey(),i.getValue());
+			for (String key : FluentIterable.from(dir2.keySet()).filter(not(DIRS)).toSet()) {
+				ret2.add(key, dir2.get(key));
 			}
-			JsonObject mergeDirs = mergeDirs(shard1, shard2);
-			if (!mergeDirs.isEmpty()) {
-				ret2.add("dirs", mergeDirs);
-			}
+			
+			JsonObject mergeDirs = mergeDirs(dir1, dir2);
+			ret2.add("dirs", mergeDirs);
+
 			JsonObject build = ret2.build();
+//			System.out.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - out\t" + build);
 			return build;
+		}
+
+		private static void validateIsDirectoryNode(JsonObject dir) {
+			
+			if (!dir.isEmpty()) {
+				if (!dir.containsKey("dirs")) {
+					throw new RuntimeException("Not a directory node: " + dir);
+				}
+			}
+			
 		}
 
 		private static JsonObject mergeDirs(JsonObject shard1, JsonObject shard2) {
@@ -2131,11 +2212,16 @@ public class Coagulate {
 	}
 
 	public static void main(String[] args) throws URISyntaxException, IOException {
-//		System.out.println("Coagulate.main() - list test " + RecursiveLimitByTotal.createFilesJsonRecursive(new String[]{"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella"}, 200, 3));
-		System.out.println("Coagulate.main() - " + MyResource.getDirectoryHierarchies("/Unsorted/images/"));
+//		JsonObject createFilesJsonRecursive = RecursiveLimitByTotal.createFilesJsonRecursive(new String[]{"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella"}, 200, 3);
+//		System.out.println("Coagulate.main() - list test " + createFilesJsonRecursive);
 		if (true) {
 //			System.exit(-1);
 		}
+	//	System.out.println("Coagulate.main() - " + MyResource.getDirectoryHierarchies("/Unsorted/images/"));
+		
+		JsonObject jsonFromString = jsonFromString("{\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\":{\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/1414371107.jpg\":{\"location\":\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/1414371107.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/1414371107.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/1414371107.jpg.jpg\"},\"dirs\":{\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/animated\":{\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/animated/31X0cQ7.gif\":{\"location\":\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/animated\",\"fileSystem\":\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/animated/31X0cQ7.gif\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/animated/31X0cQ7.gif\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/animated/_thumbnails/31X0cQ7.gif.jpg\"},\"dirs\":{}},\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst\":{\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/0UOfWdA.gif\":{\"location\":\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst\",\"fileSystem\":\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/0UOfWdA.gif\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/0UOfWdA.gif\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/_thumbnails/0UOfWdA.gif.jpg\"},\"dirs\":{\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/_-1\":{\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/_-1/1414371569.jpg\":{\"location\":\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/_-1\",\"fileSystem\":\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/_-1/1414371569.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/_-1/1414371569.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/_-1/_thumbnails/1414371569.jpg.jpg\"},\"dirs\":{}}}},\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/btt\":{\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/btt/0211.jpg\":{\"location\":\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/btt\",\"fileSystem\":\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/btt/0211.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/btt/0211.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/btt/_thumbnails/0211.jpg.jpg\"},\"dirs\":{}},\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/legs\":{\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/legs/1412125008.png\":{\"location\":\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/legs\",\"fileSystem\":\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/legs/1412125008.png\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/legs/1412125008.png\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/legs/_thumbnails/1412125008.png.jpg\"},\"dirs\":{}},\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/navel\":{\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/navel/212661619_478319_brie_bella_divas_champion_answer_5_xlarge.jpeg\":{\"location\":\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/navel\",\"fileSystem\":\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/navel/212661619_478319_brie_bella_divas_champion_answer_5_xlarge.jpeg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/navel/212661619_478319_brie_bella_divas_champion_answer_5_xlarge.jpeg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/navel/_thumbnails/212661619_478319_brie_bella_divas_champion_answer_5_xlarge.jpeg.jpg\"},\"dirs\":{}},\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/vg\":{\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/vg/Bella-Twins-Maxim.jpg\":{\"location\":\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/vg\",\"fileSystem\":\"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/vg/Bella-Twins-Maxim.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/vg/Bella-Twins-Maxim.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/vg/_thumbnails/Bella-Twins-Maxim.jpg.jpg\"},\"dirs\":{}}}}}");
+		int countFilesInHierarchy = RecursiveLimitByTotal.countFilesInHierarchy(jsonFromString.getJsonObject("/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella"));
+		System.out.println("Coagulate.main() - " + countFilesInHierarchy);
 //		System.out.println("Coagulate.main() - count test: " + RecursiveLimitByTotal.countAllFiles(ImmutableSet.of(jsonFromString("{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/1414371107.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/1414371107.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/1414371107.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/1414371107.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/489.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/489.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/489.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/489.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/tn00144.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/tn00144.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/tn00144.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/tn00144.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Brie-underwear.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Brie-underwear.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Brie-underwear.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/Brie-underwear.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/18_BELLA_01272014_0019.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/18_BELLA_01272014_0019.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/18_BELLA_01272014_0019.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/18_BELLA_01272014_0019.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/gWBwDn8.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/gWBwDn8.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/gWBwDn8.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/gWBwDn8.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/nikki-21-612x350.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/nikki-21-612x350.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/nikki-21-612x350.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/nikki-21-612x350.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/tumblr_n805iwkA6G1tfhqc0o3_250.png\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/tumblr_n805iwkA6G1tfhqc0o3_250.png\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/tumblr_n805iwkA6G1tfhqc0o3_250.png\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/tumblr_n805iwkA6G1tfhqc0o3_250.png.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/pALrw.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/pALrw.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/pALrw.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/pALrw.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Bella-Twins wwe divas.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Bella-Twins wwe divas.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Bella-Twins wwe divas.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/Bella-Twins wwe divas.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/nikki1.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/nikki1.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/nikki1.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/nikki1.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Nikki-Bella-Green.jpg\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Nikki-Bella-Green.jpg\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Nikki-Bella-Green.jpg\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/Nikki-Bella-Green.jpg.jpg\"},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Nikki-curves-002.gif\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Nikki-curves-002.gif\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Nikki-curves-002.gif\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/_thumbnails/Nikki-curves-002.gif.jpg\"},\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/animated\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/ADocnYZ.gif\":{\"location\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst\",\"fileSystem\":\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/ADocnYZ.gif\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/ADocnYZ.gif\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/_thumbnails/ADocnYZ.gif.jpg\"},\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/duplicates\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/_+1\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/_-1\":{\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/brst/_-1/_+1\":{\"dirs\":{}}}}}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/btt\":{\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/btt/duplicates\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/btt/_+1\":{\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/btt/_+1/duplicates\":{\"dirs\":{}}}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/btt/_-1\":{\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/btt/_-1/duplicates\":{\"dirs\":{}}}}}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - Brie Bella - White Lightning - Powered by XMB 1.9.6 Nexus (Alpha)_files\":{\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - Brie Bella - White Lightning - Powered by XMB 1.9.6 Nexus (Alpha)_files/btt\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - Brie Bella - White Lightning - Powered by XMB 1.9.6 Nexus (Alpha)_files/legs\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - Brie Bella - White Lightning - Powered by XMB 1.9.6 Nexus (Alpha)_files/not good\":{\"dirs\":{}}}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - The Bella Twins  Bathing Suit Beauties[Diva Focus] - Powered by XMB 1.9.6 Nexus (Alpha)_files\":{\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - The Bella Twins  Bathing Suit Beauties[Diva Focus] - Powered by XMB 1.9.6 Nexus (Alpha)_files/legs\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - The Bella Twins  Bathing Suit Beauties[Diva Focus] - Powered by XMB 1.9.6 Nexus (Alpha)_files/not good\":{\"dirs\":{}}}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - The Bellas   Diva Focus - Powered by XMB 1.9.6 Nexus (Alpha)_files\":{\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - The Bellas   Diva Focus - Powered by XMB 1.9.6 Nexus (Alpha)_files/brst\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - The Bellas   Diva Focus - Powered by XMB 1.9.6 Nexus (Alpha)_files/hips\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - The Bellas   Diva Focus - Powered by XMB 1.9.6 Nexus (Alpha)_files/navel\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/DivaBoard.com - The Bellas   Diva Focus - Powered by XMB 1.9.6 Nexus (Alpha)_files/not good\":{\"dirs\":{}}}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Google Annual Report_files\":{\"dirs\":{\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/Google Annual Report_files/not good\":{\"dirs\":{}}}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/legs\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/navel\":{\"dirs\":{}},\"/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/wwe/Bella/vg\":{\"dirs\":{}},\"dirs\":{}}}"))));
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
