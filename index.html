@@ -346,7 +346,7 @@ function printDirsRecursive(dirItems, response, idIn, iLimit) {
 		var dirPath = sortedItems[dirIndex];
 		var categoryName1 = "";
 		categoryName1 = dirPath.split('/').pop();
-		html += "<h3>" + categoryName1 + "</h3>";
+		html += "<h3><a href='http://netgear.rohidekar.com/coagulate/?locations="+encodeURIComponent(dirPath) +"'>"+ categoryName1 + "</a></h3>";
 		var filesInDir = items[dirPath];
 		if (filesInDir.length < 1) {
 			continue;
@@ -372,7 +372,7 @@ function printDirsRecursive(dirItems, response, idIn, iLimit) {
 			var filepath = filesInDirSortedMap[sortedIndex];
 			if (filepath == 'dirs') {
 				var subdirItems = filesInDir['dirs'];
-				html += printDirsRecursive(subdirItems, response, idIn + "-" + id, limit);
+				html += "<blockquote>" + printDirsRecursive(subdirItems, response, idIn + "-" + id, limit) + "</blockquote>";
 			} else {
 			}
 		}
