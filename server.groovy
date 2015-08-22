@@ -117,7 +117,7 @@ public class Coagulate {
 						"/e/Sridhar/Atletico Madrid/",
 						"/e/Sridhar UK/Atletico Madrid/",
 						"/e/Sridhar UK/Photos/Cats/",
-                                                "/e/Sridhar/Web/",
+                        "/e/Sridhar/Web/",
 						"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/",
 						"/e/new/",
 						"/media/sarnobat/e/Drive J/",
