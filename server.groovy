@@ -110,6 +110,7 @@ public class Coagulate {
 
 		final List<String> whitelisted = ImmutableList
 				.of("/media/sarnobat/Large/Videos/",
+						"/Videos/",
 						"/media/sarnobat/Unsorted/images/",
 						"/media/sarnobat/Unsorted/Videos/",
 						"/media/sarnobat/d/Videos",
@@ -1111,7 +1112,7 @@ public class Coagulate {
 	}
 
 	private static class RecursiveLimitByTotal {
-
+		
 		/**
 		 * Keep adding one more file from each directory (and its subdirectories) 
 		 * until we reach the limit. The intention is to not spend too much time
@@ -1233,7 +1234,10 @@ public class Coagulate {
 		private static Set<String> getFilesInShard(JsonObject shard) {
 			Set<String> keysInShard = new HashSet<String>();
 			keysInShard.addAll(shard.keySet());
-			if (shard.containsKey("dirs")) {
+			if (shard.isEmpty()) {
+				return ImmutableSet.of();
+			}
+			else if (shard.containsKey("dirs")) {
 				keysInShard.remove("dirs");
 				JsonObject jsonObject = shard.getJsonObject("dirs");
 				for(String dirKey : jsonObject.keySet()) {
@@ -1242,6 +1246,7 @@ public class Coagulate {
 					keysInShard.addAll(filesInShard);
 				}
 			} else {
+				System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInShard() - not a directory node: " + shard);
 				throw new RuntimeException("You must call this method on a directory node");
 			}
 			return keysInShard;
@@ -1338,13 +1343,9 @@ public class Coagulate {
 			JsonObjectBuilder dirHierarchyJson = Json.createObjectBuilder();
 			Set<String> filesToIgnoreAtLevel = new HashSet<String>();
 			// Sanity check
-			try {
 				if (!iDirectoryPath.toFile().isDirectory()) {
 					throw new RuntimeException("cannot dip into a regular file");
 				}
-			} catch (IOException e1) {
-				throw new RuntimeException(iDirectoryPath.toString());
-			}
 			// Get one leaf node
 			try {
 				int addedCount = 0;
@@ -1396,15 +1397,31 @@ public class Coagulate {
 
 		private static Set<Path> getSubPaths(Path iDirectoryPath, Filter<Path> isfile2)
 				throws IOException {
+			System.out.println("Coagulate.RecursiveLimitByTotal.getSubPaths() - " + iDirectoryPath);
 			DirectoryStream<Path> filesInDir2 = Files.newDirectoryStream(iDirectoryPath, isfile2);
-			Set<Path> filesInDir = FluentIterable.from(filesInDir2).transform(new Function<Path, Path>(){
+//			try{
+			Set<Path> filesInDir = FluentIterable.from(filesInDir2).filter(DIP_INTO).transform(new Function<Path, Path>(){
 				@Override
 				public Path apply(Path input) {
 					return input;
 				}}).toSet();
-			filesInDir2.close();
+//			} catch(java.nio.file.AccessDeniedException e) {
+// 			} finally {
+//if (filesInDir2!=null) { 				
+ 				filesInDir2.close();
+//}
+// 			}
 			return filesInDir;
 		}
+
+		private static final Predicate<Path> DIP_INTO = new Predicate<Path>() {
+
+			@Override
+			public boolean apply(Path input) {
+				Set<String> forbidden = ImmutableSet.of("_thumbnails");
+				return !forbidden.contains(input.getName(input.getNameCount() -1).toString());
+			}
+		};
 
 		// precondition : the directory structure of all members of the input are the same
 		private static JsonObject fold(Set<JsonObject> directoryHierarchies) {
@@ -2174,6 +2191,10 @@ public class Coagulate {
 	}
 
 	public static void main(String[] args) throws URISyntaxException, IOException {
+//		Path input = Paths.get("/Users/sarnobat.reincarnated");
+//		String name = input.getName(input.getNameCount() -1).toString();
+//		System.out.println("Coagulate.main() - " + name);
+//		ImmutableSet.of("sarnobat.reincarnated").contains(name);
 //		RecursiveLimitByTotal.createFilesJsonRecursive(new String[]{"/media/sarnobat/Unsorted/images"}, 100,-1);
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
