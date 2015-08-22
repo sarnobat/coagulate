@@ -1353,10 +1353,14 @@ public class Coagulate {
 			}
 			
 			// Immediate files
-			for (Entry<String, JsonObject> e : getFilesInsideDir(iDirectoryPath, filesPerLevel,
-					filesToIgnore, iLimit, filesToIgnoreAtLevel).entrySet()) {
+			ImmutableSet<Entry<String, JsonObject>> entrySet = getFilesInsideDir(iDirectoryPath, filesPerLevel,
+					filesToIgnore, iLimit, filesToIgnoreAtLevel).entrySet();
+			for (Entry<String, JsonObject> e : entrySet) {
 				dirHierarchyJson.add(e.getKey(), e.getValue());
 			}
+			System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - added "
+					+ entrySet.size() + " files that are directly inside "
+					+ iDirectoryPath.toString());
 			
 			// For ALL subdirectories, recurse
 			try {
@@ -1366,6 +1370,7 @@ public class Coagulate {
 					if (debug) {
 						System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - files from subdir " + countFilesInHierarchy(contentsRecursive));
 					}
+//					System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - added files from subdir " + p.toString() + " to return object.");
 					dirsJson.add(p.toAbsolutePath().toString(),contentsRecursive);
 					if (filesToIgnore.size() > iLimit) {
 						break;
@@ -1393,7 +1398,7 @@ public class Coagulate {
 				for (Path p : FluentIterable.from(getSubPaths(iDirectoryPath, isFile)).filter(
 						not(new Predicates.Contains(filesToIgnore))).toSet()) {
 					String absolutePath = p.toAbsolutePath().toString();
-					System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - " + absolutePath);
+					System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInsideDir() - " + absolutePath);
 					
 					filesInDir.put(absolutePath,
 							Mappings.PATH_TO_JSON_ITEM.apply(p));
@@ -1401,7 +1406,7 @@ public class Coagulate {
 					filesToIgnore.add(p.toAbsolutePath().toString());
 					filesToIgnoreAtLevel.add(p.toAbsolutePath().toString());
 					if (debug) {
-						System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - files added: " + filesToIgnore.size());
+						System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInsideDir() - files added: " + filesToIgnore.size());
 					}
 					if (filesToIgnore.size() > iLimit) {
 						break;
@@ -1419,7 +1424,7 @@ public class Coagulate {
 
 		private static Set<Path> getSubPaths(Path iDirectoryPath, Filter<Path> isfile2)
 				throws IOException {
-			System.out.println("RecursiveLimitByTotal.getSubPaths() - " + iDirectoryPath);
+//			System.out.println("RecursiveLimitByTotal.getSubPaths() - " + iDirectoryPath);
 			DirectoryStream<Path> filesInDir2 = Files.newDirectoryStream(iDirectoryPath, isfile2);
 			Set<Path> filesInDir = FluentIterable.from(filesInDir2).filter(SHOULD_DIP_INTO).toSet();
 			filesInDir2.close();
@@ -1452,6 +1457,7 @@ public class Coagulate {
 		}
 
 		private static JsonObject mergeRecursive2(JsonObject accumulated, List<JsonObject> dirs) {
+			System.out.println("Coagulate.RecursiveLimitByTotal.mergeRecursive2() - accumulated size : " + accumulated.toString().length());
 			JsonObjectBuilder ret = Json.createObjectBuilder();
 			ret.add((String) accumulated.keySet().toArray()[0],
 					mergeRecursive(getOnlyValue(accumulated),
@@ -1468,9 +1474,12 @@ public class Coagulate {
 
 		private static JsonObject mergeRecursive(JsonObject accumulated, List<JsonObject> dirs) {
 			if (dirs.size() == 0) {
+				System.out.println("Coagulate.RecursiveLimitByTotal.mergeRecursive() - " + accumulated.toString().length());
 				return accumulated;
 			}
-			return mergeRecursive(mergeDirectoryHierarchies(accumulated, dirs.get(0)),
+			JsonObject mergeDirectoryHierarchies = mergeDirectoryHierarchies(accumulated, dirs.get(0));
+			System.out.println("Coagulate.RecursiveLimitByTotal.mergeRecursive() - " + mergeDirectoryHierarchies.toString().length());
+			return mergeRecursive(mergeDirectoryHierarchies,
 					dirs.subList(1, dirs.size()));
 		}
 
@@ -1493,6 +1502,11 @@ public class Coagulate {
 //				System.out.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - base case");
 				return dir1;
 			}
+			boolean searlesInInput = false;
+			if (dir1.toString().contains("searles") || dir2.toString().contains("searles")) {
+				searlesInInput = true;
+			}
+			System.out.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - " + dir2.toString());
 			validateIsDirectoryNode(dir1);
 			validateIsDirectoryNode(dir2);
 //			System.out.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - dir1:\t" + dir1);
@@ -1511,7 +1525,19 @@ public class Coagulate {
 			ret2.add("dirs", mergeDirs);
 
 			JsonObject build = ret2.build();
-//			System.out.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - out\t" + build);
+			System.out.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - out\t" + build);
+			if (searlesInInput) {
+				if (!build.toString().contains("searl")) {
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies()");
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - arg 1 : " + dir1.toString());System.out
+							.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies()");
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - arg 2 : " + dir2.toString());
+					throw new RuntimeException("merge has lost data");
+				}
+			}
 			return build;
 		}
 
@@ -2206,7 +2232,8 @@ public class Coagulate {
 //		String name = input.getName(input.getNameCount() -1).toString();
 //		System.out.println("Coagulate.main() - " + name);
 //		ImmutableSet.of("sarnobat.reincarnated").contains(name);
-//		RecursiveLimitByTotal.createFilesJsonRecursive(new String[]{"/media/sarnobat/Unsorted/images"}, 100,-1);
+//		JsonObject s = RecursiveLimitByTotal.createFilesJsonRecursive(new String[]{"/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/"}, 200,-1);
+	//	System.out.println("Coagulate.main() - " + s);
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
 			JdkHttpServerFactory.createHttpServer(new URI(
