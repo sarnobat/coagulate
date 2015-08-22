@@ -40,6 +40,7 @@ import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
+import javax.json.JsonValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -80,6 +81,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSet.Builder;
+import com.google.common.collect.Sets;
 import com.pastdev.jsch.DefaultSessionFactory;
 
 /**
@@ -1497,7 +1499,121 @@ public class Coagulate {
 			return shard1.getJsonObject((String)shard1.keySet().toArray()[0]);
 		}
 
-		private static JsonObject mergeDirectoryHierarchies(JsonObject dir1, JsonObject dir2) {
+		private static class DirObj {
+			private final JsonObject dirJson;
+			DirObj(JsonObject dirJson) {
+				this.dirJson = validateIsDirectoryNode(dirJson);
+			}
+			
+			Map<String, FileObj> getLeafNodes() {
+				ImmutableMap.Builder<String, FileObj> ret = ImmutableMap.builder();
+				for (String path :FluentIterable.from(dirJson.keySet()).filter(not(DIRS)).toSet()) {
+					JsonObject fileJson = dirJson.getJsonObject(path);
+					ret.put(path, new FileObj(fileJson));
+				}
+				return ret.build();
+			}
+
+			public Map<String, DirObj> getDirs() {
+				ImmutableMap.Builder<String, DirObj> ret = ImmutableMap.builder();
+				JsonObject dirs = dirJson.getJsonObject("dirs");
+				for (String path :FluentIterable.from(dirs.keySet()).toSet()) {
+					JsonObject fileJson = dirs.getJsonObject(path);
+					ret.put(path, new DirObj(fileJson));
+				}
+				return ret.build();
+			}
+
+			public JsonObject json() {
+				return dirJson;
+			}
+		}
+		private static class FileObj {
+			private final JsonObject fileJson;
+			FileObj(JsonObject fileJson) {
+				this.fileJson = fileJson;
+			}
+			public JsonObject json() {
+				return fileJson;
+			}
+		}
+		
+		private static DirObj mergeDirectoryHierarchiesInternal(DirObj dir1, DirObj dir2) {
+			Map<String, FileObj> files = mergeLeafNodes(dir1.getLeafNodes(), dir2.getLeafNodes());
+			Map<String, DirObj> dirs = mergeOverlappingDirNodes(dir1.getDirs(), dir2.getDirs());
+			
+			JsonObjectBuilder ret = Json.createObjectBuilder();
+			for (Entry<String, FileObj> entry : files.entrySet()) {
+				ret.add(entry.getKey(), entry.getValue().json());
+			}
+			JsonObjectBuilder dirs2 = Json.createObjectBuilder();
+			for (Entry<String, DirObj> entry : dirs.entrySet()) {
+				dirs2.add(entry.getKey(), entry.getValue().json());
+			}
+			ret.add("dirs", dirs2);
+			return new DirObj(ret.build());
+		}
+
+		private static Map<String, DirObj> mergeOverlappingDirNodes(Map<String, DirObj> dirs1,
+				Map<String, DirObj> dirs2) {
+			ImmutableMap.Builder<String, DirObj> ret = ImmutableMap.builder();
+			for (String dirPath : Sets.union(dirs1.keySet(), dirs2.keySet())) {
+				if (dirs1.containsKey(dirPath) && dirs2.containsKey(dirPath)) {
+					DirObj dir = dirs1.get(dirPath);
+					DirObj dir2 = dirs2.get(dirPath);
+					DirObj dirsMerged = mergeDirectoryHierarchiesInternal(dir, dir2);
+					ret.put(dirPath, dirsMerged);
+				} else if (dirs1.containsKey(dirPath) && !dirs2.containsKey(dirPath)) {
+					DirObj dir1 = dirs1.get(dirPath);
+					ret.put(dirPath, dir1);
+				} else if (!dirs1.containsKey(dirPath) && dirs2.containsKey(dirPath)) {
+					DirObj dir2 = dirs2.get(dirPath);
+					ret.put(dirPath, dir2);
+				} else {
+					throw new RuntimeException("Impossible");
+				}
+			}
+			return ret.build();
+		}
+
+		private static <T> Map<String, T> mergeLeafNodes(Map<String, T> leafNodes,
+				Map<String, T> leafNodes2) {
+			return ImmutableMap.<String, T> builder().putAll(leafNodes).putAll(leafNodes2).build();
+		}
+
+		@VisibleForTesting static JsonObject mergeDirectoryHierarchies(JsonObject dir1, JsonObject dir2) {
+			boolean searlesInInput = false;
+			if (dir1.toString().contains("searles") || dir2.toString().contains("searles")) {
+				searlesInInput = true;
+			}
+			JsonObject json = mergeDirectoryHierarchiesInternal(new DirObj(dir1), new DirObj(dir2)).json();
+			if (searlesInInput) {
+				if (!json.toString().contains("searl")) {
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - arg 1 : "
+									+ dir1.toString());
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - size "
+									+ +dir1.toString().length());
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - arg 2 : "
+									+ dir2.toString());
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - size "
+									+ dir2.toString().length());
+					System.out
+					.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - output " + json.toString());
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - size "
+									+ json.toString().length());
+					throw new RuntimeException("merge has lost data");
+				}
+			}
+			return json;
+		}
+		
+		@Deprecated // This has a bug, rewrite it using a pojo wrapper
+		@VisibleForTesting static JsonObject mergeDirectoryHierarchiesOld(JsonObject dir1, JsonObject dir2) {
 			if (dir2 == null) {
 //				System.out.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - base case");
 				return dir1;
@@ -1529,25 +1645,36 @@ public class Coagulate {
 			if (searlesInInput) {
 				if (!build.toString().contains("searl")) {
 					System.out
-							.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies()");
+							.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - arg 1 : "
+									+ dir1.toString());
 					System.out
-							.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - arg 1 : " + dir1.toString());System.out
-							.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies()");
+							.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - size "
+									+ +dir1.toString().length());
 					System.out
-							.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - arg 2 : " + dir2.toString());
+							.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - arg 2 : "
+									+ dir2.toString());
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - size "
+									+ dir2.toString().length());
+					System.out
+					.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - output " + build.toString());
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal.mergeDirectoryHierarchies() - size "
+									+ build.toString().length());
 					throw new RuntimeException("merge has lost data");
 				}
 			}
 			return build;
 		}
 
-		private static void validateIsDirectoryNode(JsonObject dir) {
+		private static JsonObject validateIsDirectoryNode(JsonObject dir) {
 			
 			if (!dir.isEmpty()) {
 				if (!dir.containsKey("dirs")) {
 					throw new RuntimeException("Not a directory node: " + dir);
 				}
 			}
+			return dir;
 			
 		}
 
@@ -2233,7 +2360,11 @@ public class Coagulate {
 //		System.out.println("Coagulate.main() - " + name);
 //		ImmutableSet.of("sarnobat.reincarnated").contains(name);
 //		JsonObject s = RecursiveLimitByTotal.createFilesJsonRecursive(new String[]{"/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/"}, 200,-1);
-	//	System.out.println("Coagulate.main() - " + s);
+//		System.out.println("Coagulate.main() - " + s);
+		RecursiveLimitByTotal
+				.mergeDirectoryHierarchies(
+						jsonFromString("{\"dirs\":{\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park\":{\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/IMG_9037.JPG\":{\"location\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park\",\"fileSystem\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/IMG_9037.JPG\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/IMG_9037.JPG\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/_thumbnails/IMG_9037.JPG.jpg\"},\"dirs\":{\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/_+1\":{\"dirs\":{}},\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/_-1\":{\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/_-1/IMG_9003.JPG\":{\"location\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/_-1\",\"fileSystem\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/_-1/IMG_9003.JPG\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/_-1/IMG_9003.JPG\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/_-1/_thumbnails/IMG_9003.JPG.jpg\"},\"dirs\":{}}}}}}"),
+						jsonFromString("{\"dirs\":{\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park\":{\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/IMG_8987.JPG\":{\"location\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park\",\"fileSystem\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/IMG_8987.JPG\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/IMG_8987.JPG\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/_thumbnails/IMG_8987.JPG.jpg\"},\"dirs\":{\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/_+1\":{\"dirs\":{}},\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/_-1\":{\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/_-1/IMG_8970.JPG\":{\"location\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/_-1\",\"fileSystem\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/_-1/IMG_8970.JPG\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/_-1/IMG_8970.JPG\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/Dunne_Park/_-1/_thumbnails/IMG_8970.JPG.jpg\"},\"dirs\":{}}}},\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/farm\":{\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/farm/IMG_8923.JPG\":{\"location\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/farm\",\"fileSystem\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/farm/IMG_8923.JPG\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/farm/IMG_8923.JPG\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/farm/_thumbnails/IMG_8923.JPG.jpg\"},\"dirs\":{\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/farm/_+1\":{\"dirs\":{}},\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/farm/_-1\":{\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/farm/_-1/IMG_8927.JPG\":{\"location\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/farm/_-1\",\"fileSystem\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/farm/_-1/IMG_8927.JPG\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/farm/_-1/IMG_8927.JPG\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/farm/_-1/_thumbnails/IMG_8927.JPG.jpg\"},\"dirs\":{}}}},\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/pond\":{\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/pond/IMG_8911.JPG\":{\"location\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/pond\",\"fileSystem\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/pond/IMG_8911.JPG\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/pond/IMG_8911.JPG\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/pond/_thumbnails/IMG_8911.JPG.jpg\"},\"dirs\":{\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/pond/_+1\":{\"dirs\":{}},\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/pond/_-1\":{\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/pond/_-1/IMG_8907.JPG\":{\"location\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/pond/_-1\",\"fileSystem\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/pond/_-1/IMG_8907.JPG\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/pond/_-1/IMG_8907.JPG\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/pond/_-1/_thumbnails/IMG_8907.JPG.jpg\"},\"dirs\":{}}}},\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/searles_road\":{\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/searles_road/IMG_8854.JPG\":{\"location\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/searles_road\",\"fileSystem\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/searles_road/IMG_8854.JPG\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/searles_road/IMG_8854.JPG\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/searles_road/_thumbnails/IMG_8854.JPG.jpg\"},\"dirs\":{\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/searles_road/_+1\":{\"dirs\":{}},\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/searles_road/_-1\":{\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/searles_road/_-1/IMG_8853.JPG\":{\"location\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/searles_road/_-1\",\"fileSystem\":\"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/searles_road/_-1/IMG_8853.JPG\",\"httpUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/searles_road/_-1/IMG_8853.JPG\",\"thumbnailUrl\":\"http://netgear.rohidekar.com:4451/cmsfs/static2//media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/20150801-193923/San_Andreas_Fault/searles_road/_-1/_thumbnails/IMG_8853.JPG.jpg\"},\"dirs\":{}}}}}}"));
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
 			JdkHttpServerFactory.createHttpServer(new URI(
