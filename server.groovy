@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -1131,7 +1132,10 @@ public class Coagulate {
 			// TODO: Mutable state
 			Set<String> filesAlreadyObtained = new HashSet<String>();
 			int total = 0;
+			int swoopNumber = 0;
 			while(total < iLimit){
+				++swoopNumber;
+				System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - Swoop number " + swoopNumber);
 				List<String> dirPaths = ImmutableList.copyOf(iDirectoryPathStrings);
 				Set<JsonObject> oneSwoopThroughDirs = swoopThroughDirs(dirPaths.get(0), dirPaths.subList(1, dirPaths.size()),iLimit, filesPerLevel, filesAlreadyObtained, maxDepth);
 				
@@ -1290,7 +1294,7 @@ public class Coagulate {
 				System.out.println("Coagulate.RecursiveLimitByTotal.swoopThroughDirs() - filesAlreadyAdded before = " + fileCountBefore );
 			}
 			JsonObject dirHierarchyJson = dipIntoDir(Paths.get(dirPath), filesPerLevel,
-					filesAlreadyAdded, maxDepth, iLimit);
+					filesAlreadyAdded, maxDepth, iLimit, 1);
 			if (debug) {
 				int fileCountAfter = filesAlreadyAdded.size();
 				System.out
@@ -1336,45 +1340,29 @@ public class Coagulate {
 			}
 		};
 
-		private static JsonObject dipIntoDir(Path iDirectoryPath, int filesPerLevel, Set<String> filesToIgnore, int maxDepth, int iLimit) {
+		private static JsonObject dipIntoDir(Path iDirectoryPath, int filesPerLevel, Set<String> filesToIgnore, int maxDepth, int iLimit, int dipNumber) {
 			if (debug) {
+				System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - dip number " + dipNumber);
 				System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - dipping into " + iDirectoryPath.toString());
 			}
 			JsonObjectBuilder dirHierarchyJson = Json.createObjectBuilder();
 			Set<String> filesToIgnoreAtLevel = new HashSet<String>();
 			// Sanity check
-				if (!iDirectoryPath.toFile().isDirectory()) {
-					throw new RuntimeException("cannot dip into a regular file");
-				}
-			// Get one leaf node
-			try {
-				int addedCount = 0;
-				for (Path p : FluentIterable.from(getSubPaths(iDirectoryPath, isFile)).filter(
-						not(new Predicates.Contains(filesToIgnore)))) {
-					dirHierarchyJson.add(p.toAbsolutePath().toString(),
-							Mappings.PATH_TO_JSON_ITEM.apply(p));
-					++addedCount;
-					filesToIgnore.add(p.toAbsolutePath().toString());
-					filesToIgnoreAtLevel.add(p.toAbsolutePath().toString());
-					if (debug) {
-						System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - files added: " + filesToIgnore.size());
-					}
-					if (filesToIgnore.size() > iLimit) {
-						break;
-					}
-					if (addedCount >= filesPerLevel) {
-						break;
-					}
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
+			if (!iDirectoryPath.toFile().isDirectory()) {
+				throw new RuntimeException("cannot dip into a regular file");
+			}
+			
+			// Immediate files
+			for (Entry<String, JsonObject> e : getFilesInsideDir(iDirectoryPath, filesPerLevel,
+					filesToIgnore, iLimit, filesToIgnoreAtLevel).entrySet()) {
+				dirHierarchyJson.add(e.getKey(), e.getValue());
 			}
 			
 			// For ALL subdirectories, recurse
 			try {
 				JsonObjectBuilder dirsJson = Json.createObjectBuilder();
 				for (Path p : getSubPaths(iDirectoryPath, isDirectory)) {
-					JsonObject contentsRecursive = dipIntoDir(p, filesPerLevel, filesToIgnore, --maxDepth, iLimit);
+					JsonObject contentsRecursive = dipIntoDir(p, filesPerLevel, filesToIgnore, --maxDepth, iLimit, ++dipNumber);
 					if (debug) {
 						System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - files from subdir " + countFilesInHierarchy(contentsRecursive));
 					}
@@ -1395,27 +1383,50 @@ public class Coagulate {
 			return build;
 		}
 
+		private static ImmutableMap<String, JsonObject> getFilesInsideDir(Path iDirectoryPath,
+				int filesPerLevel, Set<String> filesToIgnore, int iLimit,
+				Set<String> filesToIgnoreAtLevel) {
+			ImmutableMap.Builder<String, JsonObject> filesInDir = ImmutableMap.builder();
+			// Get one leaf node
+			try {
+				int addedCount = 0;
+				for (Path p : FluentIterable.from(getSubPaths(iDirectoryPath, isFile)).filter(
+						not(new Predicates.Contains(filesToIgnore))).toSet()) {
+					String absolutePath = p.toAbsolutePath().toString();
+					System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - " + absolutePath);
+					
+					filesInDir.put(absolutePath,
+							Mappings.PATH_TO_JSON_ITEM.apply(p));
+					++addedCount;
+					filesToIgnore.add(p.toAbsolutePath().toString());
+					filesToIgnoreAtLevel.add(p.toAbsolutePath().toString());
+					if (debug) {
+						System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - files added: " + filesToIgnore.size());
+					}
+					if (filesToIgnore.size() > iLimit) {
+						break;
+					}
+					if (addedCount >= filesPerLevel) {
+						break;
+					}
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			ImmutableMap<String, JsonObject> build1 = filesInDir.build();
+			return build1;
+		}
+
 		private static Set<Path> getSubPaths(Path iDirectoryPath, Filter<Path> isfile2)
 				throws IOException {
-			System.out.println("Coagulate.RecursiveLimitByTotal.getSubPaths() - " + iDirectoryPath);
+			System.out.println("RecursiveLimitByTotal.getSubPaths() - " + iDirectoryPath);
 			DirectoryStream<Path> filesInDir2 = Files.newDirectoryStream(iDirectoryPath, isfile2);
-//			try{
-			Set<Path> filesInDir = FluentIterable.from(filesInDir2).filter(DIP_INTO).transform(new Function<Path, Path>(){
-				@Override
-				public Path apply(Path input) {
-					return input;
-				}}).toSet();
-//			} catch(java.nio.file.AccessDeniedException e) {
-// 			} finally {
-//if (filesInDir2!=null) { 				
- 				filesInDir2.close();
-//}
-// 			}
+			Set<Path> filesInDir = FluentIterable.from(filesInDir2).filter(SHOULD_DIP_INTO).toSet();
+			filesInDir2.close();
 			return filesInDir;
 		}
 
-		private static final Predicate<Path> DIP_INTO = new Predicate<Path>() {
-
+		private static final Predicate<Path> SHOULD_DIP_INTO = new Predicate<Path>() {
 			@Override
 			public boolean apply(Path input) {
 				Set<String> forbidden = ImmutableSet.of("_thumbnails");
