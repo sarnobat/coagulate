@@ -31,7 +31,7 @@ $(document).ready(function(){
 
 	updateURLIfEmpty();
 
-	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()),function(response) {
+	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()) + "&limit=" + limit,function(response) {
 	        $('#status').append("File list obtained. Creating tags...");
 		$('#items').empty();
 		addSubdirLinks(response);
@@ -812,6 +812,14 @@ Key bindings<br>
 #/e/Sridhar/Photos/camera phone photos/iPhone
 #/media/sarnobat/e/new/Starred_photos
 #/media/sarnobat/e/Sridhar/Photos/2014-10-11 Santa Cruz with Murali
+
+##
+## Screenshots
+##
+/e/Sridhar/Photos/2005-12-25 Chatting Screenshots
+/e/Sridhar/Photos/screenshots
+/e/Sridhar/Photos/Skype Screenshots
+/e/Sridhar/Scans/screenshots
 
 ##
 ## Pdf
