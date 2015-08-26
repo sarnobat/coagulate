@@ -1379,7 +1379,7 @@ public class Coagulate {
 						+ entrySet.size() + " files that are directly inside "
 						+ iDirectoryPath.toString());
 			} else {
-				System.out.print(".");
+//				System.out.print(".");
 			}
 			// For ALL subdirectories, recurse
 			try {
@@ -1472,7 +1472,6 @@ public class Coagulate {
 
 		// precondition : the directory structure of all members of the input are the same
 		private static JsonObject fold(Set<JsonObject> directoryHierarchies, int iLimit) {
-			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - begin");
 			JsonObject untrimmed;
 			if (directoryHierarchies.size() == 0) {
 				untrimmed = Json.createObjectBuilder().build();
@@ -1489,15 +1488,12 @@ public class Coagulate {
 				untrimmed = mergeRecursive2;
 			}
 			JsonObject object = (JsonObject) untrimmed.values().toArray()[0];
-//			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - before trimming " + prettyPrint(object));
 			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - size before trimming: " + countFilesInHierarchy(object));
 			
 			Trim3.Node vRoot = buildTreeFromJson(untrimmed);
 			JsonObject trimTreeToWithinLimitBreadthFirst = Trim3.bfs2(vRoot, iLimit).getJsonObject("dirs");
 			
 			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - size after trimming: " + countFilesInHierarchy(trimTreeToWithinLimitBreadthFirst));
-			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - after trimming: " + prettyPrint(trimTreeToWithinLimitBreadthFirst));
-			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - end");
 			return trimTreeToWithinLimitBreadthFirst;
 		}
 		
@@ -1538,8 +1534,6 @@ public class Coagulate {
 							.println("Coagulate.RecursiveLimitByTotal.Trim3.bfs() - nodes processed = "
 									+ filesAdded);
 					Node uCurrentNode = q.remove();
-
-					
 					Node nodeOut = processNode(uCurrentNode,
 							findCopyOf(uCurrentNode.getParent(), oldToNewMap));
 					if (uCurrentNode.getParent() == null) {
@@ -1551,7 +1545,7 @@ public class Coagulate {
 					for (Node nChildNode : uCurrentNode.getChildren()) {
 						q.add(nChildNode);
 					}
-					System.out.println("Coagulate.RecursiveLimitByTotal.Trim3.bfs() - files in json: " + RecursiveLimitByTotal.countFilesInHierarchy(jsonFromString(serialize(rRootOut))));
+					//System.out.println("Coagulate.RecursiveLimitByTotal.Trim3.bfs() - files in json: " + RecursiveLimitByTotal.countFilesInHierarchy(jsonFromString(serialize(rRootOut))));
 				}
 				System.out.println("Coagulate.RecursiveLimitByTotal.Trim3.bfs() - limit = " + iLimit);
 				return checkNotNull(rRootOut);
