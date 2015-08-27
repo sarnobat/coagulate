@@ -108,27 +108,28 @@ public class Coagulate {
 					.build();
 		}
 
-		final List<String> whitelisted = ImmutableList
-				.of("/media/sarnobat/Large/Videos/",
-						"/e/Sridhar/Photos/2005-12-25 Chatting Screenshots",
-						"/e/Sridhar/Photos/Skype Screenshots",
-						"/e/Sridhar/Photos/screenshots",
-"/e/Sridhar/Scans/screenshots",
-						"/Videos/",
-						"/media/sarnobat/Unsorted/images/",
-						"/media/sarnobat/Unsorted/Videos/",
-						"/media/sarnobat/d/Videos",
-						"/e/Sridhar/Atletico Madrid/",
-						"/e/Sridhar UK/Atletico Madrid/",
-						"/e/Sridhar UK/Photos/Cats/",
-                        "/e/Sridhar/Web/",
-						"/media/sarnobat/e/Sridhar/Photos/camera phone photos/iPhone/",
-						"/e/new/",
-						"/media/sarnobat/e/Drive J/",
-						"/media/sarnobat/Large/Videos_Home/AVCHD/AVCHD/BDMV/STREAM",
-						"/media/sarnobat/Record/Videos_Home/Home Video/small videos (non HD camcorder)/",
-						"/media/sarnobat/Record/Videos_Home/Home Video/home movies (high-definition)/",
-						"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
+		private final List<String> whitelisted = ImmutableList.of(
+				"/e/Sridhar/Photos/2005-12-25 Chatting Screenshots",
+				"/e/Sridhar/Photos/Skype Screenshots",
+				"/e/Sridhar/Photos/screenshots",
+				"/e/Sridhar/Photos/camera phone photos/iPhone/",
+				"/e/Sridhar/Scans/screenshots",
+				"/e/Sridhar/Web/",
+				"/e/Sridhar/Atletico Madrid/",
+				"/e/Sridhar UK/Atletico Madrid/",
+				"/e/Sridhar UK/Photos/Cats/",
+				"/e/new/",
+				"/Videos/",
+				"/media/sarnobat/Unsorted/images/",
+				"/media/sarnobat/e/Drive J/",
+				"/media/sarnobat/d/Videos",
+				"/Unsorted/Videos/", 
+				"/media/sarnobat/Large/Videos/",
+				"/media/sarnobat/Large/Videos_Home/AVCHD/AVCHD/BDMV/STREAM",
+				"/media/sarnobat/Record/Videos_Home/Home Video/small videos (non HD camcorder)/",
+				"/media/sarnobat/Record/Videos_Home/Home Video/home movies (high-definition)/",
+				"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
+
 		@GET
 		@javax.ws.rs.Path("static2/{absolutePath : .+}")
 		@Produces("application/json")
@@ -882,7 +883,6 @@ public class Coagulate {
 				q.add(vRoot);
 				int filesAdded = 0;
 				while (!q.isEmpty() && filesAdded < iLimit) {
-					System.out.println("Coagulate.RecursiveLimitByTotal.Trim3.bfs() - nodes processed = " + filesAdded);
 					Node uCurrentNode = q.remove();
 					Node nodeOut = processNode(uCurrentNode,
 							findCopyOf(uCurrentNode.getParent(), oldToNewMap));
