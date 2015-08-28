@@ -444,7 +444,8 @@ public class Coagulate {
 			System.out.println("list() - begin: " + iDirectoryPathsString);
 			try {
 				// To create JSONObject, do new JSONObject(aJsonObject.toString). But the other way round I haven't figured out
-				JsonObject response = getDirectoryHierarchies(iDirectoryPathsString, Integer.parseInt(iLimit));
+				JsonObject response = RecursiveLimitByTotal.getDirectoryHierarchies(
+						iDirectoryPathsString, Integer.parseInt(iLimit), LEVELS_TO_RECURSE);
 				System.out.println("list() - end");
 				return Response.ok().header("Access-Control-Allow-Origin", "*")
 						.entity(response.toString()).type("application/json")
@@ -457,9 +458,12 @@ public class Coagulate {
 						.type("application/json").build();
 			}
 		}
+	}
 
-		private static JsonObject getDirectoryHierarchies(String iDirectoryPathsString, Integer iLimit) throws IOException {
-			System.out.println("Coagulate.MyResource.getDirectoryHierarchies() - begin");
+	private static class RecursiveLimitByTotal {
+
+		static JsonObject getDirectoryHierarchies(String iDirectoryPathsString, Integer iLimit, int LEVELS_TO_RECURSE) throws IOException {
+			System.out.println("Coagulate.MyResource.getDirectoryHierarchies() - begin:" + iDirectoryPathsString);
 			JsonObject response = Json
 					.createObjectBuilder()
 					.add("itemsRecursive",
@@ -469,9 +473,6 @@ public class Coagulate {
 					.build();
 			return response;
 		}
-	}
-
-	private static class RecursiveLimitByTotal {
 		
 		/**
 		 * Keep adding one more file from each directory (and its subdirectories) 
@@ -479,7 +480,7 @@ public class Coagulate {
 		 * walking the file system and it taking such a long time for a response
 		 * to the user. At the same time, we want to spread the returned files all over the hierarchy, not be hogged by one big directory.
 		 */
-		static JsonObject createFilesJsonRecursive(String[] iDirectoryPathStrings, int iLimit, int maxDepth)
+		private static JsonObject createFilesJsonRecursive(String[] iDirectoryPathStrings, int iLimit, int maxDepth)
 				throws IOException {
 			System.out.println("Coagulate.RecursiveLimitByTotal.createFilesJsonRecursive() - begin");
 			JsonObject fold = fold(createDirecctoryHierarchies(iDirectoryPathStrings, iLimit, 1, maxDepth), iLimit);
@@ -487,9 +488,9 @@ public class Coagulate {
 			return fold;
 		}
 
-		private static final boolean debug = true;
+		private static final boolean debug = false;
 		private static Set<JsonObject> createDirecctoryHierarchies(String[] iDirectoryPathStrings,
-				int iLimit, int filesPerLevel, int maxDepth) {
+				int iLimit, int iFilesPerLevel, int iMaxDepth) {
 			Set<JsonObject> directoryHierarchies = new HashSet<JsonObject>();
 			// TODO: Mutable state
 			Set<String> filesAlreadyObtained = new HashSet<String>();
@@ -499,7 +500,7 @@ public class Coagulate {
 				++swoopNumber;
 				System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - Swoop number " + swoopNumber);
 				List<String> dirPaths = ImmutableList.copyOf(iDirectoryPathStrings);
-				Set<JsonObject> oneSwoopThroughDirs = swoopThroughDirs(dirPaths.get(0), dirPaths.subList(1, dirPaths.size()),iLimit, filesPerLevel, filesAlreadyObtained, maxDepth);
+				Set<JsonObject> oneSwoopThroughDirs = swoopThroughDirs(dirPaths.get(0), dirPaths.subList(1, dirPaths.size()),iLimit, iFilesPerLevel, filesAlreadyObtained, iMaxDepth);
 				inspect_files_in_swoop: {
 					System.out
 							.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - inspecting files in swoop");
@@ -540,14 +541,14 @@ public class Coagulate {
 		private static int countFilesInShard(JsonObject aShard) {
 			return countFilesInHierarchy(getOnlyValue(aShard));
 		}
-		@VisibleForTesting static int countFilesInHierarchy(JsonObject aHierarchy) {
+
+		private static int countFilesInHierarchy(JsonObject aHierarchy) {
 			validateIsDirectoryNode(aHierarchy);
 			int count = FluentIterable.from(aHierarchy.keySet()).filter(not(DIRS)).toSet().size();
 			if (aHierarchy.containsKey("dirs")) {
 				JsonObject dirs = aHierarchy.getJsonObject("dirs");
 				for (String keyInDirs : dirs.keySet()) {
 					JsonObject dirJsonInDirs = dirs.getJsonObject(keyInDirs);
-//					System.out.println("Coagulate.RecursiveLimitByTotal.countFilesInHierarchy() - getting count for dir: " + dirJsonInDirs);
 					count += countFilesInHierarchy(dirJsonInDirs);
 				}
 			}
@@ -559,57 +560,48 @@ public class Coagulate {
 			public boolean apply(String input) {
 				return "dirs".equalsIgnoreCase(input);
 			}
-			
 		};
-
-		private static void printFiles(Set<String> alreadyObtained) {
-			for (Iterator<String> iterator = alreadyObtained.iterator(); iterator.hasNext();) {
-				String string = iterator.next();
-				System.out.println("Coagulate.RecursiveLimitByTotal.printFiles() - " + string);
-			}
-		}
 
 		private static Set<String> getFiles(Set<JsonObject> shards) {
 			ImmutableSet.Builder<String> files = ImmutableSet.builder();
 			for (JsonObject shard : shards) {
-				files.addAll(getFilesInShard2(shard));
+				files.addAll(getFilesInShard(shard));
 			}
 			return files.build();
 		}
 
-		private static Set<String> getFilesInShard2(JsonObject shard2) {
+		private static Set<String> getFilesInShard(JsonObject shard2) {
 			if (shard2.keySet().size() != 1) {
 				throw new RuntimeException("Developer error");
 			}
 			String name = (String)shard2.keySet().toArray()[0];
-			JsonObject shard = shard2.getJsonObject(name);
-			return getFilesInShard(shard);
+			JsonObject dirJson = shard2.getJsonObject(name);
+			return getFilesInDir(dirJson);
 		}
 
 		// TODO: move to predicates
 		private static final Predicate<String> LEAF_KEY = new Predicate<String>() {
-			
 			@Override
 			public boolean apply(String input) {
 				return !"dirs".equals("input");
 			}
-			
 		};
-		private static Set<String> getFilesInShard(JsonObject shard) {
+
+		private static Set<String> getFilesInDir(JsonObject iDirJson) {
 			Set<String> keysInShard = new HashSet<String>();
-			keysInShard.addAll(shard.keySet());
-			if (shard.isEmpty()) {
+			keysInShard.addAll(iDirJson.keySet());
+			if (iDirJson.isEmpty()) {
 				return ImmutableSet.of();
 			}
-			else if (shard.containsKey("dirs")) {
-				JsonObject jsonObject = shard.getJsonObject("dirs");
+			else if (iDirJson.containsKey("dirs")) {
+				JsonObject jsonObject = iDirJson.getJsonObject("dirs");
 				for(String dirKey : FluentIterable.from(jsonObject.keySet()).filter(LEAF_KEY)) {
 					JsonObject dirJson = jsonObject.getJsonObject(dirKey);
 					DirObj dirObj = new DirObj(dirJson);
 					keysInShard.addAll(dirObj.getFiles().keySet());
 				}
 			} else {
-				System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInShard() - not a directory node: " + new JSONObject(shard.toString()).toString(2));
+				System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInShard() - not a directory node: " + new JSONObject(iDirJson.toString()).toString(2));
 				throw new RuntimeException("You must call this method on a directory node");
 			}
 			return keysInShard;
@@ -629,18 +621,13 @@ public class Coagulate {
 			} else {
 				List<String> tail;
 				if (dirPathsRemaining.size() == 1) {
-					System.out.println("Coagulate.RecursiveLimitByTotal.swoopThroughDirs() - tail size in current iteration is 1");
 					tail = ImmutableList.of();
 				} else {
 					tail = dirPathsRemaining.subList(1, dirPathsRemaining.size());
-					System.out.println("Coagulate.RecursiveLimitByTotal.swoopThroughDirs() - more than 1 dir left");
 				}
-				System.out.println("Coagulate.RecursiveLimitByTotal.swoopThroughDirs() - determined tail for recursing: " + tail);
 				String dirPath2 = dirPathsRemaining.get(0);
-				System.out.println("Coagulate.RecursiveLimitByTotal.swoopThroughDirs() - dirpath2 set");
 				Set<JsonObject> swoopThroughDirs = swoopThroughDirs(dirPath2, tail,
 						iLimit, filesPerLevel, filesAlreadyAdded, maxDepth);
-				System.out.println("Coagulate.RecursiveLimitByTotal.swoopThroughDirs() - swoop result: " + swoopThroughDirs);
 				for (JsonObject shard : swoopThroughDirs) {
 					System.out.println("Coagulate.RecursiveLimitByTotal.swoopThroughDirs() - inner loop");
 					JsonObjectBuilder ret = Json.createObjectBuilder();
@@ -717,7 +704,7 @@ public class Coagulate {
 			Set<String> filesToIgnoreAtLevel = new HashSet<String>();
 			// Sanity check
 			if (!iDirectoryPath.toFile().isDirectory()) {
-				throw new RuntimeException("cannot dip into a regular file");
+				throw new RuntimeException("cannot dip into a regular file: " + iDirectoryPath);
 			}
 			
 			// Immediate files
