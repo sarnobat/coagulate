@@ -576,7 +576,7 @@ public class Coagulate {
 			}
 			String name = (String)shard2.keySet().toArray()[0];
 			JsonObject dirJson = shard2.getJsonObject(name);
-			return getFilesInDir(dirJson);
+			return getFilesInDir(new DirObj(dirJson));
 		}
 
 		// TODO: move to predicates
@@ -587,21 +587,20 @@ public class Coagulate {
 			}
 		};
 
-		private static Set<String> getFilesInDir(JsonObject iDirJson) {
+		private static Set<String> getFilesInDir(DirObj iDirObj) {
 			Set<String> keysInShard = new HashSet<String>();
-			keysInShard.addAll(iDirJson.keySet());
-			if (iDirJson.isEmpty()) {
+			keysInShard.addAll(iDirObj.getFiles().keySet());
+			if (iDirObj.getFiles().size() == 0) {
 				return ImmutableSet.of();
 			}
-			else if (iDirJson.containsKey("dirs")) {
-				JsonObject jsonObject = iDirJson.getJsonObject("dirs");
-				for(String dirKey : FluentIterable.from(jsonObject.keySet()).filter(LEAF_KEY)) {
-					JsonObject dirJson = jsonObject.getJsonObject(dirKey);
-					DirObj dirObj = new DirObj(dirJson);
+			else if (iDirObj.getDirs().size() > 0) {
+				Map<String, DirObj> dirs = iDirObj.getDirs();
+				for(String dirKey : dirs.keySet()) {
+					DirObj dirObj = dirs.get(dirKey);
 					keysInShard.addAll(dirObj.getFiles().keySet());
 				}
 			} else {
-				System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInShard() - not a directory node: " + new JSONObject(iDirJson.toString()).toString(2));
+				System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInShard() - not a directory node: " + new JSONObject(iDirObj.toString()).toString(2));
 				throw new RuntimeException("You must call this method on a directory node");
 			}
 			return keysInShard;
@@ -629,7 +628,6 @@ public class Coagulate {
 				Set<JsonObject> swoopThroughDirs = swoopThroughDirs(dirPath2, tail,
 						iLimit, filesPerLevel, filesAlreadyAdded, maxDepth);
 				for (JsonObject shard : swoopThroughDirs) {
-					System.out.println("Coagulate.RecursiveLimitByTotal.swoopThroughDirs() - inner loop");
 					JsonObjectBuilder ret = Json.createObjectBuilder();
 					ret.add(dirPath, shard);
 					JsonObject shard2 = ret.build();
@@ -714,9 +712,9 @@ public class Coagulate {
 				dirHierarchyJson.add(e.getKey(), e.getValue());
 			}
 			if (entrySet.size() > 0) {
-				System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - added "
-						+ entrySet.size() + " files that are directly inside "
-						+ iDirectoryPath.toString());
+//				System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - added "
+//						+ entrySet.size() + " files that are directly inside "
+//						+ iDirectoryPath.toString());
 			} else {
 //				System.out.print(".");
 			}
@@ -1046,10 +1044,14 @@ public class Coagulate {
 
 			public Map<String, DirObj> getDirs() {
 				ImmutableMap.Builder<String, DirObj> ret = ImmutableMap.builder();
-				JsonObject dirs = dirJson.getJsonObject("dirs");
-				for (String path :FluentIterable.from(dirs.keySet()).toSet()) {
-					JsonObject fileJson = dirs.getJsonObject(path);
-					ret.put(path, new DirObj(fileJson));
+				if (dirJson.containsKey("dirs")) {
+					JsonObject dirs = dirJson.getJsonObject("dirs");
+					for (String path :FluentIterable.from(dirs.keySet()).toSet()) {
+						JsonObject fileJson = dirs.getJsonObject(path);
+						ret.put(path, new DirObj(fileJson));
+					}
+				} else {
+					System.out.println("Coagulate.RecursiveLimitByTotal.DirObj.getDirs() - no subdirs" );
 				}
 				return ret.build();
 			}
