@@ -615,10 +615,15 @@ public class Coagulate {
 			// Base case (just 1 dir to swoop through)
 			//
 			// just get one file from every subdir
-			JsonObject dirHierarchyJson = dipIntoDir(Paths.get(dirPath), filesPerLevel,
-					filesAlreadyAdded, maxDepth, iLimit, 1);
-			shardsForDir.add(Json.createObjectBuilder().add(dirPath, dirHierarchyJson).build());
-			
+			JsonObject dirHierarchyJson;
+			try {
+				dirHierarchyJson = dipIntoDir(Paths.get(dirPath), filesPerLevel,
+						filesAlreadyAdded, maxDepth, iLimit, 1);
+				shardsForDir.add(Json.createObjectBuilder().add(dirPath, dirHierarchyJson).build());
+			} catch (CannotDipIntoDirException e) {
+				System.err.println("Coagulate.RecursiveLimitByTotal.swoopThroughDirs() - ERROR: " + e);
+			}
+
 			//
 			// Recursive case
 			//
@@ -667,7 +672,7 @@ public class Coagulate {
 			}
 		};
 
-		private static JsonObject dipIntoDir(Path iDirectoryPath, int filesPerLevel, Set<String> filesToIgnore, int maxDepth, int iLimit, int dipNumber) {
+		private static JsonObject dipIntoDir(Path iDirectoryPath, int filesPerLevel, Set<String> filesToIgnore, int maxDepth, int iLimit, int dipNumber) throws CannotDipIntoDirException {
 			if (debug) {
 				System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - dip number " + dipNumber);
 				System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - dipping into " + iDirectoryPath.toString());
@@ -676,7 +681,8 @@ public class Coagulate {
 			Set<String> filesToIgnoreAtLevel = new HashSet<String>();
 			// Sanity check
 			if (!iDirectoryPath.toFile().isDirectory()) {
-				throw new RuntimeException("cannot dip into a regular file: " + iDirectoryPath);
+//				throw new CannotDipIntoDirException(iDirectoryPath.toString());
+				return dirHierarchyJson.build();
 			}
 			
 			// Immediate files
@@ -728,6 +734,11 @@ public class Coagulate {
 //			return trimTreeToWithinLimitBreadthFirst;
 		}
 
+		private static class CannotDipIntoDirException extends Exception {
+			CannotDipIntoDirException(String s) {
+				super(s);
+			}
+		}
 
 		private static ImmutableMap<String, JsonObject> getFilesInsideDir(Path iDirectoryPath,
 				int filesPerLevel, Set<String> filesToIgnore, int iLimit,
@@ -787,10 +798,19 @@ public class Coagulate {
 			JsonObject untrimmed = fold1(directoryHierarchies);
 //			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - untrimmed = " + formatJson(untrimmed));
 			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - untrimmed keyset = " + untrimmed.keySet());
-			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - size before trimming: " + countFilesInHierarchy((JsonObject) untrimmed.values().toArray()[0]));
+			int countFilesInHierarchy = countFilesInHierarchy3(untrimmed);
+			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - size before trimming: " + countFilesInHierarchy);
 			JsonObject trimTreeToWithinLimitBreadthFirst = Trim3.trimBreadthFirst(buildTreeFromJson(untrimmed), iLimit).getJsonObject("dirs");
-			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - size after trimming: " + countFilesInHierarchy(trimTreeToWithinLimitBreadthFirst));
+			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - size after trimming: " + countFilesInHierarchy3(trimTreeToWithinLimitBreadthFirst));
 			return trimTreeToWithinLimitBreadthFirst;
+		}
+
+		private static int countFilesInHierarchy3(JsonObject untrimmed) {
+			if (untrimmed.values().size() == 0) {
+				return 0;
+			} else {
+				return countFilesInHierarchy((JsonObject) untrimmed.values().toArray()[0]);
+			}
 		}
 
 		private static String formatJson(JsonObject untrimmed) {
@@ -846,9 +866,14 @@ public class Coagulate {
 		}
 
 		private static JsonObject fold2(List<Listings> unmergedListings) {
-			return fold3(unmergedListings.get(0),
-					unmergedListings.subList(1, unmergedListings.size()));
+			if (unmergedListings.size() == 0) {
+				return Json.createObjectBuilder().build();
+			} else {
+				return fold3(unmergedListings.get(0),
+						unmergedListings.subList(1, unmergedListings.size()));
+			}
 		}
+
 		private static JsonObject fold3(Listings listings1, List<Listings> unmergedListings) {
 			if (unmergedListings.size() == 0) {
 				return listings1.json();
