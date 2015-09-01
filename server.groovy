@@ -799,8 +799,7 @@ public class Coagulate {
 			JsonObject untrimmed = fold1(directoryHierarchies);
 //			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - untrimmed = " + formatJson(untrimmed));
 //			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - untrimmed keyset = " + untrimmed.keySet());
-			int countFilesInHierarchy = countFilesInHierarchy3(untrimmed);
-			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - size before trimming: " + countFilesInHierarchy);
+			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - size before trimming: " + countFilesInHierarchy3(untrimmed));
 			JsonObject trimTreeToWithinLimitBreadthFirst = Trim3.trimBreadthFirst(buildTreeFromJson(untrimmed), iLimit).getJsonObject("dirs");
 			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - size after trimming: " + countFilesInHierarchy3(trimTreeToWithinLimitBreadthFirst));
 			return trimTreeToWithinLimitBreadthFirst;
@@ -924,7 +923,7 @@ public class Coagulate {
 		private static Trim3.Node buildTreeFromJson(
 				JsonObject shard) {
 			
-			System.out.println("Coagulate.RecursiveLimitByTotal.buildTreeFromJson() - " + shard);
+			//System.out.println("Coagulate.RecursiveLimitByTotal.buildTreeFromJson() - " + shard);
 			Trim3.Node shardNode = new Trim3.Node("{}",null,null);
 			for (String key : shard.keySet()) {
 				JsonObject jsonObject = shard.getJsonObject(key);
