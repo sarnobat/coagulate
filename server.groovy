@@ -60,6 +60,7 @@ import org.apache.commons.imaging.formats.tiff.TiffField;
 import org.apache.commons.imaging.formats.tiff.constants.GpsTagConstants;
 import org.apache.commons.imaging.formats.tiff.constants.TiffTagConstants;
 import org.apache.commons.imaging.formats.tiff.taginfos.TagInfo;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.SshClient;
@@ -79,7 +80,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSet.Builder;
 import com.google.common.collect.Sets;
+import com.jcraft.jsch.JSchException;
 import com.pastdev.jsch.DefaultSessionFactory;
+import com.pastdev.jsch.command.CommandRunner.ChannelExecWrapper;
+import com.pastdev.jsch.nio.file.UnixSshFileSystem;
+import com.pastdev.jsch.nio.file.UnixSshFileSystemProvider;
+import com.pastdev.jsch.nio.file.UnixSshPath;
 
 /**
  * SSHD uses slf4j. So add the api + binding jars, and point to a properties file
@@ -249,6 +255,88 @@ public class Coagulate {
 					.build();
 		}
 
+		@GET
+		@javax.ws.rs.Path("static4/{absolutePath : .+}")
+		@Produces("application/json")
+		public Response getFileSshNio2(@PathParam("absolutePath") String absolutePathWithSlashMissing, @Context HttpHeaders header, @QueryParam("width") final Integer iWidth){
+			final String absolutePath = "/" + absolutePathWithSlashMissing;
+			try {
+				final UnixSshFileSystem unixSshFileSystem = new UnixSshFileSystem(
+						new UnixSshFileSystemProvider(), new URI(
+								"ssh.unix://sarnobat@192.168.1.2:22/home/sarnobat"),
+						getEnvironment());
+				final ChannelExecWrapper channel = getExecWrapper(unixSshFileSystem, absolutePath);
+				final InputStream inputStream = channel.getInputStream();
+
+				StreamingOutput stream = new StreamingOutput() {
+					@Override
+					public void write(OutputStream os) throws IOException, WebApplicationException {
+						System.out
+								.println("Coagulate.MyResource.getFileSshNio2(...).new StreamingOutput() {...}.write()");
+						if (iWidth != null) {
+							try {
+								net.coobird.thumbnailator.Thumbnailator.createThumbnail(
+										inputStream, os, iWidth, iWidth);
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						} else {
+							IOUtils.copy(inputStream, os);
+						}
+						inputStream.close();
+						os.close();
+						channel.close();
+						unixSshFileSystem.close();
+					}
+				};
+
+
+				return Response.ok().entity(stream)
+						.type(FileServerGroovy.getMimeType(absolutePath)).build();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return Response.serverError().header("Access-Control-Allow-Origin", "*")
+					.entity("{ 'foo' : 'bar' }").type("application/json").build();
+		}
+
+		private static void getStream(Path path) throws IOException, URISyntaxException {
+			UnixSshFileSystem unixSshFileSystem = new UnixSshFileSystem(
+					new UnixSshFileSystemProvider(), new URI(
+							"ssh.unix://sarnobat@192.168.1.2:22/home/sarnobat"), getEnvironment());
+			ChannelExecWrapper channel = getExecWrapper(unixSshFileSystem, path.toString());
+			InputStream inputStream = channel.getInputStream();
+			channel.close();
+			unixSshFileSystem.close();
+		}
+
+		private static Map<String, Object> getEnvironment() {
+			Map<String, Object> environment = new HashMap<String, Object>();
+			DefaultSessionFactory defaultSessionFactory;
+			try {
+				defaultSessionFactory = new DefaultSessionFactory("sarnobat", "192.168.1.2", 22);
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new RuntimeException(e);
+			}
+			environment.put("defaultSessionFactory", defaultSessionFactory);
+			return environment;
+		}
+
+		private static ChannelExecWrapper getExecWrapper(UnixSshFileSystem unixSshFileSystem, String string)
+				throws IOException {
+			UnixSshPath unixPath = unixSshFileSystem.getPath(string);
+			ChannelExecWrapper channel;
+			try {
+				channel = unixPath.getFileSystem().getCommandRunner()
+						.open("/bin/cat" + " '" + unixPath.toString()  + "'");
+			} catch (JSchException e) {
+				unixSshFileSystem.close();
+				throw new RuntimeException(e);
+			}
+			return channel;
+		}
+		
 		private FileSystem getAsyncClient() {
 			DefaultSessionFactory defaultSessionFactory;
 			try {
@@ -1336,7 +1424,7 @@ public class Coagulate {
 		};
 
 		private static String httpLinkFor(String iAbsolutePath) {
-			String prefix = "http://netgear.rohidekar.com:4451/cmsfs/static2/";
+			String prefix = "http://netgear.rohidekar.com:4451/cmsfs/static4/";
 			return prefix + iAbsolutePath;
 		}
 
