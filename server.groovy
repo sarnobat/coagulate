@@ -617,8 +617,8 @@ public class Coagulate {
 			// just get one file from every subdir
 			JsonObject dirHierarchyJson;
 			try {
-				dirHierarchyJson = dipIntoDir(Paths.get(dirPath), filesPerLevel,
-						filesAlreadyAdded, maxDepth, iLimit, 1);
+				dirHierarchyJson = dipIntoDirRecursive(Paths.get(dirPath), filesPerLevel,
+						filesAlreadyAdded, maxDepth, iLimit, 1, true);
 				shardsForDir.add(Json.createObjectBuilder().add(dirPath, dirHierarchyJson).build());
 			} catch (CannotDipIntoDirException e) {
 				System.err.println("Coagulate.RecursiveLimitByTotal.swoopThroughDirs() - ERROR: " + e);
@@ -672,7 +672,7 @@ public class Coagulate {
 			}
 		};
 
-		private static JsonObject dipIntoDir(Path iDirectoryPath, int filesPerLevel, Set<String> filesToIgnore, int maxDepth, int iLimit, int dipNumber) throws CannotDipIntoDirException {
+		private static JsonObject dipIntoDirRecursive(Path iDirectoryPath, int filesPerLevel, Set<String> filesToIgnore, int maxDepth, int iLimit, int dipNumber, boolean isTopLevel) throws CannotDipIntoDirException {
 			if (debug) {
 				System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - dip number " + dipNumber);
 				System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - dipping into " + iDirectoryPath.toString());
@@ -686,7 +686,8 @@ public class Coagulate {
 			}
 			
 			// Immediate files
-			ImmutableSet<Entry<String, JsonObject>> entrySet = getFilesInsideDir(iDirectoryPath, filesPerLevel,
+			int filesPerLevel2 = isTopLevel ? filesPerLevel + iLimit/5 : filesPerLevel;
+			ImmutableSet<Entry<String, JsonObject>> entrySet = getFilesInsideDir(iDirectoryPath, filesPerLevel2,
 					filesToIgnore, iLimit, filesToIgnoreAtLevel).entrySet();
 			for (Entry<String, JsonObject> e : entrySet) {
 				dirHierarchyJson.add(e.getKey(), e.getValue());
@@ -709,7 +710,7 @@ public class Coagulate {
 					// extra storage.
 					// Actually, trimming the output may be better though you do do a lot of 
 					// file system traversal (which isn't so bad since we use NIO).
-					JsonObject contentsRecursive = dipIntoDir(p, filesPerLevel, filesToIgnore, --maxDepth, iLimit, ++dipNumber);
+					JsonObject contentsRecursive = dipIntoDirRecursive(p, filesPerLevel, filesToIgnore, --maxDepth, iLimit, ++dipNumber, false);
 					if (debug) {
 						System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - files from subdir " + countFilesInHierarchy(contentsRecursive));
 					}
@@ -797,7 +798,7 @@ public class Coagulate {
 //			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - " + directoryHierarchies);
 			JsonObject untrimmed = fold1(directoryHierarchies);
 //			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - untrimmed = " + formatJson(untrimmed));
-			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - untrimmed keyset = " + untrimmed.keySet());
+//			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - untrimmed keyset = " + untrimmed.keySet());
 			int countFilesInHierarchy = countFilesInHierarchy3(untrimmed);
 			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - size before trimming: " + countFilesInHierarchy);
 			JsonObject trimTreeToWithinLimitBreadthFirst = Trim3.trimBreadthFirst(buildTreeFromJson(untrimmed), iLimit).getJsonObject("dirs");
