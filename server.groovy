@@ -592,11 +592,13 @@ public class Coagulate {
 				List<String> dirPaths = ImmutableList.copyOf(iDirectoryPathStrings);
 				List<String> subList = dirPaths.subList(0, dirPaths.size());
 				Set<JsonObject> oneSwoopThroughDirs = swoopThroughDirs(dirPaths.get(0), subList,iLimit, iFilesPerLevel, filesAlreadyObtained, iMaxDepth);
+//				System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - " + oneSwoopThroughDirs);
 				inspect_files_in_swoop: {
 //					System.out
 //							.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - inspecting files in swoop");
 					Set<String> files = getFiles(oneSwoopThroughDirs);
 					if (files.size() == 0) {
+//						System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - no files in last dip, exiting. " + dirPaths.get(0));
 						// We didn't hit the limit, but the number of files in
 						// the specified dirs doesn't exceed the limit, i.e.
 						// there are no more files left that can be gotten.
@@ -605,9 +607,10 @@ public class Coagulate {
 					filesAlreadyObtained.addAll(files);
 				}
 				directoryHierarchies.addAll(oneSwoopThroughDirs);
-				System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - updating total");
+//				System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - updating total");
 				total = filesAlreadyObtained.size();
 			}
+//			System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - " + directoryHierarchies.toString());
 			return directoryHierarchies;
 		}
 
@@ -673,13 +676,17 @@ public class Coagulate {
 		}
 
 		private static Set<String> getFilesInDir(DirObj iDirObj) {
-//			System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInDir() - begin. Looking for dirs inside: " + iDirObj.json());
+//			System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInDir() - begin. Looking for dirs inside: " + iDirObj.getPath());
 			Set<String> keysInShard = new HashSet<String>();
 			keysInShard.addAll(iDirObj.getFiles().keySet());
-			if (iDirObj.getFiles().size() == 0) {
-				return ImmutableSet.of();
-			}
-			else if (iDirObj.getDirs().size() > 0) {
+//			if (iDirObj.getFiles().size() == 0) {
+//				System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInDir() - Nothing in " + iDirObj.getPath());
+//				return ImmutableSet.of();
+//			}
+//			else
+			keysInShard.addAll(iDirObj.getFiles().keySet());
+
+			if (iDirObj.getDirs().size() > 0) {
 				Map<String, DirObj> dirs = iDirObj.getDirs();
 				for(String dirKey : dirs.keySet()) {
 					DirObj dirObj = dirs.get(dirKey);
@@ -774,7 +781,7 @@ public class Coagulate {
 			}
 			
 			// Immediate files
-			int filesPerLevel2 = isTopLevel ? filesPerLevel + iLimit/5 : filesPerLevel;
+			int filesPerLevel2 = isTopLevel ? filesPerLevel * 20 : filesPerLevel;
 			ImmutableSet<Entry<String, JsonObject>> entrySet = getFilesInsideDir(iDirectoryPath, filesPerLevel2,
 					filesToIgnore, iLimit, filesToIgnoreAtLevel).entrySet();
 			for (Entry<String, JsonObject> e : entrySet) {
@@ -816,7 +823,7 @@ public class Coagulate {
 			JsonObject build = dirHierarchyJson.build();
 			
 			
-			//System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - before trimming, number of files = " + countFilesInHierarchy(build));
+//			System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - before trimming, number of files = " + countFilesInHierarchy(build));
 			return build;
 //			JsonObject trimTreeToWithinLimitBreadthFirst = trimTreeToWithinLimitBreadthFirst(build, iLimit, new DirObjMutable(new JSONObject(build.toString())), iDirectoryPath.toAbsolutePath().toString());
 //			System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - after trimming, number of files = " + countFilesInHierarchy(trimTreeToWithinLimitBreadthFirst));

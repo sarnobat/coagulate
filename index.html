@@ -62,6 +62,11 @@ $(document).ready(function(){
 			html += pairs.map(rootFolderOnly).reduce(DIR_TO_HTML_WITH_BUTTONS, "");
 			$('#hoist_with_buttons').append(html);
 		}
+		// Markup
+		{
+			var html = printDirsRecursive(response.itemsRecursive, response, "thumbnail2", limitRoot, createThumbnailItemHtml);
+			$('#markup').val(html);
+		}
 		$('#status').append("Tags created. Loading screenshots...");
 		loadImagesSequentially(0);
 		$('#status').append("Completed.");
@@ -334,7 +339,7 @@ function filesOnly(anObj) {
 }
 
 // For thumbnails
-function printDirsRecursive(dirItems, response, idIn, iLimit) {
+function printDirsRecursive(dirItems, response, idIn, iLimit, loadImmediate) {
 	var html = "";
 	var items = dirItems;
 
@@ -346,7 +351,7 @@ function printDirsRecursive(dirItems, response, idIn, iLimit) {
 		var dirPath = sortedItems[dirIndex];
 		var categoryName1 = "";
 		categoryName1 = dirPath.split('/').pop();
-		html += "<h3><a href='http://netgear.rohidekar.com/coagulate/?locations="+encodeURIComponent(dirPath) +"'>"+ categoryName1 + "</a></h3>";
+		html += "\n\n\n<h3><a href='http://netgear.rohidekar.com/coagulate/?locations="+encodeURIComponent(dirPath) +"'>\n"+ categoryName1 + "\n</a></h3>\n\n\n";
 		var filesInDir = items[dirPath];
 		if (filesInDir.length < 1) {
 			continue;
@@ -364,7 +369,8 @@ function printDirsRecursive(dirItems, response, idIn, iLimit) {
 				if (id > iLimit) {
 //					continue;
 				}
-				html += createThumbnailItemHtml("", filesInDir[filepath]);
+				html += createThumbnailItemHtml("", filesInDir[filepath], loadImmediate);
+				html += "\n\n";
 			}
 		}
 		// For subdirs
@@ -372,7 +378,7 @@ function printDirsRecursive(dirItems, response, idIn, iLimit) {
 			var filepath = filesInDirSortedMap[sortedIndex];
 			if (filepath == 'dirs') {
 				var subdirItems = filesInDir['dirs'];
-				html += "<blockquote>" + printDirsRecursive(subdirItems, response, idIn + "-" + id, limit) + "</blockquote>";
+				html += "<blockquote>" + printDirsRecursive(subdirItems, response, idIn + "-" + id, limit, loadImmediate) + "</blockquote>";
 			} else {
 			}
 		}
@@ -381,7 +387,7 @@ function printDirsRecursive(dirItems, response, idIn, iLimit) {
 }
 
 // No buttons
-function createThumbnailItemHtml(accumulator, fileObj) {	
+function createThumbnailItemHtml(accumulator, fileObj, loadImmediate) {	
 	
 	var fileSystem = fileObj.fileSystem;
 	
@@ -403,7 +409,7 @@ function createThumbnailItemHtml(accumulator, fileObj) {
 		{
 			var res = fileSystem.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
 			if (res !=null) {
-				toBeAppended += '<a href="' + httpUrl + '" target="_blank">';
+				toBeAppended += '\t<a href=\'' + httpUrl + '\' target="_blank">\n';
 				var degreesToOrient = 0;
 				if (fileObj.exif) {
 					degreesToOrient = 90*(parseInt(fileObj.exif.orientation) - 1);
@@ -411,9 +417,13 @@ function createThumbnailItemHtml(accumulator, fileObj) {
 				// height ensures buttons don't jump left and right between items for 
 				// easier mass sorting. But it's not as nice to view.
 				// The server-side thumbnailator reorients the image correctly
-				toBeAppended += '<img class="myimage" src="http://netgear.rohidekar.com/static/icons/Orb_Icons_001.png" data-src="' + encodeURI(httpUrl + "?width=" + widthInt) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'"/>';
+				if (loadImmediate) {
+					toBeAppended += '\t\t\t<img src="' + encodeURI(httpUrl) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'" class="myimage" />\n';
+				} else {
+					toBeAppended += '\t\t\t<img src="http://netgear.rohidekar.com/static/icons/Orb_Icons_001.png" data-src="' + encodeURI(httpUrl + "?width=" + widthInt) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'" class="myimage" />\n';
+				}
 				//data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-				toBeAppended += '</a>';
+				toBeAppended += '\t</a>\n';
 			}
 		}
 		// Videos
@@ -431,8 +441,8 @@ function createThumbnailItemHtml(accumulator, fileObj) {
 				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height='+height+'>';
 			}
 		}
-		toBeAppended = "<span id='thumbnail-"+fileSystem+"'><a href='" +httpUrl+"'>" + toBeAppended + "</a>";
-		toBeAppended += "&nbsp;</span>";
+		toBeAppended = "<span id='thumbnail-"+fileSystem+"'>\n" + toBeAppended;
+		toBeAppended += "&nbsp;\n</span>";
 	}	
 	return toBeAppended;
 }
@@ -549,7 +559,7 @@ function fileObjToHtml(fileObj) {
 			{
 				var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
 				if (res !=null) {
-					toBeAppended += '<a href="' + httpUrl + '" target="_blank">';
+					toBeAppended += '<a href=\'' + httpUrl + '\' target="_blank">';
 					var degreesToOrient = 0;
 					if (fileObj.exif) {
 						degreesToOrient = 90*(parseInt(fileObj.exif.orientation) - 1);
@@ -737,6 +747,7 @@ Todo: Create a tab for simply viewing the images in a directory (no sorting). e.
     <li><a href="#sorttab">Sort</a></li>
     <li><a href="#hoist_with_buttons_tab">Hoist</a></li>
     <li><a href="#hoisttab">Hoist (read only)</a></li>
+    <li><a href="#markuptab">HTML</a></li>
   </ul>
   <div id="thumbnailtab">
 	<center>
@@ -754,6 +765,9 @@ Todo: Create a tab for simply viewing the images in a directory (no sorting). e.
   </div>
   <div id="hoisttab">  
 		<table id="hoist"></table>
+  </div>
+  <div id="markuptab">  
+		<textarea id="markup" cols="100" rows="30" style="white-space: nowrap;" ></textarea>
   </div>
 </div>
 
