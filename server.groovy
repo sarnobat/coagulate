@@ -578,7 +578,7 @@ public class Coagulate {
 			return fold;
 		}
 
-		private static final boolean debug = false;
+		private static final boolean debug = true;
 		private static Set<JsonObject> createDirecctoryHierarchies(String[] iDirectoryPathStrings,
 				int iLimit, int iFilesPerLevel, int iMaxDepth) {
 			Set<JsonObject> directoryHierarchies = new HashSet<JsonObject>();
@@ -781,7 +781,7 @@ public class Coagulate {
 			}
 			
 			// Immediate files
-			int filesPerLevel2 = isTopLevel ? filesPerLevel * 20 : filesPerLevel;
+			int filesPerLevel2 = isTopLevel ? filesPerLevel + iLimit/5 : filesPerLevel;
 			ImmutableSet<Entry<String, JsonObject>> entrySet = getFilesInsideDir(iDirectoryPath, filesPerLevel2,
 					filesToIgnore, iLimit, filesToIgnoreAtLevel).entrySet();
 			for (Entry<String, JsonObject> e : entrySet) {
