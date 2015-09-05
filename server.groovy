@@ -897,7 +897,11 @@ public class Coagulate {
 //			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - untrimmed = " + formatJson(untrimmed));
 //			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - untrimmed keyset = " + untrimmed.keySet());
 			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - size before trimming: " + countFilesInHierarchy3(untrimmed));
-			JsonObject trimTreeToWithinLimitBreadthFirst = Trim3.trimBreadthFirst(buildTreeFromJson(untrimmed), iLimit).getJsonObject("dirs");
+			
+			// I forgot why this is important. Possibly because in really deep hierarchies
+			// you'll end up with a huge number of files.
+			JsonObject trimTreeToWithinLimitBreadthFirst = Trim3.trimBreadthFirst(
+					buildTreeFromJson(untrimmed), iLimit).getJsonObject("dirs");
 			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - size after trimming: " + countFilesInHierarchy3(trimTreeToWithinLimitBreadthFirst));
 			return trimTreeToWithinLimitBreadthFirst;
 		}
@@ -1059,7 +1063,7 @@ public class Coagulate {
 						rRootOut = destNode; 
 					}
 					if (stopAddingFiles) {
-						destNode.removeFiles();
+						destNode.removeAllButOneFiles();
 					}
 					filesAdded += destNode.countFilesInNode();
 					oldToNewMap.put(srcNode, destNode);
@@ -1133,10 +1137,22 @@ public class Coagulate {
 					this.path = path;
 				}
 				
-				public void removeFiles() {
-//					JSONObject nodeJson = new JSONObject(nodeJsonStr);
+				/**
+				 * We want every directory to be visually represented
+				 * even if we've surpassed the limit.
+				 */
+				public void removeAllButOneFiles() {
+					JSONObject nodeJson = new JSONObject(nodeJsonStr);
 					JSONObject noFilesNodeJson = new JSONObject();
 					noFilesNodeJson.put("dirs", new JSONObject());
+					// Add one file
+					for (String key : nodeJson.keySet()) {
+						if (!"dirs".equals(key)) {
+							noFilesNodeJson.put(key, nodeJson.getJSONObject(key));		
+							break;
+						}
+					}
+					
 					this.nodeJsonStr = noFilesNodeJson.toString();
 				}
 
