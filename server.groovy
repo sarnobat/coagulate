@@ -271,8 +271,10 @@ public class Coagulate {
 				StreamingOutput stream = new StreamingOutput() {
 					@Override
 					public void write(OutputStream os) throws IOException, WebApplicationException {
+						if (debug) {
 						System.out
 								.println("Coagulate.MyResource.getFileSshNio2(...).new StreamingOutput() {...}.write()");
+						}
 						if (iWidth != null) {
 							try {
 								net.coobird.thumbnailator.Thumbnailator.createThumbnail(
@@ -578,7 +580,6 @@ public class Coagulate {
 			return fold;
 		}
 
-		private static final boolean debug = true;
 		private static Set<JsonObject> createDirecctoryHierarchies(String[] iDirectoryPathStrings,
 				int iLimit, int iFilesPerLevel, int iMaxDepth) {
 			Set<JsonObject> directoryHierarchies = new HashSet<JsonObject>();
@@ -781,7 +782,8 @@ public class Coagulate {
 			}
 			
 			// Immediate files
-			int filesPerLevel2 = isTopLevel ? filesPerLevel + iLimit/5 : filesPerLevel;
+			int filesPerLevel2 = isTopLevel ? filesPerLevel + iLimit/2 // /5 
+					: filesPerLevel; 
 			ImmutableSet<Entry<String, JsonObject>> entrySet = getFilesInsideDir(iDirectoryPath, filesPerLevel2,
 					filesToIgnore, iLimit, filesToIgnoreAtLevel).entrySet();
 			for (Entry<String, JsonObject> e : entrySet) {
@@ -1045,6 +1047,9 @@ public class Coagulate {
 				Queue<Node> q = new LinkedList<Node>();
 				q.add(vRoot);
 				int filesAdded = 0;
+				// TODO: just prune the files, not the directory nodes
+				// themselves (we want to display the entire hierarchy in the
+				// page)				
 				while (!q.isEmpty() && filesAdded < iLimit) {
 					Node uCurrentNode = q.remove();
 					Node nodeOut = processNode(uCurrentNode,
@@ -2355,6 +2360,8 @@ public class Coagulate {
 				gmtFrmt.setTimeZone(TimeZone.getTimeZone("GMT"));
 			}
 		}
+
+	private static final boolean debug = false;
 
 	public static void main(String[] args) throws URISyntaxException, IOException {
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
