@@ -1050,18 +1050,25 @@ public class Coagulate {
 				// TODO: just prune the files, not the directory nodes
 				// themselves (we want to display the entire hierarchy in the
 				// page)				
-				while (!q.isEmpty() && filesAdded < iLimit) {
-					Node uCurrentNode = q.remove();
-					Node nodeOut = processNode(uCurrentNode,
-							findCopyOf(uCurrentNode.getParent(), oldToNewMap));
-					if (uCurrentNode.getParent() == null) {
-						rRootOut = nodeOut; 
+				boolean stopAddingFiles = false;
+				while (!q.isEmpty()) {
+					Node srcNode = q.remove();
+					Node destNode = copyNodeNonRecursive(srcNode,
+							findCopyOf(srcNode.getParent(), oldToNewMap));
+					if (srcNode.getParent() == null) {
+						rRootOut = destNode; 
 					}
-					filesAdded += nodeOut.countFilesInNode();
-					oldToNewMap.put(uCurrentNode, nodeOut);
+					if (stopAddingFiles) {
+						destNode.removeFiles();
+					}
+					filesAdded += destNode.countFilesInNode();
+					oldToNewMap.put(srcNode, destNode);
 					
-					for (Node nChildNode : uCurrentNode.getChildren()) {
+					for (Node nChildNode : srcNode.getChildren()) {
 						q.add(nChildNode);
+					}
+					if (iLimit < filesAdded ) {
+						stopAddingFiles = true;
 					}
 //					System.out.println("Coagulate.RecursiveLimitByTotal.Trim3.bfs() - files in json: " + RecursiveLimitByTotal.countFilesInHierarchy(jsonFromString(serialize(rRootOut))));
 				}
@@ -1102,7 +1109,7 @@ public class Coagulate {
 				return oldToNewMap.get(parent);
 			}
 
-			private static Node processNode(Node nodeIn, Node parentNodeOut) {
+			private static Node copyNodeNonRecursive(Node nodeIn, Node parentNodeOut) {
 				Node nodeOut = new Node(nodeIn.getData(), parentNodeOut, nodeIn.getPath());
 				if (parentNodeOut != null) {
 					parentNodeOut.addChild(nodeOut);
@@ -1111,22 +1118,30 @@ public class Coagulate {
 			}
 
 			private static class Node {
-				private final String data;
+				/** the payload of this tree data structure */
 				@Nullable private final Node parent;
 				private final String path; 
 				private Set<Node> children = new HashSet<Node>();
+				private String nodeJsonStr;
 
 				Node(String iData, Node parent, String path) {
 					this.parent = parent;
-					this.data = removeChildren(new JSONObject(iData));
-					if (!new JSONObject(data).has("dirs")) {
+					this.nodeJsonStr = removeChildDirs(new JSONObject(iData));
+					if (!new JSONObject(nodeJsonStr).has("dirs")) {
 						throw new RuntimeException("lost empty dirs pair");
 					}
 					this.path = path;
 				}
 				
+				public void removeFiles() {
+//					JSONObject nodeJson = new JSONObject(nodeJsonStr);
+					JSONObject noFilesNodeJson = new JSONObject();
+					noFilesNodeJson.put("dirs", new JSONObject());
+					this.nodeJsonStr = noFilesNodeJson.toString();
+				}
+
 				public int countFilesInNode() {
-					JSONObject j = new JSONObject(data);
+					JSONObject j = new JSONObject(nodeJsonStr);
 					j.remove("dirs");
 					return j.keySet().size();
 				}
@@ -1135,17 +1150,18 @@ public class Coagulate {
 					return path;
 				}
 
-				private static String removeChildren(JSONObject jsonObject) {
+				//@Deprecated // We should not prune the dirs themselves.
+				private static String removeChildDirs(JSONObject jsonObject) {
 					jsonObject.remove("dirs");
 					jsonObject.put("dirs", new JSONObject());
 					if (!jsonObject.has("dirs")) {
 						throw new RuntimeException("lost empty dirs pair");
 					}
-					String string = jsonObject.toString();
-					if (!new JSONObject(string).has("dirs")) {
+					String prunedJsonStr = jsonObject.toString();
+					if (!new JSONObject(prunedJsonStr).has("dirs")) {
 						throw new RuntimeException("lost empty dirs pair");
 					}
-					return string;
+					return prunedJsonStr;
 				}
 
 				public Object getParent() {
@@ -1164,10 +1180,10 @@ public class Coagulate {
 				}
 				
 				String getData() {
-					if (!new JSONObject(data).has("dirs")) {
+					if (!new JSONObject(nodeJsonStr).has("dirs")) {
 						throw new RuntimeException("lost empty dirs pair");
 					}
-					return data;
+					return nodeJsonStr;
 				}
 			}
 		}
