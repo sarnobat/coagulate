@@ -568,15 +568,15 @@ public class Coagulate {
 					.transform(new PathToDirPair(getFilesAlreadyObtained(dirPairsAccumulated)))
 					.toSet();
 			int filesObtained = countFiles(dirPairs);
-			System.out
-					.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() - " + dirPairs);
+//			System.out
+//					.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() - " + dirPairs);
 			int newLimit = iLimit - filesObtained;
 			if (filesObtained == 0) {
 				return dirPairsAccumulated;
 			}
-			System.out
-					.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() - remaining = "
-							+ newLimit);
+//			System.out
+//					.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() - remaining = "
+//							+ newLimit);
 			return swoopRepeatedlyUntilLimitExceeded(
 					mergeDirectoryHierarchies(dirPairsAccumulated, dirPairs), iDirectoryPaths,
 					newLimit);
@@ -591,7 +591,7 @@ public class Coagulate {
 //			System.out.println("Coagulate.RecursiveLimitByTotal2.getFilesAlreadyObtained() - begin");
 			ImmutableSet.Builder<String> builder = ImmutableSet.builder();
 			for(DirPair p : dirPairsAccumulated) {
-				System.out.println("Coagulate.RecursiveLimitByTotal2.getFilesAlreadyObtained() - " + p.getDirPath());
+//				System.out.println("Coagulate.RecursiveLimitByTotal2.getFilesAlreadyObtained() - " + p.getDirPath());
 				builder.addAll(getFilesInDir(p.getDirObj()));
 			}
 //			System.out.println("Coagulate.RecursiveLimitByTotal2.getFilesAlreadyObtained() - end");
@@ -599,7 +599,7 @@ public class Coagulate {
 		}
 
 		private static Set<String> getFilesInDir(DirObj iDirObj) {
-			System.out.println("Coagulate.RecursiveLimitByTotal2.getFilesInDir() - begin");
+//			System.out.println("Coagulate.RecursiveLimitByTotal2.getFilesInDir() - begin");
 			Set<String> keysInShard = new HashSet<String>();
 			keysInShard.addAll(iDirObj.getFiles().keySet());
 			keysInShard.addAll(iDirObj.getFiles().keySet());
@@ -646,8 +646,8 @@ public class Coagulate {
 		}
 
 		private static Set<DirPair> mergeDirectoryHierarchies(Set<DirPair> left, Set<DirPair> right) {
-			System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() - left "  + left.size());
-			System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() - right "  + right.size());
+//			System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() - left "  + left.size());
+//			System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() - right "  + right.size());
 			ImmutableMap.Builder<String, DirPair> lb = ImmutableMap.builder();
 			for (DirPair l : left) {
 				lb.put(l.getDirPath(), l);
@@ -673,7 +673,7 @@ public class Coagulate {
 				}
 			}
 			ImmutableSet<DirPair> build = ret.build();
-			System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() - out : " + build.size());
+//			System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() - out : " + build.size());
 			return build;
 		}
 
