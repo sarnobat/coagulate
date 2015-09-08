@@ -637,16 +637,8 @@ public class Coagulate {
 		}
 
 		private static Set<DirPair> mergeDirectoryHierarchies(Set<DirPair> left, Set<DirPair> right) {
-			ImmutableMap.Builder<String, DirPair> lb = ImmutableMap.builder();
-			for (DirPair l : left) {
-				lb.put(l.getDirPath(), l);
-			}
-			Map<String, DirPair> lm = lb.build();
-			ImmutableMap.Builder<String, DirPair> rb = ImmutableMap.builder();
-			for (DirPair r : right) {
-				rb.put(r.getDirPath(), r);
-			}
-			Map<String, DirPair> rm = rb.build();
+			Map<String, DirPair> lm = mapFromSet(left);
+			Map<String, DirPair> rm = mapFromSet(right);
 			ImmutableSet.Builder<DirPair> ret = ImmutableSet.builder();
 			for (String dirPath : Sets.union(lm.keySet(), rm.keySet())) {
 				DirPair l = lm.get(dirPath);
@@ -663,6 +655,15 @@ public class Coagulate {
 			}
 			ImmutableSet<DirPair> build = ret.build();
 			return build;
+		}
+
+		private static Map<String, DirPair> mapFromSet(Set<DirPair> left2) {
+			ImmutableMap.Builder<String, DirPair> lb = ImmutableMap.builder();
+			for (DirPair l : left2) {
+				lb.put(l.getDirPath(), l);
+			}
+			Map<String, DirPair> lm = lb.build();
+			return lm;
 		}
 
 		private static DirObj mergeDirectoryHierarchiesInternal(DirObj dir1, DirObj dir2) {
