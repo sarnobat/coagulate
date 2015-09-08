@@ -1,0 +1,850 @@
+
+	@Deprecated
+	private static class RecursiveLimitByTotal {
+
+		static JsonObject getDirectoryHierarchies(String iDirectoryPathsString, Integer iLimit, int LEVELS_TO_RECURSE) throws IOException {
+			JsonObject response = Json
+					.createObjectBuilder()
+					.add("itemsRecursive",
+							RecursiveLimitByTotal.createFilesJsonRecursive(
+									iDirectoryPathsString.split("\\n"), 
+									iLimit, LEVELS_TO_RECURSE))
+					.build();
+			return response;
+		}
+		
+		/**
+		 * Keep adding one more file from each directory (and its subdirectories) 
+		 * until we reach the limit. The intention is to not spend too much time
+		 * walking the file system and it taking such a long time for a response
+		 * to the user. At the same time, we want to spread the returned files all over the hierarchy, not be hogged by one big directory.
+		 */
+		static JsonObject createFilesJsonRecursive(String[] iDirectoryPathStrings, int iLimit, int maxDepth)
+				throws IOException {
+//			System.out.println("Coagulate.RecursiveLimitByTotal.createFilesJsonRecursive() - begin");
+			JsonObject fold = fold(createDirecctoryHierarchies(iDirectoryPathStrings, iLimit, 1, maxDepth), iLimit);
+			System.out.println("Coagulate.RecursiveLimitByTotal.createFilesJsonRecursive() - end");
+			return fold;
+		}
+
+		private static Set<JsonObject> createDirecctoryHierarchies(String[] iDirectoryPathStrings,
+				int iLimit, int iFilesPerLevel, int iMaxDepth) {
+			Set<JsonObject> directoryHierarchies = new HashSet<JsonObject>();
+			// TODO: Mutable state
+			Set<String> filesAlreadyObtained = new HashSet<String>();
+			int total = 0;
+			int swoopNumber = 0;
+			while(total < iLimit && swoopNumber < iLimit){
+				++swoopNumber;
+				System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - Swoop number " + swoopNumber);
+				List<String> dirPaths = ImmutableList.copyOf(iDirectoryPathStrings);
+				List<String> subList = dirPaths.subList(0, dirPaths.size());
+				Set<JsonObject> oneSwoopThroughDirs = swoopThroughDirs(dirPaths.get(0), subList,iLimit, iFilesPerLevel, filesAlreadyObtained, iMaxDepth);
+//				System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - " + oneSwoopThroughDirs);
+				inspect_files_in_swoop: {
+//					System.out
+//							.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - inspecting files in swoop");
+					Set<String> files = getFiles(oneSwoopThroughDirs);
+					if (files.size() == 0) {
+//						System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - no files in last dip, exiting. " + dirPaths.get(0));
+						// We didn't hit the limit, but the number of files in
+						// the specified dirs doesn't exceed the limit, i.e.
+						// there are no more files left that can be gotten.
+						break;
+					}
+					filesAlreadyObtained.addAll(files);
+				}
+				directoryHierarchies.addAll(oneSwoopThroughDirs);
+//				System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - updating total");
+				total = filesAlreadyObtained.size();
+			}
+//			System.out.println("Coagulate.RecursiveLimitByTotal.createDirecctoryHierarchies() - " + directoryHierarchies.toString());
+			return directoryHierarchies;
+		}
+
+		private static int countAllFiles(Set<JsonObject> directoryHierarchies) {
+			int total = 0;
+			for (JsonObject aHierarchy : directoryHierarchies) {
+				total += countFilesInHierarchy2(aHierarchy);
+				System.out.println("Coagulate.RecursiveLimitByTotal.countAllFiles() - total = " + total);
+			}
+			return total;
+		}
+
+		private static int countFilesInHierarchy2(JsonObject aHierarchy) {
+			if (aHierarchy.keySet().size() != 1) {
+				throw new RuntimeException("developerError");
+			}
+			JsonObject aDirectory = aHierarchy.getJsonObject((String)aHierarchy.keySet().toArray()[0]);
+			return countFilesInHierarchy(aDirectory);
+		}
+
+		@SuppressWarnings("unused")
+		private static int countFilesInShard(JsonObject aShard) {
+			return countFilesInHierarchy(getOnlyValue(aShard));
+		}
+
+		private static int countFilesInHierarchy(JsonObject aHierarchy) {
+			validateIsDirectoryNode(aHierarchy);
+			int count = FluentIterable.from(aHierarchy.keySet()).filter(not(DIRS)).toSet().size();
+			if (aHierarchy.containsKey("dirs")) {
+				JsonObject dirs = aHierarchy.getJsonObject("dirs");
+				for (String keyInDirs : dirs.keySet()) {
+					JsonObject dirJsonInDirs = dirs.getJsonObject(keyInDirs);
+					count += countFilesInHierarchy(dirJsonInDirs);
+				}
+			}
+			return count;
+		}
+
+		private static final Predicate<String> DIRS = new Predicate<String>() {
+			@Override
+			public boolean apply(String input) {
+				return "dirs".equalsIgnoreCase(input);
+			}
+		};
+
+		private static Set<String> getFiles(Set<JsonObject> shards) {
+//			System.out.println("Coagulate.RecursiveLimitByTotal.getFiles() - begin");
+			ImmutableSet.Builder<String> files = ImmutableSet.builder();
+			for (JsonObject shard : shards) {
+				files.addAll(getFilesInShard(shard));
+			}
+			return files.build();
+		}
+
+		private static Set<String> getFilesInShard(JsonObject shard2) {
+//			System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInShard() - begin");
+			if (shard2.keySet().size() != 1) {
+				throw new RuntimeException("Developer error");
+			}
+			String name = (String)shard2.keySet().toArray()[0];
+			JsonObject dirJson = shard2.getJsonObject(name);
+			return getFilesInDir(new DirObj(dirJson, name));
+		}
+
+		private static Set<String> getFilesInDir(DirObj iDirObj) {
+//			System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInDir() - begin. Looking for dirs inside: " + iDirObj.getPath());
+			Set<String> keysInShard = new HashSet<String>();
+			keysInShard.addAll(iDirObj.getFiles().keySet());
+//			if (iDirObj.getFiles().size() == 0) {
+//				System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInDir() - Nothing in " + iDirObj.getPath());
+//				return ImmutableSet.of();
+//			}
+//			else
+			keysInShard.addAll(iDirObj.getFiles().keySet());
+
+			if (iDirObj.getDirs().size() > 0) {
+				Map<String, DirObj> dirs = iDirObj.getDirs();
+				for(String dirKey : dirs.keySet()) {
+					DirObj dirObj = dirs.get(dirKey);
+					keysInShard.addAll(dirObj.getFiles().keySet());
+				}
+			}
+//			else {
+//				System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInShard() - not a directory node: " + new JSONObject(iDirObj.json()).toString(2));
+//				throw new RuntimeException("You must call this method on a directory node");
+//			}
+			return keysInShard;
+		}
+
+		private static Set<JsonObject> swoopThroughDirs(String dirPath,
+				List<String> dirPathsRemaining, int iLimit, int filesPerLevel,
+				Set<String> filesAlreadyAdded, int maxDepth) {
+			System.out.println("Coagulate.RecursiveLimitByTotal.swoopThroughDirs() - begin: " + dirPath);
+			Builder<JsonObject> shardsForDir = ImmutableSet.builder();
+			
+			//
+			// Base case (just 1 dir to swoop through)
+			//
+			// just get one file from every subdir
+			JsonObject dirHierarchyJson;
+			try {
+				dirHierarchyJson = dipIntoDirRecursive(Paths.get(dirPath), filesPerLevel,
+						filesAlreadyAdded, maxDepth, iLimit, 1, true);
+				shardsForDir.add(Json.createObjectBuilder().add(dirPath, dirHierarchyJson).build());
+			} catch (CannotDipIntoDirException e) {
+				System.err.println("Coagulate.RecursiveLimitByTotal.swoopThroughDirs() - ERROR: " + e);
+			}
+
+			//
+			// Recursive case
+			//
+			if (dirPathsRemaining.size() == 0) {
+			} else {
+				shardsForDir.addAll(swoopThroughDirs(dirPathsRemaining.get(0),
+						tailOf(dirPathsRemaining), iLimit, filesPerLevel, filesAlreadyAdded,
+						maxDepth));
+//				for (JsonObject shard : swoopThroughDirs) {
+//					JsonObjectBuilder ret = Json.createObjectBuilder();
+//					ret.add(dirPath, shard);
+//					JsonObject shard2 = ret.build();
+//					if (shard2.containsKey("dirs")) {
+//						throw new RuntimeException(shard2.toString());
+//					}
+//					shardsForDir.add(shard2);
+//				}
+			}
+			
+			
+			
+			ImmutableSet<JsonObject> build = shardsForDir.build();
+			return build;
+		}
+
+		private static List<String> tailOf(List<String> dirPathsRemaining) {
+			List<String> tail;
+			if (dirPathsRemaining.size() == 1) {
+				tail = ImmutableList.of();
+			} else {
+				tail = dirPathsRemaining.subList(1, dirPathsRemaining.size());
+			}
+			return tail;
+		}
+
+		// TODO: Move to Predicates
+		private static final DirectoryStream.Filter<Path> isFile = new DirectoryStream.Filter<Path>() {
+			public boolean accept(Path entry) throws IOException {
+				return !Files.isDirectory(entry);
+			}
+		};
+		// TODO: Move to Predicates
+		private static final DirectoryStream.Filter<Path> isDirectory = new DirectoryStream.Filter<Path>() {
+			public boolean accept(Path entry) throws IOException {
+				return Files.isDirectory(entry);
+			}
+		};
+
+		private static JsonObject dipIntoDirRecursive(Path iDirectoryPath, int filesPerLevel, Set<String> filesToIgnore, int maxDepth, int iLimit, int dipNumber, boolean isTopLevel) throws CannotDipIntoDirException {
+			if (debug) {
+				System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - dip number " + dipNumber);
+				System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - dipping into " + iDirectoryPath.toString());
+			}
+			JsonObjectBuilder dirHierarchyJson = Json.createObjectBuilder();
+			Set<String> filesToIgnoreAtLevel = new HashSet<String>();
+			// Sanity check
+			if (!iDirectoryPath.toFile().isDirectory()) {
+//				throw new CannotDipIntoDirException(iDirectoryPath.toString());
+				return dirHierarchyJson.build();
+			}
+			
+			// Immediate files
+			int filesPerLevel2 = isTopLevel ? filesPerLevel + iLimit/2 // /5 
+					: filesPerLevel; 
+			ImmutableSet<Entry<String, JsonObject>> entrySet = getFilesInsideDir(iDirectoryPath, filesPerLevel2,
+					filesToIgnore, iLimit, filesToIgnoreAtLevel).entrySet();
+			for (Entry<String, JsonObject> e : entrySet) {
+				dirHierarchyJson.add(e.getKey(), e.getValue());
+			}
+			if (entrySet.size() > 0) {
+//				System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - added "
+//						+ entrySet.size() + " files that are directly inside "
+//						+ iDirectoryPath.toString());
+			} else {
+//				System.out.print(".");
+			}
+			// For ALL subdirectories, recurse
+			try {
+				JsonObjectBuilder dirsJson = Json.createObjectBuilder();
+				for (Path p : getSubPaths(iDirectoryPath, isDirectory)) {
+					// TODO: This causes a depth-first recursion which will cut off immediate
+					// subdirs near the end of the alphabet if we were to impose a limit.
+					// Ideally we want a breadth-first recursion. I think a queue is the way to 
+					// achieve that. But then how to attach the output to the parent also requires
+					// extra storage.
+					// Actually, trimming the output may be better though you do do a lot of 
+					// file system traversal (which isn't so bad since we use NIO).
+					JsonObject contentsRecursive = dipIntoDirRecursive(p, filesPerLevel, filesToIgnore, --maxDepth, iLimit, ++dipNumber, false);
+					if (debug) {
+						System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - files from subdir " + countFilesInHierarchy(contentsRecursive));
+					}
+//					System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - added files from subdir " + p.toString() + " to return object.");
+					dirsJson.add(p.toAbsolutePath().toString(),contentsRecursive);
+//					if (filesToIgnore.size() > iLimit) {
+//						break;
+//					}
+					
+				}
+				dirHierarchyJson.add("dirs", dirsJson.build());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			JsonObject build = dirHierarchyJson.build();
+			
+			
+//			System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - before trimming, number of files = " + countFilesInHierarchy(build));
+			return build;
+//			JsonObject trimTreeToWithinLimitBreadthFirst = trimTreeToWithinLimitBreadthFirst(build, iLimit, new DirObjMutable(new JSONObject(build.toString())), iDirectoryPath.toAbsolutePath().toString());
+//			System.out.println("Coagulate.RecursiveLimitByTotal.dipIntoDir() - after trimming, number of files = " + countFilesInHierarchy(trimTreeToWithinLimitBreadthFirst));
+//			return trimTreeToWithinLimitBreadthFirst;
+		}
+
+		private static class CannotDipIntoDirException extends Exception {
+			CannotDipIntoDirException(String s) {
+				super(s);
+			}
+		}
+
+		private static ImmutableMap<String, JsonObject> getFilesInsideDir(Path iDirectoryPath,
+				int filesPerLevel, Set<String> filesToIgnore, int iLimit,
+				Set<String> filesToIgnoreAtLevel) {
+			ImmutableMap.Builder<String, JsonObject> filesInDir = ImmutableMap.builder();
+			// Get one leaf node
+			try {
+				int addedCount = 0;
+				Predicates.Contains predicate = new Predicates.Contains(filesToIgnore);
+				for (Path p : FluentIterable.from(getSubPaths(iDirectoryPath, isFile))
+						.filter(not(predicate)).filter(Predicates.IS_DISPLAYABLE).toSet()) {
+					String absolutePath = p.toAbsolutePath().toString();
+//					System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInsideDir() - " + absolutePath);
+					
+					filesInDir.put(absolutePath,
+							Mappings.PATH_TO_JSON_ITEM.apply(p));
+					++addedCount;
+					filesToIgnore.add(p.toAbsolutePath().toString());
+					filesToIgnoreAtLevel.add(p.toAbsolutePath().toString());
+					if (debug) {
+						System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInsideDir() - files added: " + filesToIgnore.size());
+					}
+					if (filesToIgnore.size() > iLimit) {
+						break;
+					}
+					if (addedCount >= filesPerLevel) {
+						break;
+					}
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			ImmutableMap<String, JsonObject> build1 = filesInDir.build();
+			return build1;
+		}
+
+		private static Set<Path> getSubPaths(Path iDirectoryPath, Filter<Path> isfile2)
+				throws IOException {
+//			System.out.println("RecursiveLimitByTotal.getSubPaths() - " + iDirectoryPath);
+			DirectoryStream<Path> filesInDir2 = Files.newDirectoryStream(iDirectoryPath, isfile2);
+			Set<Path> filesInDir = FluentIterable.from(filesInDir2).filter(SHOULD_DIP_INTO).toSet();
+			filesInDir2.close();
+			return filesInDir;
+		}
+
+		private static final Predicate<Path> SHOULD_DIP_INTO = new Predicate<Path>() {
+			@Override
+			public boolean apply(Path input) {
+				Set<String> forbidden = ImmutableSet.of("_thumbnails");
+				return !forbidden.contains(input.getName(input.getNameCount() -1).toString());
+			}
+		};
+
+		// precondition : the directory structure of all members of the input are the same
+		private static JsonObject fold(Set<JsonObject> directoryHierarchies, int iLimit) {
+//			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - " + directoryHierarchies);
+			JsonObject untrimmed = fold1(directoryHierarchies);
+//			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - untrimmed = " + formatJson(untrimmed));
+//			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - untrimmed keyset = " + untrimmed.keySet());
+			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - size before trimming: " + countFilesInHierarchy3(untrimmed));
+			
+			// I forgot why this is important. Possibly because in really deep hierarchies
+			// you'll end up with a huge number of files.
+			JsonObject trimTreeToWithinLimitBreadthFirst = Trim3.trimBreadthFirst(
+					buildTreeFromJson(untrimmed), iLimit).getJsonObject("dirs");
+			System.out.println("Coagulate.RecursiveLimitByTotal.fold() - size after trimming: " + countFilesInHierarchy3(trimTreeToWithinLimitBreadthFirst));
+			return trimTreeToWithinLimitBreadthFirst;
+		}
+
+		private static int countFilesInHierarchy3(JsonObject untrimmed) {
+			if (untrimmed.values().size() == 0) {
+				return 0;
+			} else {
+				return countFilesInHierarchy((JsonObject) untrimmed.values().toArray()[0]);
+			}
+		}
+
+		private static String formatJson(JsonObject untrimmed) {
+			return formatJson(untrimmed.toString());
+		}
+
+		
+		private static final Function<JsonObject, Listings> JSON_TO_LISTING = new Function<JsonObject, Listings>() {
+			@Override
+			public Listings apply(JsonObject input) {
+				return new Listings(input);
+			}
+		};
+
+		private static class Listings {
+			private final Map<String, DirObj> pairs;
+			Listings(JsonObject obj) {
+				if (obj.containsKey("dirs")) {
+					throw new RuntimeException("not a listing. " + obj.toString());
+				}
+				this.pairs = createDirObjs(obj);
+			}
+			
+			private Map<String, DirObj> createDirObjs(JsonObject obj) {
+				ImmutableMap.Builder<String, DirObj> builder = ImmutableMap.builder();
+				for (String key : obj.keySet()) {
+					builder.put(key, new DirObj(obj.getJsonObject(key), key));
+				}
+				return builder.build();
+			}
+
+			public DirObj get(String dirPath) {
+				return pairs.get(dirPath);
+			}
+			public JsonObject json() {
+				JsonObjectBuilder builder = Json.createObjectBuilder();
+				
+				for (String key : pairs.keySet()) {
+					builder.add(key, pairs.get(key).json());
+				}
+				
+				return builder.build();
+			}
+			public Set<String> getDirPaths() {
+				
+				return pairs.keySet();
+			}
+		}
+
+		private static JsonObject fold1(Set<JsonObject> directoryHierarchies) {
+			return fold2(FluentIterable.from(directoryHierarchies).transform(JSON_TO_LISTING)
+					.toList());
+		}
+
+		private static JsonObject fold2(List<Listings> unmergedListings) {
+			if (unmergedListings.size() == 0) {
+				return Json.createObjectBuilder().build();
+			} else {
+				return fold3(unmergedListings.get(0),
+						unmergedListings.subList(1, unmergedListings.size()));
+			}
+		}
+
+		private static JsonObject fold3(Listings listings1, List<Listings> unmergedListings) {
+			if (unmergedListings.size() == 0) {
+				return listings1.json();
+			}
+			JsonObjectBuilder oAccumulatedListings = Json.createObjectBuilder();
+			
+			Listings listings2 = unmergedListings.get(0);
+			for (String dirPath : Sets.union(listings1.getDirPaths(), listings2.getDirPaths())) {
+//				System.out.println("Coagulate.RecursiveLimitByTotal.fold3() - dir path: " + dirPath);
+				DirObj dir1 = listings1.get(dirPath);
+				DirObj dir2 = listings2.get(dirPath);
+				if (listings1.getDirPaths().contains(dirPath) && listings2.getDirPaths().contains(dirPath)) {
+//					System.out.println("Coagulate.RecursiveLimitByTotal.fold3() - dir 1 : " + dir1.json());
+//					System.out.println("Coagulate.RecursiveLimitByTotal.fold3() - dir 2 : " + dir2.json());
+					// a proper merge
+					JsonObject json = mergeDirectoryHierarchiesInternal(dir1, dir2).json();
+//					System.out.println("Coagulate.RecursiveLimitByTotal.fold3() - " + json);
+					oAccumulatedListings.add(dirPath, json);
+				} else if (listings1.json().containsKey(dirPath) && !listings2.json().containsKey(dirPath)) {
+					oAccumulatedListings.add(dirPath, listings1.json().get(dirPath));
+				} else if (!listings1.json().containsKey(dirPath) && listings2.json().containsKey(dirPath)) {
+					oAccumulatedListings.add(dirPath, listings2.json().get(dirPath));
+				} else {
+					// nothing to add
+				}
+			}
+			
+			return fold3(new Listings(oAccumulatedListings.build()), unmergedListings.subList(1, unmergedListings.size()));
+		}
+//		{
+//			JsonObject untrimmed;
+//			if (directoryHierarchies.size() == 0) {
+//				untrimmed = Json.createObjectBuilder().build();
+//			} else if (directoryHierarchies.size() == 1) {
+//				untrimmed = directoryHierarchies.iterator().next();
+//			} else {
+//				untrimmed = mergeRecursive2(
+//						ImmutableList.copyOf(directoryHierarchies).get(0),
+//						ImmutableList.copyOf(directoryHierarchies).subList(1,
+//								directoryHierarchies.size()));
+//			}
+////			System.out.println("Coagulate.RecursiveLimitByTotal.fold1() - "
+////					+ formatJson(untrimmed.toString()));
+//			return untrimmed;
+//		}
+
+		private static Trim3.Node buildTreeFromJson(
+				JsonObject shard) {
+			
+			//System.out.println("Coagulate.RecursiveLimitByTotal.buildTreeFromJson() - " + shard);
+			Trim3.Node shardNode = new Trim3.Node("{}",null,null);
+			for (String key : shard.keySet()) {
+				JsonObject jsonObject = shard.getJsonObject(key);
+				buildTreeFromJson(jsonObject, shardNode, key);
+			}
+			return shardNode;
+		}
+
+		private static Trim3.Node buildTreeFromJson(JsonObject data, Trim3.Node parent, String path) {
+			Trim3.Node n = new Trim3.Node(data.toString(),parent,path);
+			parent.addChild(n);
+			JsonObject jsonObject = data.getJsonObject("dirs");
+			for(String subdirPath : jsonObject.keySet()) {
+				JsonObject childData = jsonObject.getJsonObject(subdirPath);
+				buildTreeFromJson(childData, n, subdirPath);
+			}
+			return n;
+		}
+
+		private static class Trim3 {
+			private static Node trimeBreadthFirst(Node vRoot, int iLimit) {
+				Node rRootOut = null;
+				Map<Node, Node> oldToNewMap = new HashMap<Node, Node>();
+				Queue<Node> q = new LinkedList<Node>();
+				q.add(vRoot);
+				int filesAdded = 0;
+				// TODO: just prune the files, not the directory nodes
+				// themselves (we want to display the entire hierarchy in the
+				// page)				
+				boolean stopAddingFiles = false;
+				while (!q.isEmpty()) {
+					Node srcNode = q.remove();
+					Node destNode = copyNodeNonRecursive(srcNode,
+							findCopyOf(srcNode.getParent(), oldToNewMap));
+					if (srcNode.getParent() == null) {
+						rRootOut = destNode; 
+					}
+					if (stopAddingFiles) {
+						destNode.removeAllButOneFiles();
+					}
+					filesAdded += destNode.countFilesInNode();
+					oldToNewMap.put(srcNode, destNode);
+					
+					for (Node nChildNode : srcNode.getChildren()) {
+						q.add(nChildNode);
+					}
+					if (iLimit < filesAdded ) {
+						stopAddingFiles = true;
+					}
+//					System.out.println("Coagulate.RecursiveLimitByTotal.Trim3.bfs() - files in json: " + RecursiveLimitByTotal.countFilesInHierarchy(jsonFromString(serialize(rRootOut))));
+				}
+				System.out.println("Coagulate.RecursiveLimitByTotal.Trim3.bfs() - limit = " + iLimit);
+				return checkNotNull(rRootOut);
+			}
+
+			static JsonObject trimBreadthFirst(Coagulate.RecursiveLimitByTotal.Trim3.Node vRoot,
+					int iLimit) {
+				Node trimTreeToWithinLimitBreadthFirst = Trim3.trimeBreadthFirst(vRoot, iLimit);
+				return jsonFromString(serialize(trimTreeToWithinLimitBreadthFirst));
+			}
+			
+			private static JsonObject jsonFromString(String string) {
+				JsonReader jsonReader = Json.createReader(new StringReader(string));
+				JsonObject object = jsonReader.readObject();
+				jsonReader.close();
+				return object;
+			}
+
+			private static String serialize(Node trimTreeToWithinLimitBreadthFirst) {
+				
+				String rootData = trimTreeToWithinLimitBreadthFirst.getData();
+				JSONObject oRoot = new JSONObject(rootData);
+				
+				for (Node childNode : trimTreeToWithinLimitBreadthFirst.getChildren()) {
+//					System.out.println("Coagulate.RecursiveLimitByTotal.Trim3.serialize() - " + oRoot.get("dirs"));
+//					System.out.println("Coagulate.RecursiveLimitByTotal.Trim3.serialize() - " + oRoot.get("dirs").getClass());
+					JSONObject dirs = oRoot.getJSONObject("dirs");
+					dirs.put(childNode.getPath(), new JSONObject(serialize(childNode)));
+				}
+				
+				return oRoot.toString();
+			}
+
+
+			private static Node findCopyOf(Object parent, Map<Node, Node> oldToNewMap) {
+				return oldToNewMap.get(parent);
+			}
+
+			private static Node copyNodeNonRecursive(Node nodeIn, Node parentNodeOut) {
+				Node nodeOut = new Node(nodeIn.getData(), parentNodeOut, nodeIn.getPath());
+				if (parentNodeOut != null) {
+					parentNodeOut.addChild(nodeOut);
+				}
+				return nodeOut;
+			}
+
+			private static class Node {
+				/** the payload of this tree data structure */
+				@Nullable private final Node parent;
+				private final String path; 
+				private Set<Node> children = new HashSet<Node>();
+				private String nodeJsonStr;
+
+				Node(String iData, Node parent, String path) {
+					this.parent = parent;
+					this.nodeJsonStr = removeChildDirs(new JSONObject(iData));
+					if (!new JSONObject(nodeJsonStr).has("dirs")) {
+						throw new RuntimeException("lost empty dirs pair");
+					}
+					this.path = path;
+				}
+				
+				/**
+				 * We want every directory to be visually represented
+				 * even if we've surpassed the limit.
+				 */
+				public void removeAllButOneFiles() {
+					JSONObject nodeJson = new JSONObject(nodeJsonStr);
+					JSONObject noFilesNodeJson = new JSONObject();
+					noFilesNodeJson.put("dirs", new JSONObject());
+					// Add one file
+					for (String key : nodeJson.keySet()) {
+						if (!"dirs".equals(key)) {
+							noFilesNodeJson.put(key, nodeJson.getJSONObject(key));		
+							break;
+						}
+					}
+					
+					this.nodeJsonStr = noFilesNodeJson.toString();
+				}
+
+				public int countFilesInNode() {
+					JSONObject j = new JSONObject(nodeJsonStr);
+					j.remove("dirs");
+					return j.keySet().size();
+				}
+
+				public String getPath() {
+					return path;
+				}
+
+				//@Deprecated // We should not prune the dirs themselves.
+				private static String removeChildDirs(JSONObject jsonObject) {
+					jsonObject.remove("dirs");
+					jsonObject.put("dirs", new JSONObject());
+					if (!jsonObject.has("dirs")) {
+						throw new RuntimeException("lost empty dirs pair");
+					}
+					String prunedJsonStr = jsonObject.toString();
+					if (!new JSONObject(prunedJsonStr).has("dirs")) {
+						throw new RuntimeException("lost empty dirs pair");
+					}
+					return prunedJsonStr;
+				}
+
+				public Object getParent() {
+					return parent;
+				}
+
+				public void addChild(Node child) {
+					children.add(child);
+					if (!child.getParent().equals(this)) {
+						throw new RuntimeException("Inconsistent children and parent");
+					}
+				}
+
+				Set<Node> getChildren() {
+					return ImmutableSet.copyOf(children);
+				}
+				
+				String getData() {
+					if (!new JSONObject(nodeJsonStr).has("dirs")) {
+						throw new RuntimeException("lost empty dirs pair");
+					}
+					return nodeJsonStr;
+				}
+			}
+		}
+		
+//		private static JsonObject mergeRecursive2(JsonObject accumulatedDirJson, List<JsonObject> dirs) {
+////			System.out.println("Coagulate.RecursiveLimitByTotal.mergeRecursive2() - accumulated: " + formatJson(accumulated.toString()));
+//			if (accumulatedDirJson.containsKey("dirs")) {
+//				throw new RuntimeException(accumulatedDirJson.toString());
+//			}
+//			if (accumulatedDirJson.keySet().size() > 1){
+//				throw new RuntimeException("hardcoding below");
+//			}
+//			JsonObjectBuilder ret = Json.createObjectBuilder();
+//			String name = (String) accumulatedDirJson.keySet().toArray()[0];
+//			System.out.println("Coagulate.RecursiveLimitByTotal.mergeRecursive2() - top level key: " + name);
+//			ImmutableList<JsonObject> list = FluentIterable.from(dirs).transform(GET_ONLY_VALUE).toList();
+//			System.out.println("Coagulate.RecursiveLimitByTotal.mergeRecursive2() - tail: " + list);
+//			ret.add(name, mergeRecursive(new DirObj(getOnlyValue(accumulatedDirJson), name), list));
+//			return ret.build();
+//		}
+
+		private static String formatJson(String string) {
+			return new JSONObject(string).toString(2);
+		}
+
+		private static final Function<JsonObject, JsonObject> GET_ONLY_VALUE = new Function<JsonObject,JsonObject>() {
+			@Override
+			public JsonObject apply(JsonObject input) {
+				return getOnlyValue(input);
+			}
+		};
+
+//		private static JsonObject mergeRecursive(DirObj iAccumulatedDir, List<JsonObject> unaccumulatedListings) {
+//			if (unaccumulatedListings.size() == 0) {
+//				return iAccumulatedDir.json();
+//			}
+//			JsonObjectBuilder oAccumulated = Json.createObjectBuilder(); 
+//			
+//			//
+//			// Base case
+//			//
+//
+//			JsonObject toBeMerged = unaccumulatedListings.get(0);
+//			for (String dirPath : toBeMerged.keySet()) {
+//			}
+//			DirObj nextToAccumulate = new DirObj(toBeMerged.getJsonObject(dirPath), dirPath);
+//
+//			//
+//			// Recursive part
+//			//
+//			
+//			Set<String> dirPaths1 = iAccumulatedDir.getDirs().keySet();
+//			Set<String> dirPaths2 = nextToAccumulate.getDirs().keySet();
+//			System.out.println("Coagulate.RecursiveLimitByTotal.mergeRecursive() - keys 1: "
+//					+ dirPaths1);
+//			System.out.println("Coagulate.RecursiveLimitByTotal.mergeRecursive() - keys 2: "
+//					+ dirPaths2);
+//			for (String subdirPath : Sets.union(dirPaths1, dirPaths2)) {
+//			}
+//			DirObj mergeDirectoryHierarchies = mergeDirectoryHierarchies(iAccumulatedDir,
+//					nextToAccumulate, subdirPath);
+//			List<JsonObject> tail = unaccumulatedListing.subList(1, unaccumulatedListing.size());
+//			JsonObject dirJson = mergeRecursive(mergeDirectoryHierarchies, tail);
+//			oAccumulated.add(subdirPath, dirJson);
+//			JsonObject build = oAccumulated.build();
+//			System.out.println("Coagulate.RecursiveLimitByTotal.mergeRecursive() - accumulated so far: " + build);
+//			return build;
+//		}
+
+		private static JsonObject mergeSetsOfDirectoryHierarchies(JsonObject dirs1, JsonObject dirs2) {
+			JsonObjectBuilder ret = Json.createObjectBuilder();
+			for (String key1 : dirs1.keySet()) {
+				ret.add(key1,
+						mergeDirectoryHierarchies(dirs1.getJsonObject(key1),
+								dirs2.getJsonObject(key1), key1));
+			}
+			return ret.build();
+		}
+
+		private static JsonObject getOnlyValue(JsonObject shard1) {
+			return shard1.getJsonObject((String)shard1.keySet().toArray()[0]);
+		}
+
+		/** Immutable */
+		private static class DirObj {
+			private final String dirPath;
+			private final JsonObject dirJson;
+			DirObj(JsonObject dirJson, String dirPath) {
+				this.dirJson = validateIsDirectoryNode(dirJson);
+				this.dirPath = dirPath;
+			}
+			
+			Map<String, FileObj> getFiles() {
+				ImmutableMap.Builder<String, FileObj> ret = ImmutableMap.builder();
+				for (String path :FluentIterable.from(dirJson.keySet()).filter(not(DIRS)).toSet()) {
+					JsonObject fileJson = dirJson.getJsonObject(path);
+					ret.put(path, new FileObj(fileJson));
+				}
+				return ret.build();
+			}
+
+			public Map<String, DirObj> getDirs() {
+				ImmutableMap.Builder<String, DirObj> ret = ImmutableMap.builder();
+				if (dirJson.containsKey("dirs")) {
+					JsonObject dirs = dirJson.getJsonObject("dirs");
+					for (String path :FluentIterable.from(dirs.keySet()).toSet()) {
+						JsonObject fileJson = dirs.getJsonObject(path);
+						ret.put(path, new DirObj(fileJson, path));
+					}
+				} else {
+					System.out.println("Coagulate.RecursiveLimitByTotal.DirObj.getDirs() - no subdirs" );
+				}
+				return ret.build();
+			}
+
+			public JsonObject json() {
+				return dirJson;
+			}
+
+			public String getPath() {
+				return dirPath;
+			}
+		}
+
+		private static class FileObj {
+			private final JsonObject fileJson;
+			FileObj(JsonObject fileJson) {
+				this.fileJson = fileJson;
+			}
+			public JsonObject json() {
+				return fileJson;
+			}
+		}
+		
+		private static DirObj mergeDirectoryHierarchiesInternal(DirObj dir1, DirObj dir2) {
+			if (!dir1.getPath().equals(dir2.getPath())) {
+				throw new RuntimeException("Must merge on a per-directory basis");
+			}
+			String commonDirPath = dir1.getPath();
+			Map<String, FileObj> files = mergeLeafNodes(dir1.getFiles(), dir2.getFiles());
+			Map<String, DirObj> dirs = mergeOverlappingDirNodes(dir1.getDirs(), dir2.getDirs(), commonDirPath);
+			
+			JsonObjectBuilder ret = Json.createObjectBuilder();
+			for (Entry<String, FileObj> entry : files.entrySet()) {
+				ret.add(entry.getKey(), entry.getValue().json());
+			}
+			JsonObjectBuilder dirs2 = Json.createObjectBuilder();
+			for (Entry<String, DirObj> entry : dirs.entrySet()) {
+				dirs2.add(entry.getKey(), entry.getValue().json());
+			}
+			ret.add("dirs", dirs2);
+			return new DirObj(ret.build(), commonDirPath);
+		}
+
+		private static Map<String, DirObj> mergeOverlappingDirNodes(Map<String, DirObj> dirs1,
+				Map<String, DirObj> dirs2, String commonDirPath) {
+			ImmutableMap.Builder<String, DirObj> ret = ImmutableMap.builder();
+			for (String dirPath : Sets.union(dirs1.keySet(), dirs2.keySet())) {
+				if (dirs1.containsKey(dirPath) && dirs2.containsKey(dirPath)) {
+					ret.put(dirPath,
+							mergeDirectoryHierarchiesInternal(dirs1.get(dirPath),
+									dirs2.get(dirPath)));
+				} else if (dirs1.containsKey(dirPath) && !dirs2.containsKey(dirPath)) {
+					ret.put(dirPath, dirs1.get(dirPath));
+				} else if (!dirs1.containsKey(dirPath) && dirs2.containsKey(dirPath)) {
+					ret.put(dirPath, dirs2.get(dirPath));
+				} else {
+					throw new RuntimeException("Impossible");
+				}
+			}
+			return ret.build();
+		}
+
+		private static <T> Map<String, T> mergeLeafNodes(Map<String, T> leafNodes,
+				Map<String, T> leafNodes2) {
+			return ImmutableMap.<String, T> builder().putAll(leafNodes).putAll(leafNodes2).build();
+		}
+
+		private static JsonObject mergeDirectoryHierarchies(JsonObject dir1, JsonObject dir2, String commonDirPath) {
+			JsonObject json = mergeDirectoryHierarchiesInternal(new DirObj(dir1, commonDirPath), new DirObj(dir2, commonDirPath)).json();
+			return json;
+		}
+
+		private static JsonObject validateIsDirectoryNode(JsonObject dir) {
+			
+			if (!dir.isEmpty()) {
+//				if (!dir.containsKey("dirs")) {
+//					throw new RuntimeException("Not a directory node: " + prettyPrint(dir));
+//				}
+				if (dir.containsKey("location")) {
+					throw new RuntimeException("Not a directory node: " + prettyPrint(dir));
+				}
+			}
+			return dir;
+			
+		}
+
+		private static String prettyPrint(JsonObject dir) {
+			return new JSONObject(dir.toString()).toString(2);
+		}
+	}
