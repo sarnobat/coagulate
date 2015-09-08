@@ -136,20 +136,21 @@ public class Coagulate {
 		@javax.ws.rs.Path("static2/{absolutePath : .+}")
 		@Produces("application/json")
 		// getFileViaSsh servefileoverssh
+		@Deprecated // Use Nio
 		public Response getFileSsh(@PathParam("absolutePath") String absolutePathWithSlashMissing, @Context HttpHeaders header, @QueryParam("width") final Integer iWidth){
 			final String absolutePath = "/" +absolutePathWithSlashMissing;
 			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(Predicates.IS_UNDER(absolutePath))){
 				try {
-//					final SftpClient sftp = getSftpClient();
-					final SshClient client = getSshClient();
-					final ClientSession session = getSession(client);
+					// final SftpClient sftp = getSftpClient();
+					final SshClient client = Nio2.getSshClient();
+					final ClientSession session = Nio2.getSession(client);
 					final SftpClient sftp = session.createSftpClient();
 					final InputStream is = sftp.read(absolutePath);
 					StreamingOutput stream = new StreamingOutput() {
 					    @Override
 						public void write(OutputStream os) throws IOException,
 								WebApplicationException {
-					//		System.out.println("getFileSsh() - file to get: " + absolutePath + ", status = " + getStatus(sftp));
+					    	//	System.out.println("getFileSsh() - file to get: " + absolutePath + ", status = " + getStatus(sftp));
 							// TODO: for most files, a straight copy is wanted. For images, check the file dimensions
 							if (iWidth != null) {
 								try {
@@ -167,11 +168,9 @@ public class Coagulate {
 							session.close(true);
 							client.stop();
 							System.out.print(".");
-					//		System.out.println("getFileSsh() - Success. (note: if you try to leave anything open, make sure you don't end up with hundreds of sshd processes)");
+							// System.out.println("getFileSsh() - Success. (note: if you try to leave anything open, make sure you don't end up with hundreds of sshd processes)");
 						}
-
 					  };
-					  
 					return Response.ok().entity(stream).type(FileServerGroovy.getMimeType(absolutePath)).build();
 				} catch (Exception e) {
 				//	e.printStackTrace();
@@ -192,12 +191,13 @@ public class Coagulate {
 		@GET
 		@javax.ws.rs.Path("static3/{absolutePath : .+}")
 		@Produces("application/json")
+		@Deprecated // This didn't work in all cases
 		public Response getFileSshNio(@PathParam("absolutePath") String absolutePathWithSlashMissing, @Context HttpHeaders header, @QueryParam("width") final Integer iWidth){
 			final String absolutePath = "/" +absolutePathWithSlashMissing;
 			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(Predicates.IS_UNDER(absolutePath))){
 				try {
 //					System.out.println("getFileSshNio() - 1");
-					final FileSystem client = getAsyncClient();
+					final FileSystem client = Nio2.getAsyncClient(getClass().getClassLoader());
 
 //					System.out.println("getFileSshNio() - 2");
 					Path path = client.getPath(absolutePath);
@@ -233,9 +233,7 @@ public class Coagulate {
 							is.close();
 //							os.close();
 						}
-
 					  };
-					  
 					return Response.ok().entity(stream).type(FileServerGroovy.getMimeType(absolutePath)).build();
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -258,17 +256,13 @@ public class Coagulate {
 				final UnixSshFileSystem unixSshFileSystem = new UnixSshFileSystem(
 						new UnixSshFileSystemProvider(), new URI(
 								"ssh.unix://sarnobat@192.168.1.2:22/home/sarnobat"),
-						getEnvironment());
-				final ChannelExecWrapper channel = getExecWrapper(unixSshFileSystem, absolutePath);
+						Nio4.getEnvironment());
+				final ChannelExecWrapper channel = Nio4.getExecWrapper(unixSshFileSystem, absolutePath);
 				final InputStream inputStream = channel.getInputStream();
 
 				StreamingOutput stream = new StreamingOutput() {
 					@Override
 					public void write(OutputStream os) throws IOException, WebApplicationException {
-						if (debug) {
-						System.out
-								.println("Coagulate.MyResource.getFileSshNio2(...).new StreamingOutput() {...}.write()");
-						}
 						if (iWidth != null) {
 							try {
 								net.coobird.thumbnailator.Thumbnailator.createThumbnail(
@@ -296,119 +290,133 @@ public class Coagulate {
 					.entity("{ 'foo' : 'bar' }").type("application/json").build();
 		}
 
-		private static Map<String, Object> getEnvironment() {
-			Map<String, Object> environment = new HashMap<String, Object>();
-			DefaultSessionFactory defaultSessionFactory;
-			try {
-				defaultSessionFactory = new DefaultSessionFactory("sarnobat", "192.168.1.2", 22);
-			} catch (Exception e) {
-				e.printStackTrace();
-				throw new RuntimeException(e);
+		private static class Nio4 {
+			private static Map<String, Object> getEnvironment() {
+				Map<String, Object> environment = new HashMap<String, Object>();
+				DefaultSessionFactory defaultSessionFactory;
+				try {
+					defaultSessionFactory = new DefaultSessionFactory("sarnobat", "192.168.1.2", 22);
+				} catch (Exception e) {
+					e.printStackTrace();
+					throw new RuntimeException(e);
+				}
+				environment.put("defaultSessionFactory", defaultSessionFactory);
+				return environment;
 			}
-			environment.put("defaultSessionFactory", defaultSessionFactory);
-			return environment;
-		}
 
-		private static ChannelExecWrapper getExecWrapper(UnixSshFileSystem unixSshFileSystem, String string)
-				throws IOException {
-			UnixSshPath unixPath = unixSshFileSystem.getPath(string);
-			ChannelExecWrapper channel;
-			try {
-				channel = unixPath.getFileSystem().getCommandRunner()
-						.open("/bin/cat" + " '" + unixPath.toString()  + "'");
-			} catch (JSchException e) {
-				unixSshFileSystem.close();
-				throw new RuntimeException(e);
+			static ChannelExecWrapper getExecWrapper(UnixSshFileSystem unixSshFileSystem, String string)
+					throws IOException {
+				UnixSshPath unixPath = unixSshFileSystem.getPath(string);
+				ChannelExecWrapper channel;
+				try {
+					channel = unixPath.getFileSystem().getCommandRunner()
+							.open("/bin/cat" + " '" + unixPath.toString()  + "'");
+				} catch (JSchException e) {
+					unixSshFileSystem.close();
+					throw new RuntimeException(e);
+				}
+				return channel;
 			}
-			return channel;
 		}
 		
-		private FileSystem getAsyncClient() {
-			DefaultSessionFactory defaultSessionFactory;
-			try {
-//				System.out.println("getAsyncClient() - a");
-				defaultSessionFactory = new DefaultSessionFactory("sarnobat", "192.168.1.2", 22);
-			} catch (Exception e) {
-				e.printStackTrace();
-				throw new RuntimeException(e);
+		@Deprecated // This didn't work
+		private static class Nio2 {
+			static FileSystem getAsyncClient(ClassLoader classLoader) {
+				DefaultSessionFactory defaultSessionFactory;
+				try {
+					// System.out.println("getAsyncClient() - a");
+					defaultSessionFactory = new DefaultSessionFactory("sarnobat", "192.168.1.2", 22);
+				} catch (Exception e) {
+					e.printStackTrace();
+					throw new RuntimeException(e);
+				}
+				// System.out.println("getAsyncClient() - b");
+				try {
+					defaultSessionFactory.setKnownHosts(System.getProperty("user.home")
+							+ "/.ssh/known_hosts");
+					// System.out.println("getAsyncClient() - c");
+					defaultSessionFactory.setIdentityFromPrivateKey(System.getProperty("user.home")
+							+ "/.ssh/id_rsa");
+					// defaultSessionFactory.setKnownHosts("/home/sarnobat/.ssh/known_hosts");
+					// defaultSessionFactory.setIdentityFromPrivateKey("/home/sarnobat/.ssh/id_rsa");
+					// defaultSessionFactory.setConfig( "StrictHostKeyChecking",
+					// "no" );
+				} catch (Exception e) {
+					e.printStackTrace();
+					System.exit(-1);
+				}
+				// System.out.println("getAsyncClient() - d");
+				Map<String, Object> environment = new HashMap<String, Object>();
+				environment.put("defaultSessionFactory", defaultSessionFactory);
+				URI uri;
+				// System.out.println("getAsyncClient() - e");
+				try {
+					uri = new URI("ssh.unix://sarnobat@192.168.1.2:22/home/sarnobat");
+					// uri = new
+					// URI("ssh.unix://sarnobat@192.168.1.2:22/home/sarnobat");
+				} catch (URISyntaxException e) {
+					throw new RuntimeException(e);
+				}
+				// System.out.println("getAsyncClient() - f");
+				FileSystem sshfs;
+				try {
+					sshfs = FileSystems
+							.newFileSystem(uri, environment, classLoader);
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+				// System.out.println("getAsyncClient() - g");
+				return sshfs;
 			}
-//			System.out.println("getAsyncClient() - b");
-			try {
-				defaultSessionFactory.setKnownHosts(System.getProperty("user.home")  + "/.ssh/known_hosts");
-//				System.out.println("getAsyncClient() - c");
-				defaultSessionFactory.setIdentityFromPrivateKey(System.getProperty("user.home")  + "/.ssh/id_rsa");
-//				defaultSessionFactory.setKnownHosts("/home/sarnobat/.ssh/known_hosts");
-//				defaultSessionFactory.setIdentityFromPrivateKey("/home/sarnobat/.ssh/id_rsa");
-//			    defaultSessionFactory.setConfig( "StrictHostKeyChecking", "no" );
-			} catch (Exception e) {
-				e.printStackTrace();
-				System.exit(-1);
-			}
-//			System.out.println("getAsyncClient() - d");
-			Map<String, Object> environment = new HashMap<String, Object>();
-			environment.put("defaultSessionFactory", defaultSessionFactory);
-			URI uri;
-//			System.out.println("getAsyncClient() - e");
-			try {
-				uri = new URI("ssh.unix://sarnobat@192.168.1.2:22/home/sarnobat");
-				//uri = new URI("ssh.unix://sarnobat@192.168.1.2:22/home/sarnobat");
-			} catch (URISyntaxException e) {
-				throw new RuntimeException(e);
-			}
-//			System.out.println("getAsyncClient() - f");
-			FileSystem sshfs;
-			try {
-				sshfs = FileSystems.newFileSystem(uri, environment, getClass().getClassLoader());
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-//			System.out.println("getAsyncClient() - g");
-			return sshfs;
-		}
+			
 
+			static ClientSession getSession(SshClient client) throws InterruptedException, IOException {
+				ClientSession session; 
+//				if (session != null && session.isClosed()) {
+//					System.out.println("getClient() - too late, was closed");
+//				}
+				session = client.connect("sarnobat", "netgear.rohidekar.com", 22).await().getSession();
+				// TODO: Use key authentication instead
+				session.addPasswordIdentity("aize2F");
+				session.auth().await();
+				return session;
+				
+			}
+			
+			static SshClient getSshClient() {
+				SshClient client;
+				client = SshClient.setUpDefaultClient();
+				// client.getProperties().put(ClientFactoryManager.HEARTBEAT_INTERVAL,
+				// "50000");
+				client.start();
+				return client;
+			}
+
+		}
+		
 		@SuppressWarnings("unused")
-		private static synchronized SftpClient getSftpClient() throws InterruptedException,
-				IOException {
-			// if (sftp == null) {
+		private static class Unused {
+			private static synchronized SftpClient getSftpClient() throws InterruptedException,
+					IOException {
+				// if (sftp == null) {
 
-			// ClientSession session ;
-			SftpClient sftp = getSftpClient2();
-			
-			// } else {
-			// sftp = session.createSftpClient();
-			// }
-			return sftp;
-		}
+				// ClientSession session ;
+				SftpClient sftp = getSftpClient2();
 
-		private static SftpClient getSftpClient2() throws InterruptedException, IOException {
-			SshClient client = getSshClient();
-			session = getSession(client);
-			SftpClient sftp = session.createSftpClient();
-			return sftp;
-		}
+				// } else {
+				// sftp = session.createSftpClient();
+				// }
+				return sftp;
+			}
 
-		private static ClientSession getSession(SshClient client) throws InterruptedException, IOException {
-			ClientSession session; 
-//			if (session != null && session.isClosed()) {
-//				System.out.println("getClient() - too late, was closed");
-//			}
-			session = client.connect("sarnobat", "netgear.rohidekar.com", 22).await().getSession();
-			// TODO: Use key authentication instead
-			session.addPasswordIdentity("aize2F");
-			session.auth().await();
-			return session;
-			
+			private static SftpClient getSftpClient2() throws InterruptedException, IOException {
+				SshClient client = Nio2.getSshClient();
+				session = Nio2.getSession(client);
+				SftpClient sftp = session.createSftpClient();
+				return sftp;
+			}
+			private static ClientSession session ;
 		}
-
-		private static SshClient getSshClient() {
-			SshClient client;
-			client = SshClient.setUpDefaultClient();
-			// client.getProperties().put(ClientFactoryManager.HEARTBEAT_INTERVAL,
-			// "50000");
-			client.start();
-			return client;
-		}
-		private static ClientSession session ;
 
 		@GET
 		@javax.ws.rs.Path("static/{absolutePath : .+}")
@@ -559,8 +567,6 @@ public class Coagulate {
 		}
 		
 		private static Set<DirPair> swoopRepeatedlyUntilLimitExceeded(Set<DirPair> dirPairsAccumulated, String[] iDirectoryPaths, int iLimit) {
-//			System.out
-//					.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() - begin");
 			if (iLimit < 1) {
 				return dirPairsAccumulated;
 			}
@@ -568,38 +574,24 @@ public class Coagulate {
 					.transform(new PathToDirPair(getFilesAlreadyObtained(dirPairsAccumulated)))
 					.toSet();
 			int filesObtained = countFiles(dirPairs);
-//			System.out
-//					.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() - " + dirPairs);
 			int newLimit = iLimit - filesObtained;
 			if (filesObtained == 0) {
 				return dirPairsAccumulated;
 			}
-//			System.out
-//					.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() - remaining = "
-//							+ newLimit);
 			return swoopRepeatedlyUntilLimitExceeded(
 					mergeDirectoryHierarchies(dirPairsAccumulated, dirPairs), iDirectoryPaths,
 					newLimit);
-//			} else {
-//				System.out
-//						.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() - finished recursing - " + dirPairsAccumulated.size());
-//				return dirPairsAccumulated;
-//			}
 		}
 		
 		private static Set<String> getFilesAlreadyObtained(Set<DirPair> dirPairsAccumulated) {
-//			System.out.println("Coagulate.RecursiveLimitByTotal2.getFilesAlreadyObtained() - begin");
 			ImmutableSet.Builder<String> builder = ImmutableSet.builder();
 			for(DirPair p : dirPairsAccumulated) {
-//				System.out.println("Coagulate.RecursiveLimitByTotal2.getFilesAlreadyObtained() - " + p.getDirPath());
 				builder.addAll(getFilesInDir(p.getDirObj()));
 			}
-//			System.out.println("Coagulate.RecursiveLimitByTotal2.getFilesAlreadyObtained() - end");
 			return builder.build();
 		}
 
 		private static Set<String> getFilesInDir(DirObj iDirObj) {
-//			System.out.println("Coagulate.RecursiveLimitByTotal2.getFilesInDir() - begin");
 			Set<String> keysInShard = new HashSet<String>();
 			keysInShard.addAll(iDirObj.getFiles().keySet());
 			keysInShard.addAll(iDirObj.getFiles().keySet());
@@ -618,7 +610,6 @@ public class Coagulate {
 			int total = 0;
 			for (DirPair aHierarchy : directoryHierarchies) {
 				total += countFilesInHierarchy2(aHierarchy.json());
-				System.out.println("Coagulate.RecursiveLimitByTotal.countAllFiles() - total = " + total);
 			}
 			return total;
 		}
@@ -646,8 +637,6 @@ public class Coagulate {
 		}
 
 		private static Set<DirPair> mergeDirectoryHierarchies(Set<DirPair> left, Set<DirPair> right) {
-//			System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() - left "  + left.size());
-//			System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() - right "  + right.size());
 			ImmutableMap.Builder<String, DirPair> lb = ImmutableMap.builder();
 			for (DirPair l : left) {
 				lb.put(l.getDirPath(), l);
@@ -673,7 +662,6 @@ public class Coagulate {
 				}
 			}
 			ImmutableSet<DirPair> build = ret.build();
-//			System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() - out : " + build.size());
 			return build;
 		}
 
@@ -752,7 +740,6 @@ public class Coagulate {
 			}
 		}
 
-
 		private static class PathToDirObj implements Function<String, DirObj> {
 			
 			private final Set<String> _filesAlreadyObtained;
@@ -789,21 +776,12 @@ public class Coagulate {
 				ImmutableSet<Entry<String, JsonObject>> entrySet = getFilesInsideDir(iDirectoryPath, filesPerLevel2,
 						filesToIgnore, iLimit, filesToIgnoreAtLevel).entrySet();
 				for (Entry<String, JsonObject> e : entrySet) {
-//					System.out
-//							.println("Coagulate.RecursiveLimitByTotal2.PathToDirObj.dipIntoDirRecursive() - " + e.getKey() );
 					dirHierarchyJson.add(e.getKey(), e.getValue());
 				}
 				// For ALL subdirectories, recurse
 				try {
 					JsonObjectBuilder dirsJson = Json.createObjectBuilder();
-					for (Path p : getSubPaths(iDirectoryPath, isDirectory)) {
-						// TODO: This causes a depth-first recursion which will cut off immediate
-						// subdirs near the end of the alphabet if we were to impose a limit.
-						// Ideally we want a breadth-first recursion. I think a queue is the way to 
-						// achieve that. But then how to attach the output to the parent also requires
-						// extra storage.
-						// Actually, trimming the output may be better though you do do a lot of 
-						// file system traversal (which isn't so bad since we use NIO).
+					for (Path p : getSubPaths(iDirectoryPath, Predicates.IS_DIRECTORY)) {
 						JsonObject contentsRecursive = dipIntoDirRecursive(p, filesPerLevel, filesToIgnore, --maxDepth, iLimit, ++dipNumber, false);
 						dirsJson.add(p.toAbsolutePath().toString(),contentsRecursive);
 					}
@@ -812,15 +790,11 @@ public class Coagulate {
 					e.printStackTrace();
 				}
 				JsonObject build = dirHierarchyJson.build();
-//				System.out
-//						.println("Coagulate.RecursiveLimitByTotal2.PathToDirObj.dipIntoDirRecursive() - " + build);
 				return build;
 			}
-			
 
 			private static Set<Path> getSubPaths(Path iDirectoryPath, Filter<Path> isfile2)
 					throws IOException {
-//				System.out.println("RecursiveLimitByTotal.getSubPaths() - " + iDirectoryPath);
 				DirectoryStream<Path> filesInDir2 = Files.newDirectoryStream(iDirectoryPath, isfile2);
 				Set<Path> filesInDir = FluentIterable.from(filesInDir2).filter(SHOULD_DIP_INTO).toSet();
 				filesInDir2.close();
@@ -835,8 +809,6 @@ public class Coagulate {
 				}
 			};
 			
-			private static final boolean debug = false;
-			
 			private static ImmutableMap<String, JsonObject> getFilesInsideDir(Path iDirectoryPath,
 					int filesPerLevel, Set<String> filesToIgnore, int iLimit,
 					Set<String> filesToIgnoreAtLevel) {
@@ -845,18 +817,13 @@ public class Coagulate {
 				try {
 					int addedCount = 0;
 					Predicates.Contains predicate = new Predicates.Contains(filesToIgnore);
-					for (Path p : FluentIterable.from(getSubPaths(iDirectoryPath, isFile))
+					for (Path p : FluentIterable.from(getSubPaths(iDirectoryPath, Predicates.IS_FILE))
 							.filter(not(predicate)).filter(Predicates.IS_DISPLAYABLE).toSet()) {
 						String absolutePath = p.toAbsolutePath().toString();
-//						System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInsideDir() - " + absolutePath);
-						
 						filesInDir.put(absolutePath,
 								Mappings.PATH_TO_JSON_ITEM.apply(p));
 						++addedCount;
 						filesToIgnoreAtLevel.add(p.toAbsolutePath().toString());
-						if (debug) {
-							System.out.println("Coagulate.RecursiveLimitByTotal.getFilesInsideDir() - files added: " + filesToIgnore.size());
-						}
 						if (filesToIgnore.size() > iLimit) {
 							break;
 						}
@@ -873,20 +840,7 @@ public class Coagulate {
 			private static class CannotDipIntoDirException extends Exception {
 				private static final long serialVersionUID = 1L;
 			}
-			// TODO: Move to Predicates
-			private static final DirectoryStream.Filter<Path> isFile = new DirectoryStream.Filter<Path>() {
-				public boolean accept(Path entry) throws IOException {
-					return !Files.isDirectory(entry);
-				}
-			};
-			// TODO: Move to Predicates
-			private static final DirectoryStream.Filter<Path> isDirectory = new DirectoryStream.Filter<Path>() {
-				public boolean accept(Path entry) throws IOException {
-					return Files.isDirectory(entry);
-				}
-			};
-		};		
-		
+		};
 		
 		private static class DirObj {
 
@@ -943,18 +897,11 @@ public class Coagulate {
 		};
 		
 		private static JsonObject validateIsDirectoryNode(JsonObject dir) {
-
 			if (!dir.isEmpty()) {
-				// if (!dir.containsKey("dirs")) {
-				// throw new RuntimeException("Not a directory node: " +
-				// prettyPrint(dir));
-				// }
 				if (dir.containsKey("location")) {
 					throw new RuntimeException("Not a directory node: " + prettyPrint(dir));
 				}
 			}
-			// Check parsing succeeds
-			jsonFromString(dir.toString());
 			return dir;
 		}
 
@@ -974,7 +921,7 @@ public class Coagulate {
 			}
 		}
 
-		// TODO: remove this and just use the supertype.
+		// TODO: remove this and just use the supertype?
 		private static class DirPair extends HashMap<String, DirObj> {
 			private static final long serialVersionUID = 1L;
 			private final String dirPath;
@@ -1003,7 +950,6 @@ public class Coagulate {
 			}
 		}
 	}
-
 
 	private static class Mappings {
 		
@@ -1036,6 +982,18 @@ public class Coagulate {
 
 	private static class Predicates {
 
+		static final DirectoryStream.Filter<Path> IS_FILE = new DirectoryStream.Filter<Path>() {
+			public boolean accept(Path entry) throws IOException {
+				return !Files.isDirectory(entry);
+			}
+		};
+		
+		static final DirectoryStream.Filter<Path> IS_DIRECTORY = new DirectoryStream.Filter<Path>() {
+			public boolean accept(Path entry) throws IOException {
+				return Files.isDirectory(entry);
+			}
+		};
+		
 		static class Contains implements Predicate<Path> {
 
 			private final Collection<String> files ;
@@ -1048,7 +1006,6 @@ public class Coagulate {
 			public boolean apply(@Nullable Path input) {
 				return files.contains(input.toAbsolutePath().toString());
 			}
-
 		}
 
 		static Predicate<String> IS_UNDER(final String absolutePath) {
@@ -1093,8 +1050,6 @@ public class Coagulate {
 		};
 		
 	}
-	
-
 
 	@SuppressWarnings("unused")
 	private static class Exif {
@@ -1215,6 +1170,7 @@ public class Coagulate {
 			Operations.doMove(sourceFilePath, getUnconflictedDestinationFilePath(iSubfolderSimpleName, sourceFilePath));
 
 		}
+
 		private static void doCopy(Path sourceFilePath, Path destinationFilePath) {
 			try {
 				Files.copy(sourceFilePath, destinationFilePath);// By default, it won't
@@ -1865,15 +1821,7 @@ public class Coagulate {
 				return msg;
 			}
 	
-			/** Override this */
-	//		String renderFilename(String uri, String filenameAfter) {
-	//			return "<a href=\"" + encodeUri(uri + filenameAfter) + "\">" +
-	//					filenameAfter  + "</a>";
-	//		}
-	
-	
-			//@Override
-			static String renderFilename(String uri, String filenameAfter) {
+			private static String renderFilename(String uri, String filenameAfter) {
 				String path = filenameAfter;//encodeUri(uri); + Paths.get(filenameAfter).getFileName().toString());
 				String insideLink;
 				if (filenameAfter.endsWith("jpg") || filenameAfter.endsWith("jpg") || filenameAfter.endsWith("gif")
@@ -1949,8 +1897,6 @@ public class Coagulate {
 				gmtFrmt.setTimeZone(TimeZone.getTimeZone("GMT"));
 			}
 		}
-
-	private static final boolean debug = false;
 
 	public static void main(String[] args) throws URISyntaxException, IOException {
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
