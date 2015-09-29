@@ -178,6 +178,7 @@ public class Coagulate {
 		@GET
 		@javax.ws.rs.Path("static4/{absolutePath : .+}")
 		@Produces("application/json")
+		@Deprecated // I don't remember why this was insufficient. But use {@link NioFileServer}
 		public Response getFileSshNio2(@PathParam("absolutePath") String absolutePathWithSlashMissing, @Context HttpHeaders header, @QueryParam("width") final Integer iWidth){
 			final String absolutePath = "/" + absolutePathWithSlashMissing;
 			System.out.println("Coagulate.MyResource.getFileSshNio2() - " + absolutePath);
