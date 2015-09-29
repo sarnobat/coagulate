@@ -7,6 +7,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.BindException;
@@ -70,6 +72,7 @@ import org.apache.commons.imaging.formats.tiff.taginfos.TagInfo;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.http.ExceptionLogger;
 import org.apache.http.HttpConnection;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
@@ -77,6 +80,8 @@ import org.apache.http.HttpStatus;
 import org.apache.http.MethodNotSupportedException;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.entity.ContentType;
+import org.apache.http.entity.FileEntity;
+import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.nio.bootstrap.HttpServer;
 import org.apache.http.impl.nio.bootstrap.ServerBootstrap;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
@@ -175,6 +180,48 @@ public class Coagulate {
 				"/media/sarnobat/Record/Videos_Home/Home Video/home movies (high-definition)/",
 				"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
 
+//		private static void handle2(final HttpRequest request, final HttpResponse response,
+//				final HttpContext context) throws UnsupportedEncodingException {
+//			String target;
+//			try {
+//				target = request.getRequestLine().getUri().replaceAll(".width.*", "").replace("%20", " ");
+//			} catch (Exception e) {
+//				throw new RuntimeException("handle error cases?");
+//			}
+//			handle3(response, target);
+//		}
+//
+//		private static void handle3(final HttpResponse response, String absolutePath)
+//				throws UnsupportedEncodingException {
+//			File file = Paths.get(URLDecoder.decode(absolutePath, "UTF-8")).toFile();
+//			validateFile(file);
+//			response.setStatusCode(HttpStatus.SC_OK);
+//			serveFileStreaming(response, file);
+//		}
+//
+//		private static void serveFileStreaming(final HttpResponse response, File file) {
+//			InputStream fis;
+//			try {
+//				fis = new FileInputStream(file);
+//
+//				PipedOutputStream pos = new PipedOutputStream();
+//				net.coobird.thumbnailator.Thumbnailator.createThumbnail(fis, pos, 50, 50);
+//				PipedInputStream pis = new PipedInputStream(pos);
+//				HttpEntity body = new InputStreamEntity(pis, ContentType.create("image/jpeg"));
+//				response.setEntity(body);
+//			} catch (FileNotFoundException e) {
+//				e.printStackTrace();
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+//		}
+
+//		private static void validateFile(final File file) {
+//			if (!file.exists() ||  !file.canRead() || file.isDirectory()) {
+//				throw new RuntimeException("handle error cases?");
+//			}
+//		}
+		
 		@GET
 		@javax.ws.rs.Path("static4/{absolutePath : .+}")
 		@Produces("application/json")
@@ -1286,6 +1333,11 @@ public class Coagulate {
 					throw new MethodNotSupportedException(method + " method not supported");
 				}
 
+				handle2(request, response, context);
+			}
+
+			private static void handle2(final HttpRequest request, final HttpResponse response,
+					final HttpContext context) throws UnsupportedEncodingException {
 				String target;
 				try {
 //					System.out.println("Coagulate.NioFileServer.HttpFileHandler.handleInternal() - about to decode");
@@ -1334,12 +1386,36 @@ public class Coagulate {
 					HttpCoreContext coreContext = HttpCoreContext.adapt(context);
 					HttpConnection conn = coreContext.getConnection(HttpConnection.class);
 					response.setStatusCode(HttpStatus.SC_OK);
-					NFileEntity body = new NFileEntity(file, ContentType.create("image/jpeg"));
-					response.setEntity(body);
+					
+					
+					serveFileStreaming(response, file);
+					
+//					NFileEntity body = new NFileEntity(file, ContentType.create("image/jpeg"));
+//					response.setEntity(body);
 					System.out.println(conn.toString() + ": serving file " + file.getPath());
 				}
 			}
+
+			private static void serveFileStreaming(final HttpResponse response, File file) {
+				InputStream fis;
+				try {
+					fis = new FileInputStream(file);
+
+//					PipedOutputStream pos = new PipedOutputStream();
+//					PipedInputStream pis = new PipedInputStream(pos);
+					
+//					net.coobird.thumbnailator.Thumbnailator.createThumbnail(fis, pos, 50, 50);
+					HttpEntity body = new InputStreamEntity(fis, ContentType.create("image/jpeg"));
+					response.setEntity(body);
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
 		}
+		
+		
 	}
 
 	private static class FileServerGroovy {
