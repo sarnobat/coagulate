@@ -8,24 +8,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
-import java.net.BindException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.DirectoryStream.Filter;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
+import java.nio.file.spi.FileSystemProvider;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,7 +27,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
 import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -46,7 +38,6 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 import javax.json.stream.JsonParsingException;
-import javax.net.ssl.SSLContext;
 import javax.ws.rs.GET;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -57,8 +48,8 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.net.URLCodec;
+import net.coobird.thumbnailator.Thumbnailator;
+
 import org.apache.commons.imaging.ImageReadException;
 import org.apache.commons.imaging.Imaging;
 import org.apache.commons.imaging.common.IImageMetadata;
@@ -68,29 +59,9 @@ import org.apache.commons.imaging.formats.tiff.constants.GpsTagConstants;
 import org.apache.commons.imaging.formats.tiff.constants.TiffTagConstants;
 import org.apache.commons.imaging.formats.tiff.taginfos.TagInfo;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.http.ExceptionLogger;
-import org.apache.http.HttpConnection;
-import org.apache.http.HttpException;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.MethodNotSupportedException;
-import org.apache.http.client.utils.URLEncodedUtils;
-import org.apache.http.entity.ContentType;
-import org.apache.http.impl.nio.bootstrap.HttpServer;
-import org.apache.http.impl.nio.bootstrap.ServerBootstrap;
-import org.apache.http.impl.nio.reactor.IOReactorConfig;
-import org.apache.http.nio.entity.NFileEntity;
-import org.apache.http.nio.entity.NStringEntity;
-import org.apache.http.nio.protocol.BasicAsyncRequestConsumer;
-import org.apache.http.nio.protocol.BasicAsyncResponseProducer;
-import org.apache.http.nio.protocol.HttpAsyncExchange;
-import org.apache.http.nio.protocol.HttpAsyncRequestConsumer;
-import org.apache.http.nio.protocol.HttpAsyncRequestHandler;
-import org.apache.http.protocol.HttpContext;
-import org.apache.http.protocol.HttpCoreContext;
-import org.apache.http.ssl.SSLContexts;
 import org.apache.sshd.ClientSession;
+import org.apache.sshd.SshClient;
+import org.apache.sshd.client.SftpClient;
 import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.json.JSONException;
@@ -119,19 +90,7 @@ import com.pastdev.jsch.nio.file.UnixSshPath;
 public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
 	public static class MyResource { // Must be public
-	
-		public MyResource() {
-			System.out.println("Coagulate.MyResource.MyResource()");
-//			try {
-//				NioFileServer.startServer(4452);
-////			} catch (BindException e) {
-//				// Server already running. Let the outer code fail
-//			} 
-//			catch (Exception e) {
-//				throw new RuntimeException(e);
-//			}
-//			System.out.println("Coagulate.MyResource.MyResource() - File server started");
-		}
+
 		//
 		// mutators
 		//
@@ -176,16 +135,126 @@ public class Coagulate {
 				"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
 
 		@GET
+		@javax.ws.rs.Path("static2/{absolutePath : .+}")
+		@Produces("application/json")
+		// getFileViaSsh servefileoverssh
+		@Deprecated // Use Nio
+		public Response getFileSsh(@PathParam("absolutePath") String absolutePathWithSlashMissing, @Context HttpHeaders header, @QueryParam("width") final Integer iWidth){
+			final String absolutePath = "/" +absolutePathWithSlashMissing;
+			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(Predicates.IS_UNDER(absolutePath))){
+				try {
+					// final SftpClient sftp = getSftpClient();
+					final SshClient client = Nio2.getSshClient();
+					final ClientSession session = Nio2.getSession(client);
+					final SftpClient sftp = session.createSftpClient();
+					final InputStream is = sftp.read(absolutePath);
+					StreamingOutput stream = new StreamingOutput() {
+					    @Override
+						public void write(OutputStream os) throws IOException,
+								WebApplicationException {
+					    	//	System.out.println("getFileSsh() - file to get: " + absolutePath + ", status = " + getStatus(sftp));
+							// TODO: for most files, a straight copy is wanted. For images, check the file dimensions
+							if (iWidth != null) {
+								try {
+									Thumbnailator.createThumbnail(is, os, iWidth, iWidth);
+								} catch (Exception e) {
+									System.out.println(e);
+									e.printStackTrace();
+								}
+							} else {
+								IOUtils.copy(is, os);
+							}
+							is.close();
+							os.close();
+							sftp.close();
+							session.close(true);
+							client.stop();
+							System.out.print(".");
+							// System.out.println("getFileSsh() - Success. (note: if you try to leave anything open, make sure you don't end up with hundreds of sshd processes)");
+						}
+					  };
+					return Response.ok().entity(stream).type(FileServerGroovy.getMimeType(absolutePath)).build();
+				} catch (Exception e) {
+				//	e.printStackTrace();
+					System.err.println("getFileSsh() - FAILED: " + absolutePath + ". " + e.toString());
+				}
+			} else {
+				System.out.println("Not whitelisted: " + absolutePath);
+			}
+			return Response.serverError()
+					.header("Access-Control-Allow-Origin", "*")
+					.entity("{ 'foo' : 'bar' }").type("application/json")
+					.build();
+		}
+
+		/**
+		 * Use asynchronous IO for SSH. Maybe this will allow more parallel connections and higher throughput 
+		 */
+		@GET
+		@javax.ws.rs.Path("static3/{absolutePath : .+}")
+		@Produces("application/json")
+		@Deprecated // This didn't work in all cases
+		public Response getFileSshNio(@PathParam("absolutePath") String absolutePathWithSlashMissing, @Context HttpHeaders header, @QueryParam("width") final Integer iWidth){
+			final String absolutePath = "/" +absolutePathWithSlashMissing;
+			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(Predicates.IS_UNDER(absolutePath))){
+				try {
+//					System.out.println("getFileSshNio() - 1");
+					final FileSystem client = Nio2.getAsyncClient(getClass().getClassLoader());
+
+//					System.out.println("getFileSshNio() - 2");
+					Path path = client.getPath(absolutePath);
+
+//					System.out.println("getFileSshNio() - 3");
+					FileSystemProvider provider = path.getFileSystem().provider();
+
+//					System.out.println("getFileSshNio() - 4");
+					final InputStream is = provider.newInputStream(path);
+
+//					System.out.println("getFileSshNio() - 5");
+					StreamingOutput stream = new StreamingOutput() {
+					    @Override
+						public void write(OutputStream os) throws IOException,
+								WebApplicationException {
+//							System.out.println("getFileSshNio() - 6");
+							// TODO: for most files, a straight copy is wanted. For images, check the file dimensions
+							if (iWidth != null) {
+								try {
+									net.coobird.thumbnailator.Thumbnailator.createThumbnail(is, os, iWidth, iWidth);
+								} catch (Exception e) {
+									System.out.println(e);
+									e.printStackTrace();
+									System.out.println("Failed thumbnailing for " + absolutePath);
+								}
+							} else {
+
+//								System.out.println("getFileSshNio() - 7");
+								IOUtils.copy(is, os);
+							}
+//							System.out.println("getFileSshNio() - 8");
+							client.close();
+							is.close();
+//							os.close();
+						}
+					  };
+					return Response.ok().entity(stream).type(FileServerGroovy.getMimeType(absolutePath)).build();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} else {
+				System.out.println("Not whitelisted: " + absolutePath);
+			}
+			return Response.serverError()
+					.header("Access-Control-Allow-Origin", "*")
+					.entity("{ 'foo' : 'bar' }").type("application/json")
+					.build();
+		}
+
+		@GET
 		@javax.ws.rs.Path("static4/{absolutePath : .+}")
 		@Produces("application/json")
 		public Response getFileSshNio2(@PathParam("absolutePath") String absolutePathWithSlashMissing, @Context HttpHeaders header, @QueryParam("width") final Integer iWidth){
 			final String absolutePath = "/" + absolutePathWithSlashMissing;
 			System.out.println("Coagulate.MyResource.getFileSshNio2() - " + absolutePath);
-			if (!FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(
-					Predicates.IS_UNDER(absolutePath))) {
-				return Response.serverError().header("Access-Control-Allow-Origin", "*")
-						.entity("{ 'foo' : 'bar' }").type("application/json").build();
-			}
 			try {
 				final UnixSshFileSystem unixSshFileSystem = new UnixSshFileSystem(
 						new UnixSshFileSystemProvider(), new URI(
@@ -253,9 +322,102 @@ public class Coagulate {
 			}
 		}
 		
+		@Deprecated // This didn't work
+		private static class Nio2 {
+			static FileSystem getAsyncClient(ClassLoader classLoader) {
+				DefaultSessionFactory defaultSessionFactory;
+				try {
+					// System.out.println("getAsyncClient() - a");
+					defaultSessionFactory = new DefaultSessionFactory("sarnobat", "192.168.1.2", 22);
+				} catch (Exception e) {
+					e.printStackTrace();
+					throw new RuntimeException(e);
+				}
+				// System.out.println("getAsyncClient() - b");
+				try {
+					defaultSessionFactory.setKnownHosts(System.getProperty("user.home")
+							+ "/.ssh/known_hosts");
+					// System.out.println("getAsyncClient() - c");
+					defaultSessionFactory.setIdentityFromPrivateKey(System.getProperty("user.home")
+							+ "/.ssh/id_rsa");
+					// defaultSessionFactory.setKnownHosts("/home/sarnobat/.ssh/known_hosts");
+					// defaultSessionFactory.setIdentityFromPrivateKey("/home/sarnobat/.ssh/id_rsa");
+					// defaultSessionFactory.setConfig( "StrictHostKeyChecking",
+					// "no" );
+				} catch (Exception e) {
+					e.printStackTrace();
+					System.exit(-1);
+				}
+				// System.out.println("getAsyncClient() - d");
+				Map<String, Object> environment = new HashMap<String, Object>();
+				environment.put("defaultSessionFactory", defaultSessionFactory);
+				URI uri;
+				// System.out.println("getAsyncClient() - e");
+				try {
+					uri = new URI("ssh.unix://sarnobat@192.168.1.2:22/home/sarnobat");
+					// uri = new
+					// URI("ssh.unix://sarnobat@192.168.1.2:22/home/sarnobat");
+				} catch (URISyntaxException e) {
+					throw new RuntimeException(e);
+				}
+				// System.out.println("getAsyncClient() - f");
+				FileSystem sshfs;
+				try {
+					sshfs = FileSystems
+							.newFileSystem(uri, environment, classLoader);
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+				// System.out.println("getAsyncClient() - g");
+				return sshfs;
+			}
+			
+
+			static ClientSession getSession(SshClient client) throws InterruptedException, IOException {
+				ClientSession session; 
+//				if (session != null && session.isClosed()) {
+//					System.out.println("getClient() - too late, was closed");
+//				}
+				session = client.connect("sarnobat", "netgear.rohidekar.com", 22).await().getSession();
+				// TODO: Use key authentication instead
+				session.addPasswordIdentity("aize2F");
+				session.auth().await();
+				return session;
+				
+			}
+			
+			static SshClient getSshClient() {
+				SshClient client;
+				client = SshClient.setUpDefaultClient();
+				// client.getProperties().put(ClientFactoryManager.HEARTBEAT_INTERVAL,
+				// "50000");
+				client.start();
+				return client;
+			}
+
+		}
 		
 		@SuppressWarnings("unused")
 		private static class Unused {
+			private static synchronized SftpClient getSftpClient() throws InterruptedException,
+					IOException {
+				// if (sftp == null) {
+
+				// ClientSession session ;
+				SftpClient sftp = getSftpClient2();
+
+				// } else {
+				// sftp = session.createSftpClient();
+				// }
+				return sftp;
+			}
+
+			private static SftpClient getSftpClient2() throws InterruptedException, IOException {
+				SshClient client = Nio2.getSshClient();
+				session = Nio2.getSession(client);
+				SftpClient sftp = session.createSftpClient();
+				return sftp;
+			}
 			private static ClientSession session ;
 		}
 
@@ -924,17 +1086,7 @@ public class Coagulate {
 		};
 
 		private static String httpLinkFor(String iAbsolutePath) {
-//			String prefix = "http://netgear.rohidekar.com:4451/cmsfs/static4/";
-			String prefix = "http://netgear.rohidekar.com:4452";
-			if (iAbsolutePath.contains("Coru")) {
-//				try {
-//					System.out.println("Coagulate.Mappings.httpLinkFor() " + URLEncoder.encode(iAbsolutePath, "UTF-8"));
-//					System.out.println("Coagulate.Mappings.httpLinkFor() " + iAbsolutePath);
-//					return prefix + URLEncoder.encode(iAbsolutePath, "UTF-8");
-//				} catch (UnsupportedEncodingException e) {
-//					e.printStackTrace();
-//				}
-			}
+			String prefix = "http://netgear.rohidekar.com:4451/cmsfs/static4/";
 			return prefix + iAbsolutePath;
 		}
 
@@ -1224,120 +1376,6 @@ public class Coagulate {
 						"an existing file will get overwritten");
 			}
 			return rDestinationFile;
-		}
-	}
-
-	/** Based on Apache Commons NIO's NHttpFileServer sample */
-	private static class NioFileServer {
-		private static final URLCodec urlDecoder = new URLCodec();
-		static void startServer(int port) throws NoSuchAlgorithmException,
-				KeyManagementException, KeyStoreException, UnrecoverableKeyException,
-				CertificateException, IOException, InterruptedException {
-			SSLContext sslcontext = null;
-			if (port == 8443) {
-				// Initialize SSL context
-				URL url = NioFileServer.class.getResource("/my.keystore");
-				if (url == null) {
-					System.out.println("Keystore not found");
-					System.exit(1);
-				}
-				sslcontext = SSLContexts.custom()
-						.loadKeyMaterial(url, "secret".toCharArray(), "secret".toCharArray())
-						.build();
-			}
-
-			IOReactorConfig config = IOReactorConfig.custom().setSoTimeout(15000)
-					.setTcpNoDelay(true).build();
-
-			final HttpServer server = ServerBootstrap.bootstrap().setListenerPort(port)
-					.setServerInfo("Test/1.1").setIOReactorConfig(config).setSslContext(sslcontext)
-					.setExceptionLogger(ExceptionLogger.STD_ERR)
-					.registerHandler("*", new HttpFileHandler()).create();
-
-			server.start();
-		}
-
-		private static class HttpFileHandler implements HttpAsyncRequestHandler<HttpRequest> {
-
-			@Override
-			public HttpAsyncRequestConsumer<HttpRequest> processRequest(final HttpRequest request,
-					final HttpContext context) {
-				System.out.println("Coagulate.NioFileServer.HttpFileHandler.processRequest() - begin");
-				// Buffer request content in memory for simplicity
-				return new BasicAsyncRequestConsumer();
-			}
-
-			@Override
-			public void handle(final HttpRequest request, final HttpAsyncExchange httpexchange,
-					final HttpContext context) throws HttpException, IOException {
-				System.out.println("Coagulate.NioFileServer.HttpFileHandler.handle() - begin");
-				HttpResponse response = httpexchange.getResponse();
-				handleInternal(request, response, context);
-				httpexchange.submitResponse(new BasicAsyncResponseProducer(response));
-			}
-
-			private static void handleInternal(final HttpRequest request,
-					final HttpResponse response, final HttpContext context) throws HttpException,
-					IOException {
-
-				String method = request.getRequestLine().getMethod().toUpperCase(Locale.ENGLISH);
-				if (!method.equals("GET") && !method.equals("HEAD") && !method.equals("POST")) {
-					throw new MethodNotSupportedException(method + " method not supported");
-				}
-
-				String target;
-				try {
-//					System.out.println("Coagulate.NioFileServer.HttpFileHandler.handleInternal() - about to decode");
-					target = request.getRequestLine().getUri().replaceAll(".width.*", "").replace("%20", " ");
-//					target = urlDecoder.decode(request.getRequestLine().getUri());
-				} catch (Exception e) {
-					
-					response.setStatusCode(HttpStatus.SC_FORBIDDEN);
-					NStringEntity entity = new NStringEntity(
-							e.getStackTrace().toString(), ContentType.create(
-									"text/html", "UTF-8"));
-					response.setEntity(entity);
-//					System.out.println("Coagulate.NioFileServer.HttpFileHandler.handleInternal() - failed to decode");
-					return;
-//					throw new RuntimeException(e);
-				}//, "UTF-8");//.replaceAll(".width.*", "").replace("%20", " ");
-				
-				final File file = Paths.get(URLDecoder.decode(target, "UTF-8")).toFile();// ,
-//																 URLDecoder.decode(target,
-//																 "UTF-8"));
-				System.out.println("NHttpFileServer.HttpFileHandler.handleInternal() - serving "
-						+ file.getAbsolutePath());
-				if (!file.canRead()) {
-					throw new RuntimeException("cannot read");
-				}
-				if (!file.exists()) {
-
-					response.setStatusCode(HttpStatus.SC_NOT_FOUND);
-					NStringEntity entity = new NStringEntity("<html><body><h1>File"
-							+ file.getPath() + " not found</h1></body></html>", ContentType.create(
-							"text/html", "UTF-8"));
-					response.setEntity(entity);
-					System.out.println("File " + file.getPath() + " not found");
-
-				} else if (!file.canRead() || file.isDirectory()) {
-
-					response.setStatusCode(HttpStatus.SC_FORBIDDEN);
-					NStringEntity entity = new NStringEntity(
-							"<html><body><h1>Access denied</h1></body></html>", ContentType.create(
-									"text/html", "UTF-8"));
-					response.setEntity(entity);
-					System.out.println("Cannot read file " + file.getPath());
-
-				} else {
-
-					HttpCoreContext coreContext = HttpCoreContext.adapt(context);
-					HttpConnection conn = coreContext.getConnection(HttpConnection.class);
-					response.setStatusCode(HttpStatus.SC_OK);
-					NFileEntity body = new NFileEntity(file, ContentType.create("image/jpeg"));
-					response.setEntity(body);
-					System.out.println(conn.toString() + ": serving file " + file.getPath());
-				}
-			}
 		}
 	}
 
@@ -1975,23 +2013,14 @@ public class Coagulate {
 			}
 		}
 
-	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
+	public static void main(String[] args) throws URISyntaxException, IOException {
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
-			NioFileServer.startServer(4452);
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.exit(-1);
-		}
-		try {
-//			System.out.println(Paths.get("/Unsorted/Videos/Atletico/1990s/_thumbnails/Juan Carlos Valerón - FIFA Futbol Mundial.mp4.jpg").toAbsolutePath());
 			JdkHttpServerFactory.createHttpServer(new URI(
 					"http://localhost:4451/"), new ResourceConfig(
 					MyResource.class));
 		} catch (Exception e) {
-			e.printStackTrace();
 			System.out.println("Port already listened on.");
-			System.exit(-1);
 		}
 	}
 }
