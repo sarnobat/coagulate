@@ -1,6 +1,8 @@
 import static com.google.common.base.Predicates.not;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -11,12 +13,10 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
-import java.net.BindException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.DirectoryStream.Filter;
@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
 import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -59,7 +58,6 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.net.URLCodec;
 import org.apache.commons.imaging.ImageReadException;
 import org.apache.commons.imaging.Imaging;
@@ -78,14 +76,11 @@ import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.MethodNotSupportedException;
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.entity.ContentType;
-import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.nio.bootstrap.HttpServer;
 import org.apache.http.impl.nio.bootstrap.ServerBootstrap;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
-import org.apache.http.nio.entity.NFileEntity;
 import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.nio.protocol.BasicAsyncRequestConsumer;
 import org.apache.http.nio.protocol.BasicAsyncResponseProducer;
@@ -1380,32 +1375,40 @@ public class Coagulate {
 									"text/html", "UTF-8"));
 					response.setEntity(entity);
 					System.out.println("Cannot read file " + file.getPath());
-
 				} else {
-
-					HttpCoreContext coreContext = HttpCoreContext.adapt(context);
-					HttpConnection conn = coreContext.getConnection(HttpConnection.class);
 					response.setStatusCode(HttpStatus.SC_OK);
-					
-					
 					serveFileStreaming(response, file);
-					
-//					NFileEntity body = new NFileEntity(file, ContentType.create("image/jpeg"));
-//					response.setEntity(body);
-					System.out.println(conn.toString() + ": serving file " + file.getPath());
 				}
 			}
 
 			private static void serveFileStreaming(final HttpResponse response, File file) {
-				InputStream fis;
 				try {
-					fis = new FileInputStream(file);
+					final InputStream fis = new FileInputStream(file);
+					System.out
+							.println("Coagulate.NioFileServer.HttpFileHandler.serveFileStreaming() - about to copy");
 
-//					PipedOutputStream pos = new PipedOutputStream();
-//					PipedInputStream pis = new PipedInputStream(pos);
-					
-//					net.coobird.thumbnailator.Thumbnailator.createThumbnail(fis, pos, 50, 50);
-					HttpEntity body = new InputStreamEntity(fis, ContentType.create("image/jpeg"));
+					// Works
+					final PipedOutputStream out = new PipedOutputStream();
+					PipedInputStream pis = new PipedInputStream(out);
+					try {
+						new Thread() {
+							@Override
+							public void run() {
+								try {
+									// This actually slows down throughput, but the memory footprint on the client side is lower.
+									net.coobird.thumbnailator.Thumbnailator.createThumbnail(fis,
+											out, 250, 250);
+									fis.close();
+									out.close();
+								} catch (IOException e) {
+									e.printStackTrace();
+								}
+							}
+						}.start();
+
+					} finally {
+					}
+					HttpEntity body = new InputStreamEntity(pis, ContentType.create("image/jpeg"));
 					response.setEntity(body);
 				} catch (FileNotFoundException e) {
 					e.printStackTrace();
@@ -1414,8 +1417,6 @@ public class Coagulate {
 				}
 			}
 		}
-		
-		
 	}
 
 	private static class FileServerGroovy {
