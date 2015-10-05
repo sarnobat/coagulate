@@ -1,8 +1,6 @@
 import static com.google.common.base.Predicates.not;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -58,7 +56,6 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
-import org.apache.commons.codec.net.URLCodec;
 import org.apache.commons.imaging.ImageReadException;
 import org.apache.commons.imaging.Imaging;
 import org.apache.commons.imaging.common.IImageMetadata;
@@ -69,7 +66,6 @@ import org.apache.commons.imaging.formats.tiff.constants.TiffTagConstants;
 import org.apache.commons.imaging.formats.tiff.taginfos.TagInfo;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.http.ExceptionLogger;
-import org.apache.http.HttpConnection;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
@@ -88,7 +84,6 @@ import org.apache.http.nio.protocol.HttpAsyncExchange;
 import org.apache.http.nio.protocol.HttpAsyncRequestConsumer;
 import org.apache.http.nio.protocol.HttpAsyncRequestHandler;
 import org.apache.http.protocol.HttpContext;
-import org.apache.http.protocol.HttpCoreContext;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.sshd.ClientSession;
 import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
@@ -405,13 +400,13 @@ public class Coagulate {
 		@GET
 		@javax.ws.rs.Path("list")
 		@Produces("application/json")
-		public Response list(@QueryParam("dirs") String iDirectoryPathsString, @QueryParam("limit") String iLimit)
+		public Response list(@QueryParam("dirs") String iDirectoryPathsString, @QueryParam("limit") String iLimit, @QueryParam("depth") Integer iDepth)
 				throws JSONException, IOException {
-			System.out.println("list() - begin: " + iDirectoryPathsString);
+			System.out.println("list() - begin: " + iDirectoryPathsString + ", depth = " + iDepth);
 			try {
 				// To create JSONObject, do new JSONObject(aJsonObject.toString). But the other way round I haven't figured out
 				JsonObject response = RecursiveLimitByTotal2.getDirectoryHierarchies(
-								iDirectoryPathsString, Integer.parseInt(iLimit));
+								iDirectoryPathsString, Integer.parseInt(iLimit), iDepth);
 				System.out.println("list() - end");
 				return Response.ok().header("Access-Control-Allow-Origin", "*")
 						.entity(response.toString()).type("application/json")
@@ -428,23 +423,23 @@ public class Coagulate {
 
 	private static class RecursiveLimitByTotal2 {
 
-		static JsonObject getDirectoryHierarchies(String iDirectoryPathsString, int iLimit) {
+		static JsonObject getDirectoryHierarchies(String iDirectoryPathsString, int iLimit, Integer iDepth) {
 			JsonObject response = Json
 					.createObjectBuilder()
 					.add("itemsRecursive",
 							createFilesJsonRecursive(
 									iDirectoryPathsString.split("\\n"), 
-									iLimit))
+									iLimit, iDepth))
 					.build();
 			return response;
 		}
 
-		private static JsonObject createFilesJsonRecursive(String[] iDirectoryPaths, int iLimit) {
+		private static JsonObject createFilesJsonRecursive(String[] iDirectoryPaths, int iLimit, Integer iDepth) {
 			Set<DirPair> dirPairs1 = swoopRepeatedlyUntilLimitExceeded(new HashSet<DirPair>(),
-					iDirectoryPaths, iLimit);
+					iDirectoryPaths, iLimit, iDepth);
 			// For sort mode
 			Map<String, Map<String, FileObj>> moreFilesAtTopLevel = getFilesInDirImmediate(iDirectoryPaths, iLimit);
-			Set<DirPair> dirPairs = addExtraFiles(dirPairs1, moreFilesAtTopLevel);
+			Set<DirPair> dirPairs = addExtraFiles(dirPairs1, moreFilesAtTopLevel, iDepth);
 			JsonObjectBuilder json = Json.createObjectBuilder();
 			for (DirPair p : dirPairs) {
 				// TODO: ensure we aren't overwriting existing key data 
@@ -513,7 +508,7 @@ public class Coagulate {
 		};
 		
 		private static Set<DirPair> addExtraFiles(Set<DirPair> dirPairs,
-				Map<String, Map<String, FileObj>> moreFilesAtTopLevel) {
+				Map<String, Map<String, FileObj>> moreFilesAtTopLevel, Integer iDepth) {
 			ImmutableSet.Builder<DirPair> ret = ImmutableSet.builder();
 			for (DirPair dirPair : dirPairs) {
 				Map<String, FileObj> newFiles = moreFilesAtTopLevel.get(dirPair.getDirPath());
@@ -544,12 +539,12 @@ public class Coagulate {
 			return build;
 		}
 
-		private static Set<DirPair> swoopRepeatedlyUntilLimitExceeded(Set<DirPair> dirPairsAccumulated, String[] iDirectoryPaths, int iLimit) {
+		private static Set<DirPair> swoopRepeatedlyUntilLimitExceeded(Set<DirPair> dirPairsAccumulated, String[] iDirectoryPaths, int iLimit, Integer iDepth) {
 			if (iLimit < 1) {
 				return dirPairsAccumulated;
 			}
 			Set<DirPair> dirPairs = FluentIterable.from(ImmutableList.copyOf(iDirectoryPaths))
-					.transform(new PathToDirPair(getFilesAlreadyObtained(dirPairsAccumulated)))
+					.transform(new Coagulate.RecursiveLimitByTotal2.PathToDirPair(getFilesAlreadyObtained(dirPairsAccumulated, iDepth), iDepth.intValue()))
 					.toSet();
 			int filesObtained = countFiles(dirPairs);
 			int newLimit = iLimit - filesObtained;
@@ -558,19 +553,20 @@ public class Coagulate {
 			}
 			return swoopRepeatedlyUntilLimitExceeded(
 					mergeDirectoryHierarchies(dirPairsAccumulated, dirPairs), iDirectoryPaths,
-					newLimit);
+					newLimit, iDepth);
 		}
 		
-		private static Set<String> getFilesAlreadyObtained(Set<DirPair> dirPairsAccumulated) {
+		private static Set<String> getFilesAlreadyObtained(Set<DirPair> dirPairsAccumulated, Integer iDepth) {
 			ImmutableSet.Builder<String> builder = ImmutableSet.builder();
 			for(DirPair p : dirPairsAccumulated) {
-				builder.addAll(getFilesInDir(p.getDirObj()));
+				builder.addAll(getFilesInDir(p.getDirObj(), iDepth));
 			}
 			return builder.build();
 		}
 
-		private static Set<String> getFilesInDir(DirObj iDirObj) {
+		private static Set<String> getFilesInDir(DirObj iDirObj, Integer iDepth) {
 			Set<String> keysInShard = new HashSet<String>();
+			// TODO : why is this done twice?
 			keysInShard.addAll(iDirObj.getFiles().keySet());
 			keysInShard.addAll(iDirObj.getFiles().keySet());
 
@@ -716,13 +712,15 @@ public class Coagulate {
 		private static class PathToDirPair implements Function<String, DirPair> {
 
 			private final Set<String> _filesAlreadyObtained;
-			PathToDirPair (Set<String> filesAlreadyObtained) {
+			private final int depth;
+			PathToDirPair (Set<String> filesAlreadyObtained, int iDepth) {
 				_filesAlreadyObtained = ImmutableSet.copyOf(filesAlreadyObtained);
+				depth = iDepth;
 			}
 
 			@Override
 			public DirPair apply(String input) {
-				DirObj dirObj = new PathToDirObj(_filesAlreadyObtained).apply(input);
+				DirObj dirObj = new PathToDirObj(_filesAlreadyObtained, depth).apply(input);
 				return new DirPair(input, dirObj);
 			}
 		}
@@ -730,8 +728,10 @@ public class Coagulate {
 		private static class PathToDirObj implements Function<String, DirObj> {
 			
 			private final Set<String> _filesAlreadyObtained;
-			PathToDirObj (Set<String> filesAlreadyObtained) {
+			private final int depth;
+			PathToDirObj (Set<String> filesAlreadyObtained, int iDepth) {
 				_filesAlreadyObtained = ImmutableSet.copyOf(filesAlreadyObtained);
+				depth = iDepth;
 			}
 			
 			@Override
@@ -739,7 +739,7 @@ public class Coagulate {
 				JsonObject j;
 				try {
 					j = dipIntoDirRecursive(Paths.get(dirPath), 1, _filesAlreadyObtained, 0,
-							100000, 0, false);
+							100000, 0, false, depth);
 				} catch (CannotDipIntoDirException e) {
 					throw new RuntimeException(e);
 				}
@@ -749,7 +749,7 @@ public class Coagulate {
 			
 			private static JsonObject dipIntoDirRecursive(Path iDirectoryPath, int filesPerLevel,
 					Set<String> filesToIgnore, int maxDepth, int iLimit, int dipNumber,
-					boolean isTopLevel) throws CannotDipIntoDirException {
+					boolean isTopLevel, int depth) throws CannotDipIntoDirException {
 				JsonObjectBuilder dirHierarchyJson = Json.createObjectBuilder();
 				Set<String> filesToIgnoreAtLevel = new HashSet<String>();
 				// Sanity check
@@ -766,15 +766,19 @@ public class Coagulate {
 					dirHierarchyJson.add(e.getKey(), e.getValue());
 				}
 				// For ALL subdirectories, recurse
-				try {
-					JsonObjectBuilder dirsJson = Json.createObjectBuilder();
-					for (Path p : getSubPaths(iDirectoryPath, Predicates.IS_DIRECTORY)) {
-						JsonObject contentsRecursive = dipIntoDirRecursive(p, filesPerLevel, filesToIgnore, --maxDepth, iLimit, ++dipNumber, false);
-						dirsJson.add(p.toAbsolutePath().toString(),contentsRecursive);
+				if (depth > 0) {
+					try {
+						JsonObjectBuilder dirsJson = Json.createObjectBuilder();
+						for (Path p : getSubPaths(iDirectoryPath, Predicates.IS_DIRECTORY)) {
+							JsonObject contentsRecursive = dipIntoDirRecursive(p, filesPerLevel,
+									filesToIgnore, --maxDepth, iLimit, ++dipNumber, false,
+									depth - 1);
+							dirsJson.add(p.toAbsolutePath().toString(), contentsRecursive);
+						}
+						dirHierarchyJson.add("dirs", dirsJson.build());
+					} catch (IOException e) {
+						e.printStackTrace();
 					}
-					dirHierarchyJson.add("dirs", dirsJson.build());
-				} catch (IOException e) {
-					e.printStackTrace();
 				}
 				JsonObject build = dirHierarchyJson.build();
 				return build;
@@ -1272,7 +1276,6 @@ public class Coagulate {
 
 	/** Based on Apache Commons NIO's NHttpFileServer sample */
 	private static class NioFileServer {
-		private static final URLCodec urlDecoder = new URLCodec();
 		static void startServer(int port) throws NoSuchAlgorithmException,
 				KeyManagementException, KeyStoreException, UnrecoverableKeyException,
 				CertificateException, IOException, InterruptedException {
@@ -1350,7 +1353,7 @@ public class Coagulate {
 //					throw new RuntimeException(e);
 				}//, "UTF-8");//.replaceAll(".width.*", "").replace("%20", " ");
 				
-				final File file = Paths.get(URLDecoder.decode(target, "UTF-8")).toFile();// ,
+				final File file = Paths.get(URLDecoder.decode(target, "UTF-8").replace("/_ 1", "/_+1")).toFile();// ,
 //																 URLDecoder.decode(target,
 //																 "UTF-8"));
 				System.out.println("NHttpFileServer.HttpFileHandler.handleInternal() - serving "
@@ -1384,37 +1387,46 @@ public class Coagulate {
 			private static void serveFileStreaming(final HttpResponse response, File file) {
 				try {
 					final InputStream fis = new FileInputStream(file);
-					System.out
-							.println("Coagulate.NioFileServer.HttpFileHandler.serveFileStreaming() - about to copy");
-
-					// Works
-					final PipedOutputStream out = new PipedOutputStream();
-					PipedInputStream pis = new PipedInputStream(out);
-					try {
-						new Thread() {
-							@Override
-							public void run() {
-								try {
-									// This actually slows down throughput, but the memory footprint on the client side is lower.
-									net.coobird.thumbnailator.Thumbnailator.createThumbnail(fis,
-											out, 250, 250);
-									fis.close();
-									out.close();
-								} catch (IOException e) {
-									e.printStackTrace();
-								}
-							}
-						}.start();
-
-					} finally {
-					}
-					HttpEntity body = new InputStreamEntity(pis, ContentType.create("image/jpeg"));
+//					PipedInputStream pis = createThumbnail(fis);
+					HttpEntity body = new InputStreamEntity(fis, ContentType.create("image/jpeg"));
 					response.setEntity(body);
 				} catch (FileNotFoundException e) {
 					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
 				}
+//				catch (IOException e) {
+//					e.printStackTrace();
+//				}
+			}
+
+			// This actually slows down throughput, but the memory footprint on the client side is lower.
+			@SuppressWarnings("unused")
+			private static PipedInputStream createThumbnail(final InputStream fis)
+					throws IOException {
+				System.out
+						.println("Coagulate.NioFileServer.HttpFileHandler.serveFileStreaming() - about to copy");
+
+				// Works
+				final PipedOutputStream out = new PipedOutputStream();
+				PipedInputStream pis = new PipedInputStream(out);
+				try {
+					new Thread() {
+						@Override
+						public void run() {
+							try {
+
+								net.coobird.thumbnailator.Thumbnailator.createThumbnail(fis,
+										out, 250, 250);
+								fis.close();
+								out.close();
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+						}
+					}.start();
+
+				} finally {
+				}
+				return pis;
 			}
 		}
 	}

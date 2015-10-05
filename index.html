@@ -20,6 +20,7 @@ var limit;
 var limitRoot = 200;
 var preDirLimit;
 var pairs;
+var depth;
 
 $(function() {
 	$( "#tabs" ).tabs();
@@ -31,7 +32,7 @@ $(document).ready(function(){
 
 	updateURLIfEmpty();
 
-	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()) + "&limit=" + limit,function(response) {
+	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()) + "&limit=" + limit + "&depth=" + depth,function(response) {
 	        $('#status').append("File list obtained. Creating tags...");
 		$('#items').empty();
 		addSubdirLinks(response);
@@ -120,10 +121,16 @@ function updateURLIfEmpty() {
 
   	limit = $.url().param('limit');
 	if (limit == null) {
-			limit = 20;
+			limit = 100;
 			window.history.pushState("object or string", "Title", document.URL + "&limit=" + limit);
 	}
 	preDirLimit = limit;
+	
+	depth = $.url().param('depth');
+	if (depth == null) {
+			depth = 1;
+			window.history.pushState("object or string", "Title", document.URL + "&depth=" + depth);
+	}
 }
 
 function updateURL() {
@@ -369,7 +376,13 @@ function printDirsRecursive(dirItems, response, idIn, iLimit, loadImmediate) {
 				if (id > iLimit) {
 //					continue;
 				}
-				html += createThumbnailItemHtml("", filesInDir[filepath], loadImmediate);
+				var height = 80;
+				if (categoryName1 == '_-1' || categoryName1 == 'back' || categoryName1 == 'duplicates' || categoryName1 == 'not good' || categoryName1 == 'small') {
+					height = 40;
+				} else if (categoryName1 == '_+1') {
+					height = 140;
+				}
+				html += createThumbnailItemHtml("", filesInDir[filepath], loadImmediate, height);
 				html += "\n\n";
 			}
 		}
@@ -386,8 +399,9 @@ function printDirsRecursive(dirItems, response, idIn, iLimit, loadImmediate) {
 	return html;
 }
 
+// reduction function and regular function
 // No buttons
-function createThumbnailItemHtml(accumulator, fileObj, loadImmediate) {	
+function createThumbnailItemHtml(accumulator, fileObj, loadImmediate, size) {	
 	
 	var fileSystem = fileObj.fileSystem;
 	
@@ -403,7 +417,10 @@ function createThumbnailItemHtml(accumulator, fileObj, loadImmediate) {
 
 		var widthInt = 250;
 		var width = widthInt + "px";
-		var height = "100px";
+		var height = size;
+		if (size == null) {
+			height = 100;
+		}
 		
 		// Images
 		{
@@ -418,9 +435,9 @@ function createThumbnailItemHtml(accumulator, fileObj, loadImmediate) {
 				// easier mass sorting. But it's not as nice to view.
 				// The server-side thumbnailator reorients the image correctly
 				if (loadImmediate) {
-					toBeAppended += '\t\t\t<img src="' + encodeURI(httpUrl) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'" class="myimage" />\n';
+					toBeAppended += '\t\t\t<img src="' + encodeURI(httpUrl) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'px" class="myimage" />\n';
 				} else {
-					toBeAppended += '\t\t\t<img src="http://netgear.rohidekar.com/static/icons/Orb_Icons_001.png" data-src="' + encodeURI(httpUrl + "?width=" + widthInt) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'" class="myimage" />\n';
+					toBeAppended += '\t\t\t<img src="http://netgear.rohidekar.com/static/icons/Orb_Icons_001.png" data-src="' + encodeURI(httpUrl + "?width=" + widthInt) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'px" class="myimage" />\n';
 				}
 				//data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
 				toBeAppended += '\t</a>\n';
@@ -431,14 +448,14 @@ function createThumbnailItemHtml(accumulator, fileObj, loadImmediate) {
 			var matchesVideo = fileSystem.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi)|(mts))/gi);
 			if (matchesVideo != null) {
 				var simpleName = fileObj.httpUrl.split('/').pop();
-				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height="'+height+'" title="'+ simpleName +'">';
+				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height="'+height+'px" title="'+ simpleName +'">';
 			}
 		}
 		// PDFs
 		{
 			var matchesVideo = fileSystem.match(/.*((pdf)|(tif))/gi);
 			if (matchesVideo != null) {
-				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height='+height+'>';
+				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height="'+height+'px">';
 			}
 		}
 		toBeAppended = "<span id='thumbnail-"+fileSystem+"'>\n" + toBeAppended;
