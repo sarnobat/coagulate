@@ -543,10 +543,13 @@ public class Coagulate {
 			if (iLimit < 1) {
 				return dirPairsAccumulated;
 			}
+			// For each dir path, we ultimately call {@link PathToDirObj#dipIntoDirRecursive}
 			Set<DirPair> dirPairs = FluentIterable.from(ImmutableList.copyOf(iDirectoryPaths))
-					.transform(new Coagulate.RecursiveLimitByTotal2.PathToDirPair(getFilesAlreadyObtained(dirPairsAccumulated, iDepth), iDepth.intValue()))
+					.transform(new PathToDirPair(getFilesAlreadyObtained(dirPairsAccumulated, iDepth), iDepth.intValue()))
 					.toSet();
 			int filesObtained = countFiles(dirPairs);
+			System.out
+					.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() - filesObtained = " + filesObtained);
 			int newLimit = iLimit - filesObtained;
 			if (filesObtained == 0) {
 				return dirPairsAccumulated;
@@ -766,18 +769,22 @@ public class Coagulate {
 					dirHierarchyJson.add(e.getKey(), e.getValue());
 				}
 				// For ALL subdirectories, recurse
-				if (depth > 0) {
-					try {
-						JsonObjectBuilder dirsJson = Json.createObjectBuilder();
-						for (Path p : getSubPaths(iDirectoryPath, Predicates.IS_DIRECTORY)) {
-							JsonObject contentsRecursive = dipIntoDirRecursive(p, filesPerLevel,
-									filesToIgnore, --maxDepth, iLimit, ++dipNumber, false,
-									depth - 1);
+
+				if (depth >= 0) {
+				try {
+					JsonObjectBuilder dirsJson = Json.createObjectBuilder();
+					for (Path p : getSubPaths(iDirectoryPath, Predicates.IS_DIRECTORY)) {
+						JsonObject contentsRecursive = dipIntoDirRecursive(p, filesPerLevel,
+								filesToIgnore, --maxDepth, iLimit, ++dipNumber, false, depth - 1);
+						if (depth > 0) {
 							dirsJson.add(p.toAbsolutePath().toString(), contentsRecursive);
+						} else {
+							dirsJson.add(p.toAbsolutePath().toString(), Json.createObjectBuilder().build());
 						}
-						dirHierarchyJson.add("dirs", dirsJson.build());
-					} catch (IOException e) {
-						e.printStackTrace();
+					}
+					dirHierarchyJson.add("dirs", dirsJson.build());
+				} catch (IOException e) {
+	e.printStackTrace();
 					}
 				}
 				JsonObject build = dirHierarchyJson.build();
@@ -812,6 +819,8 @@ public class Coagulate {
 			private static ImmutableMap<String, JsonObject> getFilesInsideDir(Path iDirectoryPath,
 					int filesPerLevel, Set<String> filesToIgnore, int iLimit,
 					Set<String> filesToIgnoreAtLevel) {
+//				System.out
+//						.println("Coagulate.RecursiveLimitByTotal2.PathToDirObj.getFilesInsideDir() - " + iDirectoryPath);
 				ImmutableMap.Builder<String, JsonObject> filesInDir = ImmutableMap.builder();
 				// Get one leaf node
 				try {
