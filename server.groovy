@@ -884,7 +884,7 @@ public class Coagulate {
 						ret.put(path, new DirObj(fileJson, path));
 					}
 				} else {
-					System.out.println("Coagulate.RecursiveLimitByTotal.DirObj.getDirs() - no subdirs" );
+//					System.out.println("Coagulate.RecursiveLimitByTotal.DirObj.getDirs() - no subdirs" );
 				}
 				return ret.build();
 			}
