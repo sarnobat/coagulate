@@ -981,7 +981,8 @@ public class Coagulate {
 
 		private static String httpLinkFor(String iAbsolutePath) {
 //			String prefix = "http://netgear.rohidekar.com:4451/cmsfs/static4/";
-			String prefix = "http://netgear.rohidekar.com:4452";
+			int fsPort = port + 1;
+			String prefix = "http://netgear.rohidekar.com:" + fsPort;
 			if (iAbsolutePath.contains("Coru")) {
 //				try {
 //					System.out.println("Coagulate.Mappings.httpLinkFor() " + URLEncoder.encode(iAbsolutePath, "UTF-8"));
@@ -2074,6 +2075,7 @@ public class Coagulate {
 			}
 		}
 
+private static final int port = 4451;
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
@@ -2085,7 +2087,7 @@ public class Coagulate {
 		try {
 //			System.out.println(Paths.get("/Unsorted/Videos/Atletico/1990s/_thumbnails/Juan Carlos Valerón - FIFA Futbol Mundial.mp4.jpg").toAbsolutePath());
 			JdkHttpServerFactory.createHttpServer(new URI(
-					"http://localhost:4451/"), new ResourceConfig(
+					"http://localhost:" + port + "/"), new ResourceConfig(
 					MyResource.class));
 		} catch (Exception e) {
 			e.printStackTrace();
