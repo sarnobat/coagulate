@@ -208,7 +208,7 @@ function dirObjToHtmlWithButtons(val, dir) {
 	html += "<tr><td><span id='level-" + level +"'>";
 
 	html += "<h3>" + dirName + "</h3>";
-	html += "<textarea>" + dir + "</textarea>";
+	html += "<textarea cols='100' rows='1'>" + dir + "</textarea>";
 	html += "<br>";
 	var pairs = toPairs(val);
 	var files2 = preDirLimit;
