@@ -510,7 +510,8 @@ function createItemHtml(response, item, key, unused, fileObj, subDirs)
 	var localLink = "<a href=\"file://" + fileObj.fileSystem.toString() +"\">" + "Local Link" + "</a>";
 
 
-	var idstring = "card-" + fileObj.fileSystem;	
+	var idstringUnescaped = "card-" + fileObj.fileSystem;	
+	var idstring = idstringUnescaped.replace(/'/g, "&apos;");
 	id += 1;
 	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
 		+ image + "<td><td>"+createButtonsPanel(item, subDirs, key, idstring)
@@ -530,7 +531,11 @@ function createButtonsPanel(item, subdirs, key, idstring) {
 	var buttons = "<table><tr><td>";							
 	{
 		var escaped = item.replace(/'/g, "&apos;");
-		buttons += "<button onclick='moveFileToParent(\"" + escaped + "\",\""+idstring+"\")'>Wrong Category</button><br>";
+		var idstringescaped = idstring.replace(/'/g, "&apos;");
+//		if (idstring.indexOf("'") > -1) {
+//			alert(idstringescaped);
+//		}
+		buttons += "<button onclick='moveFileToParent(\"" + escaped + "\",\""+idstringescaped+"\")'>Wrong Category</button><br>";
 		var subdirsArray = Object.keys(subdirs).sort(sortFunction);
 		{
 			var buttonsAdded = 0;
@@ -541,14 +546,14 @@ function createButtonsPanel(item, subdirs, key, idstring) {
 				}
 				var dirPath = subdirsArray[dir];				
 				var dirName = dirPath.substr(dirPath.lastIndexOf('/') + 1);
-				buttons += "<button onmousedown='this.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstring+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
+				buttons += "<button onmousedown='this.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstringescaped+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
 			}
 		}
 	}
 	buttons += "<br>";
-	buttons += "<button onclick='moveToNonExistingFolder(this,\"" +escaped+"\",\""+dirName+"\",\""+idstring+"\")'>MOVE to custom</button><br>";
+	buttons += "<button onclick='moveToNonExistingFolder(this,\"" +escaped+"\",\""+dirName+"\",\""+idstringescaped+"\")'>MOVE to custom</button><br>";
 	buttons += "<br>";
-	buttons += "<button onclick='copyFileToFolder(\"" + escaped + "\", \"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/favorites\",\""+idstring+"\", this)'>COPY TO favorites</button><br>";
+	buttons += "<button onclick='copyFileToFolder(\"" + escaped + "\", \"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/favorites\",\""+idstringescaped+"\", this)'>COPY TO favorites</button><br>";
 	buttons += "</td></tr></table>";
 	return buttons;
 }
