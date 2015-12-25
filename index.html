@@ -404,7 +404,8 @@ function printDirsRecursive(dirItems, response, idIn, iLimit, loadImmediate) {
 function createThumbnailItemHtml(accumulator, fileObj, loadImmediate, size) {	
 	
 	var fileSystem = fileObj.fileSystem;
-	
+
+	// File types to ignore	
 	var res = fileSystem.match(/.*\.((txt)|(lnk))/gi);
 	if (res != null) {
 		return;
@@ -630,7 +631,7 @@ function fileToHtmlParameterized(subdirs) {
 		var fileObj = filePair[filePath];
 	
 	
-		if (fileObj.fileSystem.match(/.*(nohup.out$|Thumbs.db|[pP]icasa.ini)/)) {
+		if (fileObj.fileSystem.match(/.*(img|nohup.out$|Thumbs.db|[pP]icasa.ini)/)) {
 			ret += "";
 		} else {
 			var dirPath = filePath.substring(0, filePath.lastIndexOf("/"));
