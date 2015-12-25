@@ -80,7 +80,8 @@ $(document).ready(function(){
 });
 
 function reRender() {
-	pairs = shuffle(pairs);
+	//pairs = shuffle(pairs);
+	//pairs = shuffle(pairs);
 	reRenderCards();
 	loadImagesSequentially(0);
 }
@@ -92,7 +93,21 @@ function reRenderCards() {
 	$('#itemsNew').append(html);
 }
 
+// descending
+function BY_CREATED(a, b) {
+
+  if (a[Object.keys(a)[0]].created < b[Object.keys(b)[0]].created ) {
+    return -1;
+  }
+  if (a[Object.keys(a)[0]].created > b[Object.keys(b)[0]].created ) {
+    return 1;
+  }
+  // a must be equal to b
+  return 0;
+}
+
 function shuffle(array) {
+  alert('broken after ordering by timestamp');
   var currentIndex = array.length, temporaryValue, randomIndex ;
 
   // While there remain elements to shuffle...
@@ -517,13 +532,21 @@ function createItemHtml(response, item, key, unused, fileObj, subDirs)
 	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
 		+ image + "<td><td>"+createButtonsPanel(item, subDirs, key, idstring)
 		+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
-		+ decodeURIComponent(item)
+		+ decodeURIComponent(item) + '\n'  + prettyDate(new Date(fileObj.created)) + '\n' + fileObj.created
 		+"</textarea></td>"
 		+ "<td><a href='" +fileObj.httpUrl+"'>" + fileObj.httpUrl + "</a><br>" +localLink
 		+ "<br><br>"+fileObj.thumbnailUrl + "</td></tr></table></td></tr>";
 
 	return toBeAppended;
 }
+
+function prettyDate(date) {
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    return date.getUTCFullYear() +  months[date.getUTCMonth()] + ' ' + date.getUTCDate();
+}
+
 
 // item = filepath
 // key = dirpath
@@ -616,7 +639,8 @@ function dirToHtmlCards(dirObj) {
 	var html = "";
 	//console.debug(dirObj);
 	var dir = Object.keys(dirObj);
-	var files = shuffle(toPairs(dirObj[dir])).slice(0, limitRoot).filter(filesOnly);
+	//var files = shuffle(toPairs(dirObj[dir])).slice(0, limitRoot).filter(filesOnly);
+	var files = toPairs(dirObj[dir]).slice(0, limitRoot).filter(filesOnly).sort(BY_CREATED).reverse();
 	var subdirs = dirObj[dir].dirs;
 	html += files.map(fileToHtmlParameterized(subdirs)).join('');
 	return html;

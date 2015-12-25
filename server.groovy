@@ -21,6 +21,7 @@ import java.nio.file.DirectoryStream.Filter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -916,6 +917,7 @@ public class Coagulate {
 			@Override
 			public JsonObject apply(Path iPath) {
 //				System.out.print("f");
+				try {
 				return Json
 						.createObjectBuilder()
 						.add("location",
@@ -925,7 +927,11 @@ public class Coagulate {
 						.add("httpUrl",
 								httpLinkFor(iPath.toAbsolutePath().toString()))
 						.add("thumbnailUrl", httpLinkFor(thumbnailFor(iPath)))
+						.add("created", Files.readAttributes(iPath, BasicFileAttributes.class).creationTime().toMillis())
 						.build();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
 			}
 		};
 
