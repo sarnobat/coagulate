@@ -21,6 +21,7 @@ import java.nio.file.DirectoryStream.Filter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -117,16 +118,8 @@ public class Coagulate {
 	
 		public MyResource() {
 			System.out.println("Coagulate.MyResource.MyResource()");
-//			try {
-//				NioFileServer.startServer(4452);
-////			} catch (BindException e) {
-//				// Server already running. Let the outer code fail
-//			} 
-//			catch (Exception e) {
-//				throw new RuntimeException(e);
-//			}
-//			System.out.println("Coagulate.MyResource.MyResource() - File server started");
 		}
+
 		//
 		// mutators
 		//
@@ -170,48 +163,6 @@ public class Coagulate {
 				"/media/sarnobat/Record/Videos_Home/Home Video/home movies (high-definition)/",
 				"/media/sarnobat/3TB/jungledisk_sync_final/sync3/jungledisk_sync_final/misc");
 
-//		private static void handle2(final HttpRequest request, final HttpResponse response,
-//				final HttpContext context) throws UnsupportedEncodingException {
-//			String target;
-//			try {
-//				target = request.getRequestLine().getUri().replaceAll(".width.*", "").replace("%20", " ");
-//			} catch (Exception e) {
-//				throw new RuntimeException("handle error cases?");
-//			}
-//			handle3(response, target);
-//		}
-//
-//		private static void handle3(final HttpResponse response, String absolutePath)
-//				throws UnsupportedEncodingException {
-//			File file = Paths.get(URLDecoder.decode(absolutePath, "UTF-8")).toFile();
-//			validateFile(file);
-//			response.setStatusCode(HttpStatus.SC_OK);
-//			serveFileStreaming(response, file);
-//		}
-//
-//		private static void serveFileStreaming(final HttpResponse response, File file) {
-//			InputStream fis;
-//			try {
-//				fis = new FileInputStream(file);
-//
-//				PipedOutputStream pos = new PipedOutputStream();
-//				net.coobird.thumbnailator.Thumbnailator.createThumbnail(fis, pos, 50, 50);
-//				PipedInputStream pis = new PipedInputStream(pos);
-//				HttpEntity body = new InputStreamEntity(pis, ContentType.create("image/jpeg"));
-//				response.setEntity(body);
-//			} catch (FileNotFoundException e) {
-//				e.printStackTrace();
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
-//		}
-
-//		private static void validateFile(final File file) {
-//			if (!file.exists() ||  !file.canRead() || file.isDirectory()) {
-//				throw new RuntimeException("handle error cases?");
-//			}
-//		}
-		
 		@GET
 		@javax.ws.rs.Path("static4/{absolutePath : .+}")
 		@Produces("application/json")
@@ -965,17 +916,24 @@ public class Coagulate {
 		private static final Function<Path, JsonObject> PATH_TO_JSON_ITEM = new Function<Path, JsonObject>() {
 			@Override
 			public JsonObject apply(Path iPath) {
-//				System.out.print("f");
+				long created;
+				try {
+					created = Files.readAttributes(iPath, BasicFileAttributes.class).creationTime().toMillis();
+				} catch (IOException e) {
+					System.err.println("PATH_TO_JSON_ITEM.apply() - " + e.getMessage());
+					created = 0;
+				}
 				return Json
 						.createObjectBuilder()
 						.add("location",
 								iPath.getParent().toFile().getAbsolutePath()
-										.toString())
-						.add("fileSystem", iPath.toAbsolutePath().toString())
-						.add("httpUrl",
-								httpLinkFor(iPath.toAbsolutePath().toString()))
-						.add("thumbnailUrl", httpLinkFor(thumbnailFor(iPath)))
-						.build();
+								.toString())
+								.add("fileSystem", iPath.toAbsolutePath().toString())
+								.add("httpUrl",
+										httpLinkFor(iPath.toAbsolutePath().toString()))
+										.add("thumbnailUrl", httpLinkFor(thumbnailFor(iPath)))
+										.add("created", created)
+										.build();
 			}
 		};
 
@@ -2075,8 +2033,9 @@ public class Coagulate {
 			}
 		}
 
-private static final int port = 4451;
-private static final int fsPort = 4452;
+	private static final int port = 4451;
+	private static final int fsPort = 4452;
+
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
