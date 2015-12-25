@@ -916,29 +916,31 @@ public class Coagulate {
 		private static final Function<Path, JsonObject> PATH_TO_JSON_ITEM = new Function<Path, JsonObject>() {
 			@Override
 			public JsonObject apply(Path iPath) {
-//				System.out.print("f");
+				long created;
 				try {
+					created = Files.readAttributes(iPath, BasicFileAttributes.class).creationTime().toMillis();
+				} catch (IOException e) {
+					System.err.println("PATH_TO_JSON_ITEM.apply() - " + e.getMessage());
+					created = 0;
+				}
 				return Json
 						.createObjectBuilder()
 						.add("location",
 								iPath.getParent().toFile().getAbsolutePath()
-										.toString())
-						.add("fileSystem", iPath.toAbsolutePath().toString())
-						.add("httpUrl",
-								httpLinkFor(iPath.toAbsolutePath().toString()))
-						.add("thumbnailUrl", httpLinkFor(thumbnailFor(iPath)))
-						.add("created", Files.readAttributes(iPath, BasicFileAttributes.class).creationTime().toMillis())
-						.build();
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
+								.toString())
+								.add("fileSystem", iPath.toAbsolutePath().toString())
+								.add("httpUrl",
+										httpLinkFor(iPath.toAbsolutePath().toString()))
+										.add("thumbnailUrl", httpLinkFor(thumbnailFor(iPath)))
+										.add("created", created)
+										.build();
 			}
 		};
 
 		private static String httpLinkFor(String iAbsolutePath) {
 //			String prefix = "http://netgear.rohidekar.com:4451/cmsfs/static4/";
 			int fsPort = port + 1;
-			String prefix = "http://netgear.rohidekar.com:" + fsPort;
+			String prefix = "http://netgear.rohidekar.com:4" + fsPort;
 			if (iAbsolutePath.contains("Coru")) {
 //				try {
 //					System.out.println("Coagulate.Mappings.httpLinkFor() " + URLEncoder.encode(iAbsolutePath, "UTF-8"));
@@ -2031,7 +2033,9 @@ public class Coagulate {
 			}
 		}
 
-private static final int port = 4451;
+	private static final int port = 4451;
+	private static final int fsPort = 4452;
+
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
