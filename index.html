@@ -244,7 +244,7 @@ function dirObjToHtmlWithButtons(val, dir) {
 		html += "<br>";
 		html += "<button onclick='up(\""+filename +"\",\""+id+"\", "+level+")'>+</button>";
 		html += "<button onclick='down(\""+filename +"\",\""+id+"\", "+level+")'>-</button><br>";
-		html += "<button onmousedown='this.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + filename + "\",\"duplicates\",\""+id+"\")' style='background-color:"+getColorForDir(dirName)+"'>duplicates</button><br>";
+		html += "<button onmousedown='this.style.cssText = \"background-color : peachpuff\";' onclick='moveFile(this, \"" + filename + "\",\"duplicates\",\""+id+"\")' style='background-color:"+getColorForDir(dirName)+"'>duplicates</button><br>";
 		html += "</span>";
 		--files2;
 		if (files2 < 1 && !startsWith(dirName, '_+')) {
@@ -722,9 +722,11 @@ function moveFile(button, filePath, destinationDirSimpleName,id) {
 }
 
 function removeImageElement(filePath) {
+		var next = $("[id='card-" + filePath + "']").get(0);
 		$("[id='card-" + filePath + "']").remove();
 		$("[id='thumbnail-" + filePath + "']").remove();
 		$("[id='hoistwithbuttons-" + filePath + "']").remove();
+		next.scrollIntoView();
 }
 
 function sortFunction(a, b) {
