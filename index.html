@@ -47,7 +47,7 @@ $(document).ready(function(){
 			$('#thumbnailItems').append(html);
 			// TODO: write the actual image urls to the new tab link immediately.
 		}
-		// Hoist
+		// Hoist (no buttons)
 		{
 			var html = "";
 			//console.debug(html);
@@ -55,7 +55,7 @@ $(document).ready(function(){
 			html += pairs.map(rootFolderOnly).reduce(DIR_TO_HTML, "");
 			$('#hoist').append(html);
 		}
-		// Hoist (no buttons)
+		// Hoist
 		{
 			var html = "";
 			//console.debug(html);
@@ -234,7 +234,7 @@ function dirObjToHtmlWithButtons(val, dir) {
 			continue;
 		}
 		var fileObj = pair[filename];
-		var id = "hoistwithbuttons-" + hoistButtonId;
+		var id = "hoistwithbuttons-" + filename;
 		++hoistButtonId;
 		html += "<span id='"+id+"' style='float : left' align='left'>";
 		html += "<br>";
@@ -243,7 +243,8 @@ function dirObjToHtmlWithButtons(val, dir) {
 		html += "<br>";
 		html += "<br>";
 		html += "<button onclick='up(\""+filename +"\",\""+id+"\", "+level+")'>+</button>";
-		html += "<button onclick='down(\""+filename +"\",\""+id+"\", "+level+")'>-</button>";
+		html += "<button onclick='down(\""+filename +"\",\""+id+"\", "+level+")'>-</button><br>";
+		html += "<button onmousedown='this.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + filename + "\",\"duplicates\",\""+id+"\")' style='background-color:"+getColorForDir(dirName)+"'>duplicates</button><br>";
 		html += "</span>";
 		--files2;
 		if (files2 < 1 && !startsWith(dirName, '_+')) {
@@ -281,8 +282,9 @@ function down(field,id, currentLevelId) {
 		var targetLevel = currentLevelId - 1;
 		removeImageElement(field);
 		// TODO: handle the case where target level doesn't exist
-		var elem = $("#"+id).remove();
+		var elem = $("#"+field).remove();
 		$("#level-" + targetLevel).append(elem);
+		// TODO: why is this called twice?
 		removeImageElement(field);
     });
 }
@@ -519,7 +521,15 @@ function loadImagesSequentially(i) {
 function createItemHtml(response, item, key, unused, fileObj, subDirs)
 {	
 	var image = fileObjToHtml(fileObj);
-
+	
+	var res1 = fileObj.fileSystem.match(/.*fuse.hidden.*/gi);
+	if (res1 !=null) {
+		return;
+	}
+	var res2 = fileObj.fileSystem.match(/.*aufs/gi);
+	if (res2 !=null) {
+		return;
+	}
 	var width = "250px";
 	var height = "300px";
 	
@@ -529,10 +539,13 @@ function createItemHtml(response, item, key, unused, fileObj, subDirs)
 	var idstringUnescaped = "card-" + fileObj.fileSystem;	
 	var idstring = idstringUnescaped.replace(/'/g, "&apos;");
 	id += 1;
+console.debug(item);
 	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
 		+ image + "<td><td>"+createButtonsPanel(item, subDirs, key, idstring)
 		+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
-		+ decodeURIComponent(item) + '\n'  + prettyDate(new Date(fileObj.created)) + '\n' + fileObj.created
+		+ decodeURIComponent(item) + '\n\n' 
+		+ prettyDate(new Date(fileObj.created)) + '\n' 
+		+ fileObj.created
 		+"</textarea></td>"
 		+ "<td><a href='" +fileObj.httpUrl+"'>" + fileObj.httpUrl + "</a><br>" +localLink
 		+ "<br><br>"+fileObj.thumbnailUrl + "</td></tr></table></td></tr>";
@@ -570,6 +583,11 @@ function createButtonsPanel(item, subdirs, key, idstring) {
 				}
 				var dirPath = subdirsArray[dir];				
 				var dirName = dirPath.substr(dirPath.lastIndexOf('/') + 1);
+				var res1 = dirName.match(/\..*/gi);
+				
+				if (res1 != null) {
+					continue;
+				}
 				buttons += "<button onmousedown='this.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstringescaped+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
 			}
 		}
@@ -582,6 +600,7 @@ function createButtonsPanel(item, subdirs, key, idstring) {
 	return buttons;
 }
 
+// image
 function fileObjToHtml(fileObj) {
 	// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
 	var widthInt = 250;
@@ -681,6 +700,7 @@ function moveFile(button, filePath, destinationDirSimpleName,id) {
 function removeImageElement(filePath) {
 		$("[id='card-" + filePath + "']").remove();
 		$("[id='thumbnail-" + filePath + "']").remove();
+		$("[id='hoistwithbuttons-" + filePath + "']").remove();
 }
 
 function sortFunction(a, b) {
