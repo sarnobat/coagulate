@@ -2050,7 +2050,7 @@ public class Coagulate {
 					"http://localhost:" + port + "/"), new ResourceConfig(
 					MyResource.class));
 		} catch (Exception e) {
-			e.printStackTrace();
+			//e.printStackTrace();
 			System.out.println("Port already listened on.");
 			System.exit(-1);
 		}
