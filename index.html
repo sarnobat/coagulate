@@ -47,7 +47,7 @@ $(document).ready(function(){
 			$('#thumbnailItems').append(html);
 			// TODO: write the actual image urls to the new tab link immediately.
 		}
-		// Hoist
+		// Hoist (no buttons)
 		{
 			var html = "";
 			//console.debug(html);
@@ -55,7 +55,7 @@ $(document).ready(function(){
 			html += pairs.map(rootFolderOnly).reduce(DIR_TO_HTML, "");
 			$('#hoist').append(html);
 		}
-		// Hoist (no buttons)
+		// Hoist
 		{
 			var html = "";
 			//console.debug(html);
@@ -80,7 +80,8 @@ $(document).ready(function(){
 });
 
 function reRender() {
-	pairs = shuffle(pairs);
+	//pairs = shuffle(pairs);
+	//pairs = shuffle(pairs);
 	reRenderCards();
 	loadImagesSequentially(0);
 }
@@ -92,7 +93,21 @@ function reRenderCards() {
 	$('#itemsNew').append(html);
 }
 
+// descending
+function BY_CREATED(a, b) {
+
+  if (a[Object.keys(a)[0]].created < b[Object.keys(b)[0]].created ) {
+    return -1;
+  }
+  if (a[Object.keys(a)[0]].created > b[Object.keys(b)[0]].created ) {
+    return 1;
+  }
+  // a must be equal to b
+  return 0;
+}
+
 function shuffle(array) {
+  alert('broken after ordering by timestamp');
   var currentIndex = array.length, temporaryValue, randomIndex ;
 
   // While there remain elements to shuffle...
@@ -219,7 +234,7 @@ function dirObjToHtmlWithButtons(val, dir) {
 			continue;
 		}
 		var fileObj = pair[filename];
-		var id = "hoistwithbuttons-" + hoistButtonId;
+		var id = "hoistwithbuttons-" + filename;
 		++hoistButtonId;
 		html += "<span id='"+id+"' style='float : left' align='left'>";
 		html += "<br>";
@@ -228,7 +243,8 @@ function dirObjToHtmlWithButtons(val, dir) {
 		html += "<br>";
 		html += "<br>";
 		html += "<button onclick='up(\""+filename +"\",\""+id+"\", "+level+")'>+</button>";
-		html += "<button onclick='down(\""+filename +"\",\""+id+"\", "+level+")'>-</button>";
+		html += "<button onclick='down(\""+filename +"\",\""+id+"\", "+level+")'>-</button><br>";
+		html += "<button onmousedown='this.style.cssText = \"background-color : peachpuff\";' onclick='moveFile(this, \"" + filename + "\",\"duplicates\",\""+id+"\")' style='background-color:"+getColorForDir(dirName)+"'>duplicates</button><br>";
 		html += "</span>";
 		--files2;
 		if (files2 < 1 && !startsWith(dirName, '_+')) {
@@ -266,8 +282,9 @@ function down(field,id, currentLevelId) {
 		var targetLevel = currentLevelId - 1;
 		removeImageElement(field);
 		// TODO: handle the case where target level doesn't exist
-		var elem = $("#"+id).remove();
+		var elem = $("#"+field).remove();
 		$("#level-" + targetLevel).append(elem);
+		// TODO: why is this called twice?
 		removeImageElement(field);
     });
 }
@@ -404,7 +421,8 @@ function printDirsRecursive(dirItems, response, idIn, iLimit, loadImmediate) {
 function createThumbnailItemHtml(accumulator, fileObj, loadImmediate, size) {	
 	
 	var fileSystem = fileObj.fileSystem;
-	
+
+	// File types to ignore	
 	var res = fileSystem.match(/.*\.((txt)|(lnk))/gi);
 	if (res != null) {
 		return;
@@ -485,14 +503,36 @@ function loadImagesSequentially(i) {
 	if (i >= images.length) {
 		return
 	}
-
+//	var imgElem = images[i][0];
+//	var imgElemId = $(images[i]).get(0).id;
 	var imageAttrs = images[i].attributes;
 	var datasrc = $(images[i]).attr('data-src');
 	$(images[i]).attr('src',datasrc);
 	var a = function(j) {
 		loadImagesSequentially(++i);
 	};
-	$(images[i]).load(a(i));
+	$(images[i]).load(a(i), function() {
+		console.debug($( this ).get(0).naturalWidth);
+		console.debug($( this ).get(0).naturalHeight);
+//		if ($( this ).get(0).naturalHeight > 300) {
+//			$( this ).attr('width',  300/$( this ).get(0).naturalHeight * $( this ).get(0).naturalWidth);
+//		}
+		if ($( this ).get(0).height >= $( this ).get(0).width) {
+			console.debug($( this ).get(0));
+			$( this ).get(0).style.height = '250px';
+			$( this ).get(0).style.width = 'auto';
+//			$( this ).parent().append($( this ).get(0).style.height + " x " + $( this ).get(0).style.width);
+		} else 	if ($( this ).get(0).height < $( this ).get(0).width) {
+			console.debug($( this ).get(0));
+			$( this ).get(0).style.width = '250px';
+			$( this ).get(0).style.height = 'auto';
+//			$( this ).parent().append($( this ).get(0).style.height + " x " + $( this ).get(0).style.width);
+		} else {
+			debugger;
+		}
+
+	});
+//	console.debug(img.naturalHeight + " x " + img.naturalWidth);
 
 }
 
@@ -503,25 +543,45 @@ function loadImagesSequentially(i) {
 function createItemHtml(response, item, key, unused, fileObj, subDirs)
 {	
 	var image = fileObjToHtml(fileObj);
-
+	
+	var res1 = fileObj.fileSystem.match(/.*fuse.hidden.*/gi);
+	if (res1 !=null) {
+		return;
+	}
+	var res2 = fileObj.fileSystem.match(/.*aufs/gi);
+	if (res2 !=null) {
+		return;
+	}
 	var width = "250px";
 	var height = "300px";
 	
 	var localLink = "<a href=\"file://" + fileObj.fileSystem.toString() +"\">" + "Local Link" + "</a>";
 
 
-	var idstring = "card-" + fileObj.fileSystem;	
+	var idstringUnescaped = "card-" + fileObj.fileSystem;	
+	var idstring = idstringUnescaped.replace(/'/g, "&apos;");
 	id += 1;
+console.debug(item);
 	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
 		+ image + "<td><td>"+createButtonsPanel(item, subDirs, key, idstring)
 		+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
-		+ decodeURIComponent(item)
+		+ decodeURIComponent(item) + '\n\n' 
+		+ prettyDate(new Date(fileObj.created)) + '\n' 
+		+ fileObj.created
 		+"</textarea></td>"
 		+ "<td><a href='" +fileObj.httpUrl+"'>" + fileObj.httpUrl + "</a><br>" +localLink
 		+ "<br><br>"+fileObj.thumbnailUrl + "</td></tr></table></td></tr>";
 
 	return toBeAppended;
 }
+
+function prettyDate(date) {
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    return date.getUTCFullYear() +  months[date.getUTCMonth()] + ' ' + date.getUTCDate();
+}
+
 
 // item = filepath
 // key = dirpath
@@ -531,9 +591,9 @@ function createButtonsPanel(item, subdirs, key, idstring) {
 	{
 		var escaped = item.replace(/'/g, "&apos;");
 		var idstringescaped = idstring.replace(/'/g, "&apos;");
-		if (idstring.indexOf("'") > -1) {
-			alert(idstringescaped);
-		}
+//		if (idstring.indexOf("'") > -1) {
+//			alert(idstringescaped);
+//		}
 		buttons += "<button onclick='moveFileToParent(\"" + escaped + "\",\""+idstringescaped+"\")'>Wrong Category</button><br>";
 		var subdirsArray = Object.keys(subdirs).sort(sortFunction);
 		{
@@ -545,6 +605,11 @@ function createButtonsPanel(item, subdirs, key, idstring) {
 				}
 				var dirPath = subdirsArray[dir];				
 				var dirName = dirPath.substr(dirPath.lastIndexOf('/') + 1);
+				var res1 = dirName.match(/\..*/gi);
+				
+				if (res1 != null) {
+					continue;
+				}
 				buttons += "<button onmousedown='this.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstringescaped+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
 			}
 		}
@@ -557,11 +622,12 @@ function createButtonsPanel(item, subdirs, key, idstring) {
 	return buttons;
 }
 
+// image
 function fileObjToHtml(fileObj) {
 	// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
 	var widthInt = 250;
-	var width = widthInt + "px";
-	var height = "300px";
+//	var width = widthInt + "px";
+//	var height = "300px";
 	var item = fileObj.fileSystem;
 	{
 		var res = item.match(/.*\.((txt)|(lnk))/gi);
@@ -585,7 +651,9 @@ function fileObjToHtml(fileObj) {
 					if (fileObj.exif) {
 						degreesToOrient = 90*(parseInt(fileObj.exif.orientation) - 1);
 					}
-					toBeAppended += '<img width="'+width+'" class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl +'?width=' + widthInt) + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
+//					toBeAppended += '<hr size="250px">';
+					toBeAppended += '<img src="http://www.htmlgoodies.com/images/1x1.gif" width="250px" height="1px"><br>';
+					toBeAppended += '<img class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl +'?width=' + widthInt) + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
 					toBeAppended += '</a>';
 				}
 			}
@@ -614,7 +682,8 @@ function dirToHtmlCards(dirObj) {
 	var html = "";
 	//console.debug(dirObj);
 	var dir = Object.keys(dirObj);
-	var files = shuffle(toPairs(dirObj[dir])).slice(0, limitRoot).filter(filesOnly);
+	//var files = shuffle(toPairs(dirObj[dir])).slice(0, limitRoot).filter(filesOnly);
+	var files = toPairs(dirObj[dir]).slice(0, limitRoot).filter(filesOnly).sort(BY_CREATED).reverse();
 	var subdirs = dirObj[dir].dirs;
 	html += files.map(fileToHtmlParameterized(subdirs)).join('');
 	return html;
@@ -629,7 +698,7 @@ function fileToHtmlParameterized(subdirs) {
 		var fileObj = filePair[filePath];
 	
 	
-		if (fileObj.fileSystem.match(/.*(nohup.out$|Thumbs.db|[pP]icasa.ini)/)) {
+		if (fileObj.fileSystem.match(/.*(img|nohup.out$|Thumbs.db|[pP]icasa.ini)/)) {
 			ret += "";
 		} else {
 			var dirPath = filePath.substring(0, filePath.lastIndexOf("/"));
@@ -653,8 +722,11 @@ function moveFile(button, filePath, destinationDirSimpleName,id) {
 }
 
 function removeImageElement(filePath) {
+		var next = $("[id='card-" + filePath + "']").get(0);
 		$("[id='card-" + filePath + "']").remove();
 		$("[id='thumbnail-" + filePath + "']").remove();
+		$("[id='hoistwithbuttons-" + filePath + "']").remove();
+		next.scrollIntoView();
 }
 
 function sortFunction(a, b) {
