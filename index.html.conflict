@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Coagulate (Content Management System)</title>
+<link rel="shortcut icon" href="http://netgear.rohidekar.com/static/icons/Orb_Icons_001.png" type="image/x-icon" />
+
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.11.0/themes/smoothness/jquery-ui.css">
+<link rel="stylesheet" href="http://jqueryui.com/jquery-wp-content/themes/jqueryui.com/style.css">
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script src="http://netgear.rohidekar.com/yurl/jquery/jquery-ui.js"></script>
+<script type="text/javascript" src="http://netgear.rohidekar.com/yurl/jquery/purl.js"></script>
+<script src="http://netgear.rohidekar.com/yurl/js/webtoolkit.md5.js"></script>
+</script>
+<script src="http://netgear.rohidekar.com/yurl/js/imagezoom.ssarnobat.js"></script>
+<script>
+
+
+var urlBase = "http://netgear.rohidekar.com:44451/cmsfs/";
+var limit;
+var limitRoot = 200;
+var preDirLimit;
+var pairs;
+var depth;
+
+$(function() {
+	$( "#tabs" ).tabs();
+});
+
+// TODO: This code is nice and simple thanks to the functional refactorings. What would 
+// be even better is if we could replace the loops with recursion.
+$(document).ready(function(){
+
+	updateURLIfEmpty();
+
+	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()) + "&limit=" + limit + "&depth=" + depth,function(response) {
+	        $('#status').append("File list obtained. Creating tags...");
+		$('#items').empty();
+		addSubdirLinks(response);
+		pairs = toPairs(response.itemsRecursive);
+		// Sorting
+		{
+			reRenderCards();
+		}
+		// Thumbnails
+		{
+			var html = printDirsRecursive(response.itemsRecursive, response, "thumbnail2", limitRoot);
+			$('#thumbnailItems').append(html);
+			// TODO: write the actual image urls to the new tab link immediately.
+		}
+		// Hoist (no buttons)
+		{
+			var html = "";
+			//console.debug(html);
+			
+			html += pairs.map(rootFolderOnly).reduce(DIR_TO_HTML, "");
+			$('#hoist').append(html);
+		}
+		// Hoist
+		{
+			var html = "";
+			//console.debug(html);
+			
+			html += pairs.map(rootFolderOnly).reduce(DIR_TO_HTML_WITH_BUTTONS, "");
+			$('#hoist_with_buttons').append(html);
+		}
+		// Markup
+		{
+			var html = printDirsRecursive(response.itemsRecursive, response, "thumbnail2", limitRoot, createThumbnailItemHtml);
+			$('#markup').val(html);
+		}
+		$('#status').append("Tags created. Loading screenshots...");
+		loadImagesSequentially(0);
+		$('#status').append("Completed.");
+	})
+	.fail(function() {
+		console.debug( "error" );
+		$('#status').append("Error");
+	});
+	$('#status').append("This might take a while...");
+});
+
+function reRender() {
+	//pairs = shuffle(pairs);
+	//pairs = shuffle(pairs);
+	reRenderCards();
+	loadImagesSequentially(0);
+}
+
+function reRenderCards() {
+	$('#itemsNew').empty();
+	var html = "";
+	html += pairs.map(DIR_TO_HTML_CARDS).join('');
+	$('#itemsNew').append(html);
+}
+
+// descending
+function BY_CREATED(a, b) {
+
+  if (a[Object.keys(a)[0]].created < b[Object.keys(b)[0]].created ) {
+    return -1;
+  }
+  if (a[Object.keys(a)[0]].created > b[Object.keys(b)[0]].created ) {
+    return 1;
+  }
+  // a must be equal to b
+  return 0;
+}
+
+function shuffle(array) {
+  alert('broken after ordering by timestamp');
+  var currentIndex = array.length, temporaryValue, randomIndex ;
+
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+
+    // And swap it with the current element.
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
+}
+
+function updateURLIfEmpty() {
+	var locations = $.url().param('locations');
+	if (locations == null || locations == '') {
+			updateURL();
+	} else {
+		$("#locations").val(decodeURIComponent(locations));
+	}
+
+  	limit = $.url().param('limit');
+	if (limit == null) {
+			limit = 100;
+			window.history.pushState("object or string", "Title", document.URL + "&limit=" + limit);
+	}
+	preDirLimit = limit;
+	
+	depth = $.url().param('depth');
+	if (depth == null) {
+			depth = 1;
+			window.history.pushState("object or string", "Title", document.URL + "&depth=" + depth);
+	}
+}
+
+function updateURL() {
+	history.pushState(null, null, '/coagulate?locations=' + encodeURIComponent($("#locations").val())); // HTML5
+}
+
+function dirToFilesInDirParameterized(dirContents) {
+	return function dirToFilesInDir(dir) {
+		return { 
+			"dir" : dir,
+			"filesInDir" : dirContents[dir] ,
+			"subdirs" : dirContents[dir].dirs
+		};
+	};
+}
+
+function toPairs(obj) {
+	var ret = [];
+	var keys = Object.keys(obj).sort();// Sometimes you want to sort, sometimes shuffle. Make this toggleable
+	for (var i = 0; i < keys.length; i++) {
+		var key = keys[i];
+		var val = obj[key];
+		var out = {};
+		out[key] = val;
+		ret.push(out);
+	}
+	return ret;
+}
+
+function DIR_TO_HTML_WITH_BUTTONS(accumulator, dirPair) {
+	return dirToHtmlWithButtons(accumulator, dirPair);
+}
+
+function dirToHtmlWithButtons(accumulator, dirPair) {
+
+	var key = Object.keys(dirPair)[0];
+	var val = dirPair[key];
+	
+	return accumulator + "<tr><td><h2>" + lastPartOf(key) +"</h2></td></tr>" + dirObjToHtmlWithButtons(val, key);
+}
+
+function DIR_TO_HTML(accumulator, dirPair) {
+	return dirToHtml(accumulator, dirPair);
+}
+
+function dirToHtml(accumulator, dirPair) {
+
+	var key = Object.keys(dirPair)[0];
+	var val = dirPair[key];
+	
+	return accumulator + "<h2>" + lastPartOf(key) +"</h2>" + dirObjToHtml(val, key);
+}
+
+function startsWith(str, prefix) {
+	return (str.lastIndexOf(prefix,0) == 0);
+}
+
+var hoistButtonId = 0;
+var level = 1000; // This is just a unique number, not semantically significant
+function dirObjToHtmlWithButtons(val, dir) {
+	var html = "";
+	// recurse pre-order
+	if (val.dirs) {
+		var dirnames = Object.keys(val.dirs);
+		for (var i = 0; i < dirnames.length; i++) {
+			var dirname =  dirnames[i];
+			if (lastPartOf(dirname).lastIndexOf('_+',0) == 0) {
+				var dirObj = val.dirs[dirname];
+				html +=  dirObjToHtmlWithButtons(dirObj, dirname);
+			}
+		}
+	}
+	var dirName = lastPartOf(dir);
+	--level;
+	html += "<tr><td><span id='level-" + level +"'>";
+
+	html += "<h3>" + dirName + "</h3>";
+	html += "<textarea cols='100' rows='1'>" + dir + "</textarea>";
+	html += "<br>";
+	var pairs = toPairs(val);
+	var files2 = preDirLimit;
+	for (var i = 0; i < pairs.length; i++) {
+		var pair = pairs[i];
+		var filename = Object.keys(pair)[0];
+		if (filename == 'dirs') {
+			continue;
+		}
+		var fileObj = pair[filename];
+		var id = "hoistwithbuttons-" + filename;
+		++hoistButtonId;
+		html += "<span id='"+id+"' style='float : left' align='left'>";
+		html += "<br>";
+		html += createThumbnailItemHtml("", fileObj);
+		html += "<br>";
+		html += "<br>";
+		html += "<br>";
+		html += "<button onclick='up(\""+filename +"\",\""+id+"\", "+level+")'>+</button>";
+		html += "<button onclick='down(\""+filename +"\",\""+id+"\", "+level+")'>-</button><br>";
+		html += "<button onmousedown='this.style.cssText = \"background-color : peachpuff\";' onclick='moveFile(this, \"" + filename + "\",\"duplicates\",\""+id+"\")' style='background-color:"+getColorForDir(dirName)+"'>duplicates</button><br>";
+		html += "</span>";
+		--files2;
+		if (files2 < 1 && !startsWith(dirName, '_+')) {
+			break;
+		}
+	}
+	html += "</span></td></tr>";
+		
+	var files3 = preDirLimit;	
+	if (dirnames != null) {
+		for (var i = 0; i < dirnames.length; i++) {
+			var dirname =  dirnames[i];
+			if (lastPartOf(dirname).lastIndexOf('_-',0) == 0) {
+				var dirObj = val.dirs[dirname];
+				html += dirObjToHtmlWithButtons(dirObj, dirname);
+			}
+		}
+	}
+	return html;
+}
+
+
+function up(field,id, currentLevelId) {
+	$.getJSON("http://netgear.rohidekar.com:4463/helloworld/moveUp?path=" + encodeURIComponent(field),function(result){
+		var targetLevel = currentLevelId + 1;
+		// TODO: handle the case where target level doesn't exist
+		var elem = $("#"+id).remove();
+		$("#level-" + targetLevel).append(elem);
+		removeImageElement(field);
+	});
+}
+
+function down(field,id, currentLevelId) {
+	$.getJSON("http://netgear.rohidekar.com:4463/helloworld/moveDown?path=" + encodeURIComponent(field),function(result){
+		var targetLevel = currentLevelId - 1;
+		removeImageElement(field);
+		// TODO: handle the case where target level doesn't exist
+		var elem = $("#"+field).remove();
+		$("#level-" + targetLevel).append(elem);
+		// TODO: why is this called twice?
+		removeImageElement(field);
+    });
+}
+
+function dirObjToHtml(val, dir) {
+	var html = "";
+	// recurse pre-order
+	if (val.dirs) {
+		var dirnames = Object.keys(val.dirs);
+		for (var i = 0; i < dirnames.length; i++) {
+			var dirname =  dirnames[i];
+			if (lastPartOf(dirname).lastIndexOf('_+',0) == 0) {
+				var dirObj = val.dirs[dirname];
+				html +=  dirObjToHtml(dirObj, dirname);
+			}
+		}
+	}
+	var dirName = lastPartOf(dir);
+	html += "<h3>" + dirName + "</h3><textarea>" + dir + "</textarea><br>";
+	var pairs1 = toPairs(val).filter(function(aPair){aPair[0] != 'dirs'});
+	var pairs;
+	if (startsWith(dirName, '_+')) {
+		pairs = pairs1;
+	} else {
+		pairs = pairs1.slice(0, preDirLimit);
+	}
+	// TODO: make the other createThumbnailItemHtml() calls be done via map reduce
+	html += pairs.map(pairVal).reduce(createThumbnailItemHtml, "");
+	var files3 = preDirLimit;	
+	if (dirnames != null) {
+		for (var i = 0; i < dirnames.length; i++) {
+			var dirname =  dirnames[i];
+			if (lastPartOf(dirname).lastIndexOf('_-',0) == 0) {
+				var dirObj = val.dirs[dirname];
+				html += dirObjToHtml(dirObj, dirname);
+			}
+		}
+	}
+	return html;
+}
+
+function pairVal(pair) {
+	return pair[1];
+}
+
+// also retains ranking dirs
+function rootFolderOnly(dirPair) {
+	var ret = jQuery.extend(true, {}, dirPair);
+	var key = Object.keys(dirPair)[0];
+	// Assumption : the right hand side is deep copied.
+	val = ret[key];
+	if (val.dirs) {
+		var subDirs = Object.keys(val.dirs);
+		for (var i = 0; i < subDirs.length; i++) {
+			var subDir = subDirs[i];
+			var dirName = subDir.substr(subDir.lastIndexOf('/') + 1);
+			if (dirName.lastIndexOf('_', 0) == 0) {
+				// retain it
+			} else {
+				delete val.dirs[subDir];
+			}
+		}
+	}
+	return ret;
+}
+
+function lastPartOf(str) {
+	return str.substr(str.lastIndexOf('/') + 1);
+}
+
+function filesOnly(anObj) {
+	if (anObj.dirs == null) {
+		return true;
+	}
+	return false;
+}
+
+// For thumbnails
+function printDirsRecursive(dirItems, response, idIn, iLimit, loadImmediate) {
+	var html = "";
+	var items = dirItems;
+
+	var id = 0;
+	// For each directory
+	var sortedItems = Object.keys(dirItems).sort();
+	// TODO: Move current dir to front
+	for(var dirIndex in sortedItems) { 
+		var dirPath = sortedItems[dirIndex];
+		var categoryName1 = "";
+		categoryName1 = dirPath.split('/').pop();
+		html += "\n\n\n<h3><a href='http://netgear.rohidekar.com/coagulate/?locations="+encodeURIComponent(dirPath) +"'>\n"+ categoryName1 + "\n</a></h3>\n\n\n";
+		var filesInDir = items[dirPath];
+		if (filesInDir.length < 1) {
+			continue;
+		}
+		var filesInDirSortedMap = shuffle(Object.keys(filesInDir));//Object.keys(filesInDir).sort();
+		// For each regular file in the directory
+		for (var sortedIndex in filesInDirSortedMap) {
+			var filepath = filesInDirSortedMap[sortedIndex];
+			if (filepath.match(/.*(nohup.out$|Thumbs.db|[pP]icasa.ini)/)) {
+				continue;
+			}
+			if (filepath == 'dirs') {
+			} else {
+				++id;
+				if (id > iLimit) {
+//					continue;
+				}
+				var height = 80;
+				if (categoryName1 == '_-1' || categoryName1 == 'back' || categoryName1 == 'duplicates' || categoryName1 == 'not good' || categoryName1 == 'small') {
+					height = 40;
+				} else if (categoryName1 == '_+1') {
+					height = 140;
+				}
+				html += createThumbnailItemHtml("", filesInDir[filepath], loadImmediate, height);
+				html += "\n\n";
+			}
+		}
+		// For subdirs
+		for (var sortedIndex in filesInDirSortedMap) {
+			var filepath = filesInDirSortedMap[sortedIndex];
+			if (filepath == 'dirs') {
+				var subdirItems = filesInDir['dirs'];
+				html += "<blockquote>" + printDirsRecursive(subdirItems, response, idIn + "-" + id, limit, loadImmediate) + "</blockquote>";
+			} else {
+			}
+		}
+	}
+	return html;
+}
+
+// reduction function and regular function
+// No buttons
+function createThumbnailItemHtml(accumulator, fileObj, loadImmediate, size) {	
+	
+	var fileSystem = fileObj.fileSystem;
+
+	// File types to ignore	
+	var res = fileSystem.match(/.*\.((txt)|(lnk))/gi);
+	if (res != null) {
+		return;
+	}
+
+	{
+		var toBeAppended = accumulator;
+		var httpUrl = fileObj.httpUrl;
+		var thumbnailUrl = fileObj.thumbnailUrl;
+
+		var widthInt = 250;
+		var width = widthInt + "px";
+		var height = size;
+		if (size == null) {
+			height = 100;
+		}
+		
+		// Images
+		{
+			var res = fileSystem.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
+			if (res !=null) {
+				toBeAppended += '\t<a href=\'' + httpUrl + '\' target="_blank">\n';
+				var degreesToOrient = 0;
+				if (fileObj.exif) {
+					degreesToOrient = 90*(parseInt(fileObj.exif.orientation) - 1);
+				}
+				// height ensures buttons don't jump left and right between items for 
+				// easier mass sorting. But it's not as nice to view.
+				// The server-side thumbnailator reorients the image correctly
+				if (loadImmediate) {
+					toBeAppended += '\t\t\t<img src="' + encodeURI(httpUrl) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'px" class="myimage" />\n';
+				} else {
+					toBeAppended += '\t\t\t<img src="http://netgear.rohidekar.com/static/icons/Orb_Icons_001.png" data-src="' + encodeURI(httpUrl + "?width=" + widthInt) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'px" class="myimage" />\n';
+				}
+				//data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+				toBeAppended += '\t</a>\n';
+			}
+		}
+		// Videos
+		{
+			var matchesVideo = fileSystem.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi)|(mts))/gi);
+			if (matchesVideo != null) {
+				var simpleName = fileObj.httpUrl.split('/').pop();
+				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height="'+height+'px" title="'+ simpleName +'">';
+			}
+		}
+		// PDFs
+		{
+			var matchesVideo = fileSystem.match(/.*((pdf)|(tif))/gi);
+			if (matchesVideo != null) {
+				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height="'+height+'px">';
+			}
+		}
+		toBeAppended = "<span id='thumbnail-"+fileSystem+"'>\n" + toBeAppended;
+		toBeAppended += "&nbsp;\n</span>";
+	}	
+	return toBeAppended;
+}
+
+function addSubdirLinks(response) {
+
+	var subdirectories = Object.keys(response.itemsRecursive);
+	for(var dirIndex in subdirectories) { 
+
+		var filesInDir = Object.keys(response.itemsRecursive[subdirectories[dirIndex]].dirs);
+
+		if (filesInDir.length < 1) {
+			continue;
+		}
+		for (var sortedIndex in filesInDir) {
+			var filepath = filesInDir[sortedIndex];
+			$('#subdirs').append("<tr><td><a href='/coagulate/?locations=" +encodeURIComponent(filepath)+ "'>"+filepath+"</a></td></tr>");
+		}
+	}
+}
+function loadImagesSequentially(i) {
+	var images = $('.myimage');
+	if (i >= images.length) {
+		return
+	}
+//	var imgElem = images[i][0];
+//	var imgElemId = $(images[i]).get(0).id;
+	var imageAttrs = images[i].attributes;
+	var datasrc = $(images[i]).attr('data-src');
+	$(images[i]).attr('src',datasrc);
+	var a = function(j) {
+		loadImagesSequentially(++i);
+	};
+	$(images[i]).load(a(i), function() {
+		console.debug($( this ).get(0).naturalWidth);
+		console.debug($( this ).get(0).naturalHeight);
+//		if ($( this ).get(0).naturalHeight > 300) {
+//			$( this ).attr('width',  300/$( this ).get(0).naturalHeight * $( this ).get(0).naturalWidth);
+//		}
+		if ($( this ).get(0).height >= $( this ).get(0).width) {
+			console.debug($( this ).get(0));
+			$( this ).get(0).style.height = '250px';
+			$( this ).get(0).style.width = 'auto';
+//			$( this ).parent().append($( this ).get(0).style.height + " x " + $( this ).get(0).style.width);
+		} else 	if ($( this ).get(0).height < $( this ).get(0).width) {
+			console.debug($( this ).get(0));
+			$( this ).get(0).style.width = '250px';
+			$( this ).get(0).style.height = 'auto';
+//			$( this ).parent().append($( this ).get(0).style.height + " x " + $( this ).get(0).style.width);
+		} else {
+			debugger;
+		}
+
+	});
+//	console.debug(img.naturalHeight + " x " + img.naturalWidth);
+
+}
+
+// item = filepath
+// key = dirpath
+// item2 = fileObj
+// 
+function createItemHtml(response, item, key, unused, fileObj, subDirs)
+{	
+	var image = fileObjToHtml(fileObj);
+	
+	var res1 = fileObj.fileSystem.match(/.*fuse.hidden.*/gi);
+	if (res1 !=null) {
+		return;
+	}
+	var res2 = fileObj.fileSystem.match(/.*aufs/gi);
+	if (res2 !=null) {
+		return;
+	}
+	var width = "250px";
+	var height = "300px";
+	
+	var localLink = "<a href=\"file://" + fileObj.fileSystem.toString() +"\">" + "Local Link" + "</a>";
+
+
+	var idstringUnescaped = "card-" + fileObj.fileSystem;	
+	var idstring = idstringUnescaped.replace(/'/g, "&apos;");
+	id += 1;
+console.debug(item);
+	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
+		+ image + "<td><td>"+createButtonsPanel(item, subDirs, key, idstring)
+		+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
+		+ decodeURIComponent(item) + '\n\n' 
+		+ prettyDate(new Date(fileObj.created)) + '\n' 
+		+ fileObj.created
+		+"</textarea></td>"
+		+ "<td><a href='" +fileObj.httpUrl+"'>" + fileObj.httpUrl + "</a><br>" +localLink
+		+ "<br><br>"+fileObj.thumbnailUrl + "</td></tr></table></td></tr>";
+
+	return toBeAppended;
+}
+
+function prettyDate(date) {
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    return date.getUTCFullYear() +  months[date.getUTCMonth()] + ' ' + date.getUTCDate();
+}
+
+
+// item = filepath
+// key = dirpath
+function createButtonsPanel(item, subdirs, key, idstring) {
+
+	var buttons = "<table><tr><td>";							
+	{
+		var escaped = item.replace(/'/g, "&apos;");
+		var idstringescaped = idstring.replace(/'/g, "&apos;");
+<<<<<<< HEAD
+		if (idstring.indexOf("'") > -1) {
+			alert(idstringescaped);
+		}
+=======
+//		if (idstring.indexOf("'") > -1) {
+//			alert(idstringescaped);
+//		}
+>>>>>>> ea8a70b7d715dae9a149423cd6cc187e856849ce
+		buttons += "<button onclick='moveFileToParent(\"" + escaped + "\",\""+idstringescaped+"\")'>Wrong Category</button><br>";
+		var subdirsArray = Object.keys(subdirs).sort(sortFunction);
+		{
+			var buttonsAdded = 0;
+			for (var dir in subdirsArray) {
+				buttonsAdded++;
+				if (buttonsAdded%15 == 0) {
+					buttons += "</td><td>";
+				}
+				var dirPath = subdirsArray[dir];				
+				var dirName = dirPath.substr(dirPath.lastIndexOf('/') + 1);
+<<<<<<< HEAD
+=======
+				var res1 = dirName.match(/\..*/gi);
+				
+				if (res1 != null) {
+					continue;
+				}
+>>>>>>> ea8a70b7d715dae9a149423cd6cc187e856849ce
+				buttons += "<button onmousedown='this.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstringescaped+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
+			}
+		}
+	}
+	buttons += "<br>";
+	buttons += "<button onclick='moveToNonExistingFolder(this,\"" +escaped+"\",\""+dirName+"\",\""+idstringescaped+"\")'>MOVE to custom</button><br>";
+	buttons += "<br>";
+	buttons += "<button onclick='copyFileToFolder(\"" + escaped + "\", \"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/favorites\",\""+idstringescaped+"\", this)'>COPY TO favorites</button><br>";
+	buttons += "</td></tr></table>";
+	return buttons;
+}
+
+// image
+function fileObjToHtml(fileObj) {
+	// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
+	var widthInt = 250;
+//	var width = widthInt + "px";
+//	var height = "300px";
+	var item = fileObj.fileSystem;
+	{
+		var res = item.match(/.*\.((txt)|(lnk))/gi);
+		if (res !=null) {
+			return;
+		}
+	}
+	
+	{
+		var toBeAppended = "";
+		var httpUrl = fileObj.httpUrl;
+		//console.debug(fileObj);
+		var thumbnailUrl = fileObj.thumbnailUrl;
+		{
+			var lastModified = fileObj.lastModified;
+			{
+				var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
+				if (res !=null) {
+					toBeAppended += '<a href=\'' + httpUrl + '\' target="_blank">';
+					var degreesToOrient = 0;
+					if (fileObj.exif) {
+						degreesToOrient = 90*(parseInt(fileObj.exif.orientation) - 1);
+					}
+//					toBeAppended += '<hr size="250px">';
+					toBeAppended += '<img src="http://www.htmlgoodies.com/images/1x1.gif" width="250px" height="1px"><br>';
+					toBeAppended += '<img class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl +'?width=' + widthInt) + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
+					toBeAppended += '</a>';
+				}
+			}
+		}
+		{
+			var matchesVideo = item.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi)|(mts))/gi);
+			if (matchesVideo != null) {
+				toBeAppended += '<img src=\"' +thumbnailUrl+'\">';
+			}
+		}
+		{
+			var matchesVideo = item.match(/.*((pdf)|(tif))/gi);
+			if (matchesVideo != null) {
+				toBeAppended += '<img src=\"' +thumbnailUrl+'\" width=200>';
+			}
+		}
+	}	
+	return toBeAppended;
+}
+
+function DIR_TO_HTML_CARDS(dirObj) {
+	return dirToHtmlCards(dirObj);
+}
+
+function dirToHtmlCards(dirObj) {
+	var html = "";
+	//console.debug(dirObj);
+	var dir = Object.keys(dirObj);
+	//var files = shuffle(toPairs(dirObj[dir])).slice(0, limitRoot).filter(filesOnly);
+	var files = toPairs(dirObj[dir]).slice(0, limitRoot).filter(filesOnly).sort(BY_CREATED).reverse();
+	var subdirs = dirObj[dir].dirs;
+	html += files.map(fileToHtmlParameterized(subdirs)).join('');
+	return html;
+}
+
+var id = 0;
+
+function fileToHtmlParameterized(subdirs) {
+	return function fileToHtml(filePair) {
+		var ret = "";
+		var filePath = Object.keys(filePair)[0];
+		var fileObj = filePair[filePath];
+	
+	
+		if (fileObj.fileSystem.match(/.*(img|nohup.out$|Thumbs.db|[pP]icasa.ini)/)) {
+			ret += "";
+		} else {
+			var dirPath = filePath.substring(0, filePath.lastIndexOf("/"));
+			ret += createItemHtml(null, filePath, dirPath, null, fileObj, subdirs);
+		}
+		return ret;
+	};
+}
+
+function moveToNonExistingFolder(elem, fileToMove, parentDir, idstring) {
+	var newCategorySimpleName = prompt("Category name:");
+	var newDir = parentDir + '/' + newCategorySimpleName;
+	moveFile(elem, fileToMove, newCategorySimpleName, idstring);
+}
+
+function moveFile(button, filePath, destinationDirSimpleName,id) {
+	$.getJSON(urlBase + "/move?filePath="+encodeURIComponent(filePath) + "&destinationDirSimpleName=" + encodeURIComponent(destinationDirSimpleName),function(response){
+		removeImageElement(filePath);
+		// TODO: Also remove from pairs global variable so it doesn't keep coming back when we shuffle
+	});
+}
+
+function removeImageElement(filePath) {
+		var next = $("[id='card-" + filePath + "']").get(0);
+		$("[id='card-" + filePath + "']").remove();
+		$("[id='thumbnail-" + filePath + "']").remove();
+		$("[id='hoistwithbuttons-" + filePath + "']").remove();
+		next.scrollIntoView();
+}
+
+function sortFunction(a, b) {
+	if (a.toLowerCase() < b.toLowerCase()) return -1;
+	if (a.toLowerCase() > b.toLowerCase()) return 1;
+	return 0;
+}
+							
+function getColorForDir(dirName) {								
+	var color = "";
+	if (dirName == 'other' || dirName == 'divas') {
+		color = 'pink';
+	} else if (dirName.match(/Atletico/i) || dirName == 'brst') {
+		color = 'red';
+	}
+	else if (dirName.match(/Liverpool/i)) {
+		color = 'red';
+	}
+	 else if (dirName == 'legs') {
+		color = 'yellow';
+	}  else if (dirName == 'navel') {
+		color = 'lightpurple';
+	}  else if (dirName == 'teen') {
+		color = 'lavender';
+	} else if (dirName.match(/soccer/i)) {
+		color = 'green';
+	} else if (dirName == 'ind') {
+		color = 'orange';
+	}
+	return color
+}
+
+function addslashes( str ) {
+    return (str + '').replace(/[\\"']/g, '\\$&').replace(/\u0000/g, '\\0');
+}
+
+function moveFileToParent(filePath, id) {
+	$.getJSON(urlBase + "/moveToParent?filePath="+encodeURIComponent(filePath), function(response){
+		removeImageElement(filePath);
+		//$("#" + id).remove();
+	});
+}
+
+function copyFileToFolder(filePath, destinationDirPath, id, button) {
+	$.getJSON(urlBase + "/copyToFolder?filePath="+encodeURIComponent(filePath) + "&destinationDirPath=" + encodeURIComponent(destinationDirPath), function(response){
+		$(button).css('background-color','green');
+		$("#" + id).css('color','white');
+	});
+}
+
+function shuffle(array) {
+  var currentIndex = array.length, temporaryValue, randomIndex ;
+
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+
+    // And swap it with the current element.
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
+}
+
+function openHtmlTextInNewTab() {
+	var newWin = open('url', '_blank', '');
+	newWin.document.write($("#thumbnailItems").html());
+	newWin.document.title = document.title;
+}
+
+</script>
+<style type="text/css">
+
+.ui-widget {
+	/* Reduces JQUery's default font size */
+    font-size: 70%;
+}
+
+.ui-tabs .ui-tabs-panel {
+	background-color : #FFE6EA;
+}
+</style>
+</head>
+<body style="background-color : #FFE6EA">
+
+
+<script> 
+    $(function(){
+      $("#menubar").load("http://netgear.rohidekar.com/index.html"); 
+    });
+</script>
+<div id="menubar"></div>
+
+Todo: Create a tab for simply viewing the images in a directory (no sorting). e.g. for "favorites". Otherwise you have to manually add links to yurl
+<br>
+<a href="/coagulate">Reset Locations</a><br><br>
+<a href="/coagulate?locations=%2Fmedia%2Fsarnobat%2Fe%2FDrive%20J%2Fpictures%2FOther%20(new)%2Fpictures%2Fmisc_sync_master%2F">Other</a><br>
+<a href="/coagulate?locations=%2FUnsorted%2FVideos%2F%0A%2FLarge%2FVideos%0A%2Fe%2Fnew%2Fvideo%0A%2Fe%2FVideos%0A%2Fd%2FVideos%0A%2Fmedia%2Fsarnobat%2Fc%2FDocuments%20and%20Settings%2FSridhar.SRIDHAR-E5FA83A%2FDesktop%2Fvideos%2F%0A%2FLarge%2FVideos_Home%2FAVCHD%2FAVCHD%2FBDMV%2FSTREAM%0A%2Fmedia%2Fsarnobat%2FRecord%2FVideos_Home%2FHome%20Video%2Fhome%20movies%20(high-definition)%0A%2Fmedia%2Fsarnobat%2FRecord%2FVideos_Home%2FHome%20Video%2Fsmall%20videos%20(non%20HD%20camcorder)">Videos</a><br>
+<a href="/coagulate/?locations=%2Fe%2FSridhar%2FPhotos%2Fcamera%20phone%20photos%2FiPhone%2F">Photos</a><br>
+<a href="/coagulate?locations=%2Fmedia%2Fsarnobat%2FRecord%2FRecord%20to%20DVD%20(non-videos)%2Fbooks%0A%2Fmedia%2Fsarnobat%2F3TB%2FComputer%20Knowledge%20MegaCollection%20v1.0%0A%2Fmedia%2Fsarnobat%2Fe%2Fnew%2Fbooks%0A%2Fmedia%2Fsarnobat%2Fe%2FSridhar%2FBooks%0A%2Fmedia%2Fsarnobat%2Fd%2FRecord%20these%2FBooks%0A%2Fe%2Fnew%2Fpdf">Books</a><br>
+<a href="/coagulate?locations=%2Fmedia%2Fsarnobat%2FUnsorted%2Fimages">Images</a><br>
+<a href="/coagulate?locations=%23%2Fe%2FSridhar%2FWeb%2FFriends%0A%2FUnsorted%2Fimages%2Ffriends%0A%23%2Fe%2Fnew%2Fweb%2FFriends">Friends</a><br>
+<a href="/coagulate?locations=%23%2Fe%2Fnew%2Fweb%2F%0A%2Fe%2FSridhar%2FWeb%2F">Web</a><br>
+<br>
+<div id="status"></div>
+
+<div id="tabs">
+  <ul>
+    <li><a href="#thumbnailtab">Thumbnails</a></li>
+    <li><a href="#sorttab">Sort</a></li>
+    <li><a href="#hoist_with_buttons_tab">Hoist</a></li>
+    <li><a href="#hoisttab">Hoist (read only)</a></li>
+    <li><a href="#markuptab">HTML</a></li>
+  </ul>
+  <div id="thumbnailtab">
+	<center>
+		<a href="" onclick="openHtmlTextInNewTab()">Open in new tab (after images have loaded)</a><br>
+	</center>
+	<table id="thumbnailItems"></table><br>
+  </div>
+  <div id="sorttab">
+  	<button onclick="reRender()">Shuffle</button>
+	<table id="itemsNew"></table>
+    <table id="items"></table>
+  </div>
+  <div id="hoist_with_buttons_tab">  
+		<table id="hoist_with_buttons"></table>
+  </div>
+  <div id="hoisttab">  
+		<table id="hoist"></table>
+  </div>
+  <div id="markuptab">  
+		<textarea id="markup" cols="100" rows="30" style="white-space: nowrap;" ></textarea>
+  </div>
+</div>
+
+
+<table id="subdirs"></table>
+
+Key bindings<br>
+<textarea id="locations" cols="100" rows="30" onblur="updateURL()">
+## Miscellaneous
+/e/new
+#/Users/sarnobat/Desktop
+
+##
+## Other
+##
+
+#/e/Drive J/pictures/Other (new)/pictures/misc_sync_master
+#/media/sarnobat/Unsorted/images
+#/Users/sarnobat/Windows/misc/ind
+#/Users/sarnobat/Windows/misc/favorites
+#/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/teen/primejailbat.com
+
+##
+## Videos
+##
+
+/Unsorted/Videos/
+/Large/Videos
+/e/new/video
+/e/Videos
+/d/Videos
+/media/sarnobat/c/Documents and Settings/Sridhar.SRIDHAR-E5FA83A/Desktop/videos/
+/Large/Videos_Home/AVCHD/AVCHD/BDMV/STREAM
+/media/sarnobat/Record/Videos_Home/Home Video/home movies (high-definition)
+/media/sarnobat/Record/Videos_Home/Home Video/small videos (non HD camcorder)
+#/d/Flashget
+#/d/Flashget/Done
+#/e/Flashget
+#/media/sarnobat/Unsorted/Videos/wwf/
+#/media/sarnobat/Unsorted/Videos/Atletico
+#/media/sarnobat/Unsorted/Videos/soccer
+#/media/sarnobat/Unsorted/Videos/Other
+
+##
+## Images
+##
+
+/e/new/photos
+/e/new/images
+/e/Sridhar/Photos/camera phone photos/iPhone/2015-04-28
+/e/Sridhar/Photos/camera phone photos/iPhone/2015-04-13/20150413-233008
+/e/Sridhar/Photos/camera phone photos/iPhone/2015-03-08
+/e/Sridhar/Photos/2003 and before - Pre Digital Camera/scans - unsorted
+/e/new/screenshots
+#/e/new/photos_iphone_white/20150313-203901
+#/e/Sridhar/Photos/Courtesy of others/dad	
+#/e/Sridhar/Photos/camera phone photos/iPhone/Sridhar
+#/e/Sridhar/Photos/camera phone photos/iPhone
+#/media/sarnobat/e/new/Starred_photos
+#/media/sarnobat/e/Sridhar/Photos/2014-10-11 Santa Cruz with Murali
+
+##
+## Screenshots
+##
+/e/Sridhar/Photos/2005-12-25 Chatting Screenshots
+/e/Sridhar/Photos/screenshots
+/e/Sridhar/Photos/Skype Screenshots
+/e/Sridhar/Scans/screenshots
+
+##
+## Pdf
+##
+
+#/media/sarnobat/Record/Record to DVD (non-videos)/books
+#/media/sarnobat/3TB/Computer Knowledge MegaCollection v1.0
+#/media/sarnobat/e/new/books
+#/media/sarnobat/e/Sridhar/Books
+#/media/sarnobat/d/Record these/Books
+#/e/new/pdf
+
+##
+## Audio
+##
+
+#/media/sarnobat/e/Sridhar/Audio - THIS IS NOT THE MASTER COPY, SO ITS POINTLESS
+</textarea>
+
+<br><br>
+<button>get urls</button>
+
+</body>
+</html>
