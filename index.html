@@ -14,13 +14,13 @@
 <script src="http://netgear.rohidekar.com/yurl/js/imagezoom.ssarnobat.js"></script>
 <script>
 
-
 var urlBase = "http://netgear.rohidekar.com:44451/cmsfs/";
 var limit;
 var limitRoot = 200;
 var preDirLimit;
 var pairs;
 var depth;
+var WIDTH_250 = 250;
 
 $(function() {
 	$( "#tabs" ).tabs();
@@ -431,7 +431,6 @@ function createThumbnailItemHtml(accumulator, fileObj, loadImmediate, size) {
 		var httpUrl = fileObj.httpUrl;
 		var thumbnailUrl = fileObj.thumbnailUrl;
 
-		var widthInt = 250;
 		var height = size;
 		if (size == null) {
 			height = 100;
@@ -452,7 +451,7 @@ function createThumbnailItemHtml(accumulator, fileObj, loadImmediate, size) {
 				if (loadImmediate) {
 					toBeAppended += '\t\t\t<img src="' + encodeURI(httpUrl) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'px" class="loadImageSequentially" />\n';
 				} else {
-					toBeAppended += '\t\t\t<img src="http://netgear.rohidekar.com/static/icons/Orb_Icons_001.png" data-src="' + encodeURI(httpUrl + "?width=" + widthInt) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'px" class="loadImageSequentially thumbnail" />\n';
+					toBeAppended += '\t\t\t<img src="http://netgear.rohidekar.com/static/icons/Orb_Icons_001.png" data-src="' + encodeURI(httpUrl + "?width=" + WIDTH_250) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'px" class="loadImageSequentially thumbnail" />\n';
 				}
 				//data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
 				toBeAppended += '\t</a>\n';
@@ -510,10 +509,10 @@ function loadImagesSequentially(i) {
 		if (!$( this ).hasClass('thumbnail')) {
 			// compute the height and width such that this will fit inside a square of fixed size
 			if ($( this ).get(0).height >= $( this ).get(0).width) {
-				$( this ).get(0).style.height = '250px';
+				$( this ).get(0).style.height = WIDTH_250 + 'px';
 				$( this ).get(0).style.width = 'auto';
 			} else 	if ($( this ).get(0).height < $( this ).get(0).width) {
-				$( this ).get(0).style.width = '250px';
+				$( this ).get(0).style.width = WIDTH_250 + 'px';
 				$( this ).get(0).style.height = 'auto';
 			} else {
 				debugger;
@@ -541,7 +540,7 @@ function createItemHtml(response, item, key, unused, fileObj, subDirs)
 	if (res2 != null) {
 		return;
 	}
-	var width = "250px";
+	var width = WIDTH_250 + "px";
 	
 	var localLink = "<a href=\"file://" + fileObj.fileSystem.toString() +"\">" + "Local Link" + "</a>";
 
@@ -618,7 +617,6 @@ function createButtonsPanel(item, subdirs, key, idstring) {
 // image
 function fileObjToHtml(fileObj) {
 	// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
-	var widthInt = 250;
 	var item = fileObj.fileSystem;
 	{
 		var res = item.match(/.*\.((txt)|(lnk))/gi);
@@ -640,7 +638,7 @@ function fileObjToHtml(fileObj) {
 					if (fileObj.exif) {
 						degreesToOrient = 90*(parseInt(fileObj.exif.orientation) - 1);
 					}
-					toBeAppended += '<img src="http://www.htmlgoodies.com/images/1x1.gif" width="250px" height="1px"><br>';
+					toBeAppended += '<img src="http://www.htmlgoodies.com/images/1x1.gif" width="' + WIDTH_250 + 'px" height="1px"><br>';
 					toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl +'?width=' + widthInt) + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
 					toBeAppended += '</a>';
 				}
@@ -789,6 +787,8 @@ function openHtmlTextInNewTab() {
 	newWin.document.write($("#thumbnailItems").html());
 	newWin.document.title = document.title;
 }
+
+
 
 
 
