@@ -107,7 +107,7 @@ function BY_CREATED(a, b) {
 }
 
 function shuffle(array) {
-  alert('broken after ordering by timestamp');
+  console.debug('broken after ordering by timestamp');
   var currentIndex = array.length, temporaryValue, randomIndex ;
 
   // While there remain elements to shuffle...
@@ -234,7 +234,8 @@ function dirObjToHtmlWithButtons(val, dir) {
 			continue;
 		}
 		var fileObj = pair[filename];
-		var id = "hoistwithbuttons-" + filename;
+		var filenameEscaped = filename.replace(/'/g,'&apos;');
+		var id = "hoistwithbuttons-" + filenameEscaped;
 		++hoistButtonId;
 		html += "<span id='"+id+"' style='float : left' align='left'>";
 		html += "<br>";
@@ -242,8 +243,8 @@ function dirObjToHtmlWithButtons(val, dir) {
 		html += "<br>";
 		html += "<br>";
 		html += "<br>";
-		html += "<button onclick='up(\""+filename +"\",\""+id+"\", "+level+", this)'>+</button>";
-		html += "<button onclick='down(\""+filename +"\",\""+id+"\", "+level+", this)'>-</button><br>";
+		html += "<button onclick='up(\""+filenameEscaped +"\",\""+id+"\", "+level+", this)'>+</button>";
+		html += "<button onclick='down(\""+ filenameEscaped +"\",\""+id+"\", "+level+", this)'>-</button><br>";
 		html += "<button onmousedown='this.style.cssText = \"background-color : peachpuff\";' onclick='moveFile(this, \"" + filename + "\",\"duplicates\",\""+id+"\")' style='background-color:"+getColorForDir(dirName)+"'>dup</button><br>";
 		html += "</span>";
 		--files2;
@@ -254,7 +255,7 @@ function dirObjToHtmlWithButtons(val, dir) {
 	html += "</span></td></tr>";
 		
 	if (dirnames != null) {
-		alert('dirnames = ' + dirnames + '\nMove declaration to right place');
+		console.debug('dirnames = ' + dirnames + '\nMove declaration to right place');
 		for (var i = 0; i < dirnames.length; i++) {
 			var dirname =  dirnames[i];
 			if (lastPartOf(dirname).lastIndexOf('_-',0) == 0) {
@@ -267,6 +268,7 @@ function dirObjToHtmlWithButtons(val, dir) {
 }
 
 function up(field,id, currentLevelId, button) {
+//	var field = decodeUIRComponent(fieldEncoded);
 	$.getJSON("http://netgear.rohidekar.com:4463/helloworld/moveUp?path=" + encodeURIComponent(field),function(result){
 		var targetLevel = currentLevelId + 1;
 		// TODO: handle the case where target level doesn't exist
@@ -277,6 +279,8 @@ function up(field,id, currentLevelId, button) {
 }
 
 function down(field,id, currentLevelId, button) {
+//	var field = decodeUIRComponent(fieldEncoded);
+	console.debug('down(): ' + field);
 	$.getJSON("http://netgear.rohidekar.com:4463/helloworld/moveDown?path=" + encodeURIComponent(field),function(result){
 		var targetLevel = currentLevelId - 1;
 		// TODO: handle the case where target level doesn't exist
@@ -312,7 +316,7 @@ function dirObjToHtml(val, dir) {
 	// TODO: make the other createThumbnailItemHtml() calls be done via map reduce
 	html += pairs.map(pairVal).reduce(createThumbnailItemHtml, "");
 	if (dirnames != null) {
-		alert('dirnames = ' + dirnames + '\nMove declaration to right place');
+		console.debug('dirnames = ' + dirnames + '\nMove declaration to right place');
 		for (var i = 0; i < dirnames.length; i++) {
 			var dirname =  dirnames[i];
 			if (lastPartOf(dirname).lastIndexOf('_-',0) == 0) {
@@ -584,7 +588,7 @@ function createButtonsPanel(item, subdirs, key, idstring) {
 		var escaped = item.replace(/'/g, "&apos;");
 		var idstringescaped = idstring.replace(/'/g, "&apos;");
 //		if (idstring.indexOf("'") > -1) {
-//			alert(idstringescaped);
+//			console.debug(idstringescaped);
 //		}
 		buttons += "<button onclick='moveFileToParent(\"" + escaped + "\",\""+idstringescaped+"\")'>Wrong Category</button><br>";
 		var subdirsArray = Object.keys(subdirs).sort(sortFunction);
@@ -639,7 +643,7 @@ function fileObjToHtml(fileObj) {
 						degreesToOrient = 90*(parseInt(fileObj.exif.orientation) - 1);
 					}
 					toBeAppended += '<img src="http://www.htmlgoodies.com/images/1x1.gif" width="' + WIDTH_250 + 'px" height="1px"><br>';
-					toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl +'?width=' + widthInt) + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
+					toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl +'?width=' + WIDTH_250) + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
 					toBeAppended += '</a>';
 				}
 			}
@@ -787,7 +791,6 @@ function openHtmlTextInNewTab() {
 	newWin.document.write($("#thumbnailItems").html());
 	newWin.document.title = document.title;
 }
-
 
 
 
