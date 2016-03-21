@@ -555,33 +555,68 @@ function createItemHtml(response, item, key, unused, fileObj, subDirs)
 	var idstringUnescaped = "card-" + fileObj.fileSystem;	
 	var idstring = idstringUnescaped.replace(/'/g, "&apos;");
 	id += 1;
-	console.debug('createItemHtml() - appending');
+
 	var buttonPanel = createButtonsPanel(item, subDirs, key, idstring);
+	console.debug('createItemHtml() - date = ' + fileObj.created);
+	console.debug('createItemHtml() - 2');
+	var dt = new Date(fileObj.created)
+	console.debug('createItemHtml() - 3 ' + dt );
+	var prettyDate = "----";//prettyDate(dt);
+	console.debug('createItemHtml() - 4  ' + item);
+	
+	var itemDecoded;
+	try {
+		itemDecoded = decodeURIComponent(item);
+	} catch (err) {
+		//debugger;
+		itemDecoded = "Malformed: " + item;
+	}
+	console.debug('createItemHtml() - appending');
 	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
-		+ image + "<td><td>"
-		+ buttonPanel
-		+ "</td>"
-		+ "</tr>"
+		+   image + "<td><td>"
+		+   buttonPanel
+		+   "</td>"
+		+ "  </tr>"
 		+ "<tr>"
 		+ "<td colspan=2>"
-		+ prettyDate(new Date(fileObj.created)) + '<br>' 
-		+ "<textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
-		+ decodeURIComponent(item) + '\n\n' 
-//		+ fileObj.created
-		+ "</textarea></td>"
+		+   prettyDate + '<br>' 
+		+   "<textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
+		+   itemDecoded + '\n\n' 
+//		+   fileObj.created
+		+   "</textarea></td>"
 		+ "<td><a href='" +fileObj.httpUrl+"'>" + fileObj.httpUrl + "</a><br>" +localLink
-		+ "<br><br>"+fileObj.thumbnailUrl + "</td>"
-		+ "</tr>"
-		+ "</table></td></tr>";
+		+ "  <br><br>"+fileObj.thumbnailUrl + "</td>"
+		+ "  </tr>"
+		+ "  </table></td></tr>";
 	console.debug('createItemHtml() - end');
 	return toBeAppended;
 }
 
-function prettyDate(date) {
+function prettyDate(date2) {
+	return "foobar";
+}
+
+function prettyDate1(date2) {
+	console.debug('prettyDate() - begin');
     var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-    return date.getUTCFullYear() + ' ' +  months[date.getUTCMonth()] + ' ' + date.getUTCDate();
+	console.debug('prettyDate() - 1');
+    var fullYear = date2.getUTCFullYear();
+	console.debug('prettyDate() - 2');
+    var monthIdx = date2.getUTCMonth();
+    console.debug('prettyDate() - 3');
+    var dateStr;
+    try {
+		dateStr = date2.getUTCDate();
+		console.debug('prettyDate() - 3.1 ');
+    } catch (err) {
+        console.debug('prettyDate() - 3.2 ' + err );
+    	dateStr = 'date error 601';
+    }
+    console.debug('prettyDate() - 4');
+	var ret = fullYear + ' ' +  months[monthIdx] + ' ' + dateStr;
+	console.debug('prettyDate() - 5');
+    return ret;
 }
 
 
