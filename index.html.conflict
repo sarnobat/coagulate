@@ -14,13 +14,13 @@
 <script src="http://netgear.rohidekar.com/yurl/js/imagezoom.ssarnobat.js"></script>
 <script>
 
+
 var urlBase = "http://netgear.rohidekar.com:44451/cmsfs/";
 var limit;
 var limitRoot = 200;
 var preDirLimit;
 var pairs;
 var depth;
-var WIDTH_250 = 250;
 
 $(function() {
 	$( "#tabs" ).tabs();
@@ -33,7 +33,7 @@ $(document).ready(function(){
 	updateURLIfEmpty();
 
 	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()) + "&limit=" + limit + "&depth=" + depth,function(response) {
-		$('#status').append("File list obtained. Creating tags...");
+	        $('#status').append("File list obtained. Creating tags...");
 		$('#items').empty();
 		addSubdirLinks(response);
 		pairs = toPairs(response.itemsRecursive);
@@ -107,7 +107,7 @@ function BY_CREATED(a, b) {
 }
 
 function shuffle(array) {
-  console.debug('broken after ordering by timestamp');
+  alert('broken after ordering by timestamp');
   var currentIndex = array.length, temporaryValue, randomIndex ;
 
   // While there remain elements to shuffle...
@@ -234,8 +234,7 @@ function dirObjToHtmlWithButtons(val, dir) {
 			continue;
 		}
 		var fileObj = pair[filename];
-		var filenameEscaped = filename.replace(/'/g,'&apos;');
-		var id = "hoistwithbuttons-" + filenameEscaped;
+		var id = "hoistwithbuttons-" + filename;
 		++hoistButtonId;
 		html += "<span id='"+id+"' style='float : left' align='left'>";
 		html += "<br>";
@@ -243,9 +242,9 @@ function dirObjToHtmlWithButtons(val, dir) {
 		html += "<br>";
 		html += "<br>";
 		html += "<br>";
-		html += "<button onclick='up(\""+filenameEscaped +"\",\""+id+"\", "+level+", this)'>+</button>";
-		html += "<button onclick='down(\""+ filenameEscaped +"\",\""+id+"\", "+level+", this)'>-</button><br>";
-		html += "<button onmousedown='this.style.cssText = \"background-color : peachpuff\";' onclick='moveFile(this, \"" + filename + "\",\"duplicates\",\""+id+"\")' style='background-color:"+getColorForDir(dirName)+"'>dup</button><br>";
+		html += "<button onclick='up(\""+filename +"\",\""+id+"\", "+level+")'>+</button>";
+		html += "<button onclick='down(\""+filename +"\",\""+id+"\", "+level+")'>-</button><br>";
+		html += "<button onmousedown='this.style.cssText = \"background-color : peachpuff\";' onclick='moveFile(this, \"" + filename + "\",\"duplicates\",\""+id+"\")' style='background-color:"+getColorForDir(dirName)+"'>duplicates</button><br>";
 		html += "</span>";
 		--files2;
 		if (files2 < 1 && !startsWith(dirName, '_+')) {
@@ -254,8 +253,8 @@ function dirObjToHtmlWithButtons(val, dir) {
 	}
 	html += "</span></td></tr>";
 		
+	var files3 = preDirLimit;	
 	if (dirnames != null) {
-		console.debug('dirnames = ' + dirnames + '\nMove declaration to right place');
 		for (var i = 0; i < dirnames.length; i++) {
 			var dirname =  dirnames[i];
 			if (lastPartOf(dirname).lastIndexOf('_-',0) == 0) {
@@ -267,24 +266,23 @@ function dirObjToHtmlWithButtons(val, dir) {
 	return html;
 }
 
-function up(field,id, currentLevelId, button) {
-//	var field = decodeUIRComponent(fieldEncoded);
+
+function up(field,id, currentLevelId) {
 	$.getJSON("http://netgear.rohidekar.com:4463/helloworld/moveUp?path=" + encodeURIComponent(field),function(result){
 		var targetLevel = currentLevelId + 1;
 		// TODO: handle the case where target level doesn't exist
-		var elem = $("[id='" + id + "']").remove();
+		var elem = $("#"+id).remove();
 		$("#level-" + targetLevel).append(elem);
 		removeImageElement(field);
 	});
 }
 
-function down(field,id, currentLevelId, button) {
-//	var field = decodeUIRComponent(fieldEncoded);
-	console.debug('down(): ' + field);
+function down(field,id, currentLevelId) {
 	$.getJSON("http://netgear.rohidekar.com:4463/helloworld/moveDown?path=" + encodeURIComponent(field),function(result){
 		var targetLevel = currentLevelId - 1;
+		removeImageElement(field);
 		// TODO: handle the case where target level doesn't exist
-		var elem = $("[id='" + id + "']").remove();
+		var elem = $("#"+field).remove();
 		$("#level-" + targetLevel).append(elem);
 		// TODO: why is this called twice?
 		removeImageElement(field);
@@ -315,8 +313,8 @@ function dirObjToHtml(val, dir) {
 	}
 	// TODO: make the other createThumbnailItemHtml() calls be done via map reduce
 	html += pairs.map(pairVal).reduce(createThumbnailItemHtml, "");
+	var files3 = preDirLimit;	
 	if (dirnames != null) {
-		console.debug('dirnames = ' + dirnames + '\nMove declaration to right place');
 		for (var i = 0; i < dirnames.length; i++) {
 			var dirname =  dirnames[i];
 			if (lastPartOf(dirname).lastIndexOf('_-',0) == 0) {
@@ -366,7 +364,6 @@ function filesOnly(anObj) {
 
 // For thumbnails
 function printDirsRecursive(dirItems, response, idIn, iLimit, loadImmediate) {
-	//console.debug('printDirsRecursive() - begin');
 	var html = "";
 	var items = dirItems;
 
@@ -376,7 +373,6 @@ function printDirsRecursive(dirItems, response, idIn, iLimit, loadImmediate) {
 	// TODO: Move current dir to front
 	for(var dirIndex in sortedItems) { 
 		var dirPath = sortedItems[dirIndex];
-		//console.debug('printDirsRecursive() - ' + dirPath);
 		var categoryName1 = "";
 		categoryName1 = dirPath.split('/').pop();
 		html += "\n\n\n<h3><a href='http://netgear.rohidekar.com/coagulate/?locations="+encodeURIComponent(dirPath) +"'>\n"+ categoryName1 + "\n</a></h3>\n\n\n";
@@ -384,7 +380,7 @@ function printDirsRecursive(dirItems, response, idIn, iLimit, loadImmediate) {
 		if (filesInDir.length < 1) {
 			continue;
 		}
-		var filesInDirSortedMap = shuffle(Object.keys(filesInDir));
+		var filesInDirSortedMap = shuffle(Object.keys(filesInDir));//Object.keys(filesInDir).sort();
 		// For each regular file in the directory
 		for (var sortedIndex in filesInDirSortedMap) {
 			var filepath = filesInDirSortedMap[sortedIndex];
@@ -437,6 +433,8 @@ function createThumbnailItemHtml(accumulator, fileObj, loadImmediate, size) {
 		var httpUrl = fileObj.httpUrl;
 		var thumbnailUrl = fileObj.thumbnailUrl;
 
+		var widthInt = 250;
+		var width = widthInt + "px";
 		var height = size;
 		if (size == null) {
 			height = 100;
@@ -455,9 +453,9 @@ function createThumbnailItemHtml(accumulator, fileObj, loadImmediate, size) {
 				// easier mass sorting. But it's not as nice to view.
 				// The server-side thumbnailator reorients the image correctly
 				if (loadImmediate) {
-					toBeAppended += '\t\t\t<img src="' + encodeURI(httpUrl) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'px" class="loadImageSequentially" />\n';
+					toBeAppended += '\t\t\t<img src="' + encodeURI(httpUrl) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'px" class="myimage" />\n';
 				} else {
-					toBeAppended += '\t\t\t<img src="http://netgear.rohidekar.com/static/icons/Orb_Icons_001.png" data-src="' + encodeURI(httpUrl + "?width=" + WIDTH_250) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'px" class="loadImageSequentially thumbnail" />\n';
+					toBeAppended += '\t\t\t<img src="http://netgear.rohidekar.com/static/icons/Orb_Icons_001.png" data-src="' + encodeURI(httpUrl + "?width=" + widthInt) + '" onmouseenter="zoom(this)" style="transform: rotate(' + degreesToOrient + 'deg); height : '+height+'px" class="myimage" />\n';
 				}
 				//data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
 				toBeAppended += '\t</a>\n';
@@ -478,7 +476,7 @@ function createThumbnailItemHtml(accumulator, fileObj, loadImmediate, size) {
 				toBeAppended += '<img src=\"' +thumbnailUrl+'\" height="'+height+'px">';
 			}
 		}
-		toBeAppended = "<span id='thumbnail-"+ fileSystem +"'>\n" + toBeAppended;
+		toBeAppended = "<span id='thumbnail-"+fileSystem+"'>\n" + toBeAppended;
 		toBeAppended += "&nbsp;\n</span>";
 	}	
 	return toBeAppended;
@@ -501,33 +499,41 @@ function addSubdirLinks(response) {
 	}
 }
 function loadImagesSequentially(i) {
-	var images = $('.loadImageSequentially');
+	var images = $('.myimage');
 	if (i >= images.length) {
 		return
 	}
+//	var imgElem = images[i][0];
+//	var imgElemId = $(images[i]).get(0).id;
+	var imageAttrs = images[i].attributes;
 	var datasrc = $(images[i]).attr('data-src');
 	$(images[i]).attr('src',datasrc);
 	var a = function(j) {
 		loadImagesSequentially(++i);
 	};
 	$(images[i]).load(a(i), function() {
-		
-		if (!$( this ).hasClass('thumbnail')) {
-			// compute the height and width such that this will fit inside a square of fixed size
-			if ($( this ).get(0).height >= $( this ).get(0).width) {
-				$( this ).get(0).style.height = WIDTH_250 + 'px';
-				$( this ).get(0).style.width = 'auto';
-			} else 	if ($( this ).get(0).height < $( this ).get(0).width) {
-				$( this ).get(0).style.width = WIDTH_250 + 'px';
-				$( this ).get(0).style.height = 'auto';
-			} else {
-				debugger;
-			}
+		console.debug($( this ).get(0).naturalWidth);
+		console.debug($( this ).get(0).naturalHeight);
+//		if ($( this ).get(0).naturalHeight > 300) {
+//			$( this ).attr('width',  300/$( this ).get(0).naturalHeight * $( this ).get(0).naturalWidth);
+//		}
+		if ($( this ).get(0).height >= $( this ).get(0).width) {
+			console.debug($( this ).get(0));
+			$( this ).get(0).style.height = '250px';
+			$( this ).get(0).style.width = 'auto';
+//			$( this ).parent().append($( this ).get(0).style.height + " x " + $( this ).get(0).style.width);
+		} else 	if ($( this ).get(0).height < $( this ).get(0).width) {
+			console.debug($( this ).get(0));
+			$( this ).get(0).style.width = '250px';
+			$( this ).get(0).style.height = 'auto';
+//			$( this ).parent().append($( this ).get(0).style.height + " x " + $( this ).get(0).style.width);
 		} else {
-				$( this ).get(0).style.height = '80px';
-				$( this ).get(0).style.width = 'auto';
+			debugger;
 		}
+
 	});
+//	console.debug(img.naturalHeight + " x " + img.naturalWidth);
+
 }
 
 // item = filepath
@@ -536,7 +542,6 @@ function loadImagesSequentially(i) {
 // 
 function createItemHtml(response, item, key, unused, fileObj, subDirs)
 {	
-	console.debug('createItemHtml() - begin');
 	var image = fileObjToHtml(fileObj);
 	
 	var res1 = fileObj.fileSystem.match(/.*fuse.hidden.*/gi);
@@ -544,93 +549,57 @@ function createItemHtml(response, item, key, unused, fileObj, subDirs)
 		return;
 	}
 	var res2 = fileObj.fileSystem.match(/.*aufs/gi);
-	if (res2 != null) {
+	if (res2 !=null) {
 		return;
 	}
-	var width = WIDTH_250 + "px";
+	var width = "250px";
+	var height = "300px";
 	
 	var localLink = "<a href=\"file://" + fileObj.fileSystem.toString() +"\">" + "Local Link" + "</a>";
 
-	//console.debug('createItemHtml() - ' + fileObj.fileSystem.toString());
+
 	var idstringUnescaped = "card-" + fileObj.fileSystem;	
 	var idstring = idstringUnescaped.replace(/'/g, "&apos;");
 	id += 1;
-
-	var buttonPanel = createButtonsPanel(item, subDirs, key, idstring);
-	console.debug('createItemHtml() - date = ' + fileObj.created);
-	console.debug('createItemHtml() - 2');
-	var dt = new Date(fileObj.created)
-	console.debug('createItemHtml() - 3 ' + dt );
-	var prettyDate = "----";//prettyDate(dt);
-	console.debug('createItemHtml() - 4  ' + item);
-	
-	var itemDecoded;
-	try {
-		itemDecoded = decodeURIComponent(item);
-	} catch (err) {
-		//debugger;
-		itemDecoded = "Malformed: " + item;
-	}
-	console.debug('createItemHtml() - appending');
+console.debug(item);
 	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
-		+   image + "<td><td>"
-		+   buttonPanel
-		+   "</td>"
-		+ "  </tr>"
-		+ "<tr>"
-		+ "<td colspan=2>"
-		+   prettyDate + '<br>' 
-		+   "<textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
-		+   itemDecoded + '\n\n' 
-//		+   fileObj.created
-		+   "</textarea></td>"
+		+ image + "<td><td>"+createButtonsPanel(item, subDirs, key, idstring)
+		+ "</td></tr><tr><td colspan=2><textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
+		+ decodeURIComponent(item) + '\n\n' 
+		+ prettyDate(new Date(fileObj.created)) + '\n' 
+		+ fileObj.created
+		+"</textarea></td>"
 		+ "<td><a href='" +fileObj.httpUrl+"'>" + fileObj.httpUrl + "</a><br>" +localLink
-		+ "  <br><br>"+fileObj.thumbnailUrl + "</td>"
-		+ "  </tr>"
-		+ "  </table></td></tr>";
-	console.debug('createItemHtml() - end');
+		+ "<br><br>"+fileObj.thumbnailUrl + "</td></tr></table></td></tr>";
+
 	return toBeAppended;
 }
 
-function prettyDate(date2) {
-	return "foobar";
-}
-
-function prettyDate1(date2) {
-	console.debug('prettyDate() - begin');
+function prettyDate(date) {
     var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-	console.debug('prettyDate() - 1');
-    var fullYear = date2.getUTCFullYear();
-	console.debug('prettyDate() - 2');
-    var monthIdx = date2.getUTCMonth();
-    console.debug('prettyDate() - 3');
-    var dateStr;
-    try {
-		dateStr = date2.getUTCDate();
-		console.debug('prettyDate() - 3.1 ');
-    } catch (err) {
-        console.debug('prettyDate() - 3.2 ' + err );
-    	dateStr = 'date error 601';
-    }
-    console.debug('prettyDate() - 4');
-	var ret = fullYear + ' ' +  months[monthIdx] + ' ' + dateStr;
-	console.debug('prettyDate() - 5');
-    return ret;
+
+    return date.getUTCFullYear() +  months[date.getUTCMonth()] + ' ' + date.getUTCDate();
 }
 
 
 // item = filepath
 // key = dirpath
 function createButtonsPanel(item, subdirs, key, idstring) {
-	console.debug('createButtonsPanel() - begin');
+
 	var buttons = "<table><tr><td>";							
 	{
 		var escaped = item.replace(/'/g, "&apos;");
 		var idstringescaped = idstring.replace(/'/g, "&apos;");
+<<<<<<< HEAD
+		if (idstring.indexOf("'") > -1) {
+			alert(idstringescaped);
+		}
+=======
 //		if (idstring.indexOf("'") > -1) {
-//			console.debug(idstringescaped);
+//			alert(idstringescaped);
 //		}
+>>>>>>> ea8a70b7d715dae9a149423cd6cc187e856849ce
 		buttons += "<button onclick='moveFileToParent(\"" + escaped + "\",\""+idstringescaped+"\")'>Wrong Category</button><br>";
 		var subdirsArray = Object.keys(subdirs).sort(sortFunction);
 		{
@@ -642,27 +611,32 @@ function createButtonsPanel(item, subdirs, key, idstring) {
 				}
 				var dirPath = subdirsArray[dir];				
 				var dirName = dirPath.substr(dirPath.lastIndexOf('/') + 1);
+<<<<<<< HEAD
+=======
 				var res1 = dirName.match(/\..*/gi);
 				
 				if (res1 != null) {
 					continue;
 				}
+>>>>>>> ea8a70b7d715dae9a149423cd6cc187e856849ce
 				buttons += "<button onmousedown='this.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstringescaped+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
 			}
 		}
 	}
 	buttons += "<br>";
-	buttons += "<button onclick='moveToNonExistingFolder(this,\"" +escaped+"\",\""+idstringescaped+"\")'>MOVE to custom</button><br>";
+	buttons += "<button onclick='moveToNonExistingFolder(this,\"" +escaped+"\",\""+dirName+"\",\""+idstringescaped+"\")'>MOVE to custom</button><br>";
 	buttons += "<br>";
 	buttons += "<button onclick='copyFileToFolder(\"" + escaped + "\", \"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/favorites\",\""+idstringescaped+"\", this)'>COPY TO favorites</button><br>";
 	buttons += "</td></tr></table>";
-	console.debug('createButtonsPanel() - end');
 	return buttons;
 }
 
 // image
 function fileObjToHtml(fileObj) {
 	// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
+	var widthInt = 250;
+//	var width = widthInt + "px";
+//	var height = "300px";
 	var item = fileObj.fileSystem;
 	{
 		var res = item.match(/.*\.((txt)|(lnk))/gi);
@@ -674,8 +648,10 @@ function fileObjToHtml(fileObj) {
 	{
 		var toBeAppended = "";
 		var httpUrl = fileObj.httpUrl;
+		//console.debug(fileObj);
 		var thumbnailUrl = fileObj.thumbnailUrl;
 		{
+			var lastModified = fileObj.lastModified;
 			{
 				var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
 				if (res !=null) {
@@ -684,8 +660,9 @@ function fileObjToHtml(fileObj) {
 					if (fileObj.exif) {
 						degreesToOrient = 90*(parseInt(fileObj.exif.orientation) - 1);
 					}
-					toBeAppended += '<img src="http://www.htmlgoodies.com/images/1x1.gif" width="' + WIDTH_250 + 'px" height="1px"><br>';
-					toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl +'?width=' + WIDTH_250) + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
+//					toBeAppended += '<hr size="250px">';
+					toBeAppended += '<img src="http://www.htmlgoodies.com/images/1x1.gif" width="250px" height="1px"><br>';
+					toBeAppended += '<img class="myimage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl +'?width=' + widthInt) + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
 					toBeAppended += '</a>';
 				}
 			}
@@ -711,20 +688,19 @@ function DIR_TO_HTML_CARDS(dirObj) {
 }
 
 function dirToHtmlCards(dirObj) {
-	console.debug('dirToHtmlCards() - begin');
+	var html = "";
+	//console.debug(dirObj);
 	var dir = Object.keys(dirObj);
+	//var files = shuffle(toPairs(dirObj[dir])).slice(0, limitRoot).filter(filesOnly);
 	var files = toPairs(dirObj[dir]).slice(0, limitRoot).filter(filesOnly).sort(BY_CREATED).reverse();
 	var subdirs = dirObj[dir].dirs;
-	var html = "";
 	html += files.map(fileToHtmlParameterized(subdirs)).join('');
-	console.debug('dirToHtmlCards() - end: ' + 	html);
 	return html;
 }
 
 var id = 0;
 
 function fileToHtmlParameterized(subdirs) {
-	console.debug('fileToHtmlParameterized() - begin');
 	return function fileToHtml(filePair) {
 		var ret = "";
 		var filePath = Object.keys(filePair)[0];
@@ -741,8 +717,9 @@ function fileToHtmlParameterized(subdirs) {
 	};
 }
 
-function moveToNonExistingFolder(elem, fileToMove, idstring) {
+function moveToNonExistingFolder(elem, fileToMove, parentDir, idstring) {
 	var newCategorySimpleName = prompt("Category name:");
+	var newDir = parentDir + '/' + newCategorySimpleName;
 	moveFile(elem, fileToMove, newCategorySimpleName, idstring);
 }
 
@@ -754,14 +731,11 @@ function moveFile(button, filePath, destinationDirSimpleName,id) {
 }
 
 function removeImageElement(filePath) {
-		//var next = $("[id='card-" + encodeURIComponent(filePath) + "']").get(0);
+		var next = $("[id='card-" + filePath + "']").get(0);
 		$("[id='card-" + filePath + "']").remove();
 		$("[id='thumbnail-" + filePath + "']").remove();
 		$("[id='hoistwithbuttons-" + filePath + "']").remove();
-		//if (next == null) {
-		//	debugger;
-		//}
-		//next.scrollIntoView();
+		next.scrollIntoView();
 }
 
 function sortFunction(a, b) {
@@ -791,7 +765,7 @@ function getColorForDir(dirName) {
 	} else if (dirName == 'ind') {
 		color = 'orange';
 	}
-	return color;
+	return color
 }
 
 function addslashes( str ) {
@@ -837,9 +811,6 @@ function openHtmlTextInNewTab() {
 	newWin.document.title = document.title;
 }
 
-
-
-
 </script>
 <style type="text/css">
 
@@ -863,15 +834,16 @@ function openHtmlTextInNewTab() {
 </script>
 <div id="menubar"></div>
 
+Todo: Create a tab for simply viewing the images in a directory (no sorting). e.g. for "favorites". Otherwise you have to manually add links to yurl
 <br>
-<span><a href="/coagulate">Reset Locations</a></span>
-<span><a href="/coagulate?locations=%2Fmedia%2Fsarnobat%2Fe%2FDrive%20J%2Fpictures%2FOther%20(new)%2Fpictures%2Fmisc_sync_master%2F">Other</a></span>
-<span><a href="/coagulate?locations=%2FUnsorted%2FVideos%2F%0A%2FLarge%2FVideos%0A%2Fe%2Fnew%2Fvideo%0A%2Fe%2FVideos%0A%2Fd%2FVideos%0A%2Fmedia%2Fsarnobat%2Fc%2FDocuments%20and%20Settings%2FSridhar.SRIDHAR-E5FA83A%2FDesktop%2Fvideos%2F%0A%2FLarge%2FVideos_Home%2FAVCHD%2FAVCHD%2FBDMV%2FSTREAM%0A%2Fmedia%2Fsarnobat%2FRecord%2FVideos_Home%2FHome%20Video%2Fhome%20movies%20(high-definition)%0A%2Fmedia%2Fsarnobat%2FRecord%2FVideos_Home%2FHome%20Video%2Fsmall%20videos%20(non%20HD%20camcorder)">Videos</a></span>
-<span><a href="/coagulate/?locations=%2Fe%2FSridhar%2FPhotos%2Fcamera%20phone%20photos%2FiPhone%2F">Photos</a></span>
-<span><a href="/coagulate?locations=%2Fmedia%2Fsarnobat%2FRecord%2FRecord%20to%20DVD%20(non-videos)%2Fbooks%0A%2Fmedia%2Fsarnobat%2F3TB%2FComputer%20Knowledge%20MegaCollection%20v1.0%0A%2Fmedia%2Fsarnobat%2Fe%2Fnew%2Fbooks%0A%2Fmedia%2Fsarnobat%2Fe%2FSridhar%2FBooks%0A%2Fmedia%2Fsarnobat%2Fd%2FRecord%20these%2FBooks%0A%2Fe%2Fnew%2Fpdf">Books</a></span>
-<span><a href="/coagulate?locations=%2Fmedia%2Fsarnobat%2FUnsorted%2Fimages">Images</a></span>
-<span><a href="/coagulate?locations=%23%2Fe%2FSridhar%2FWeb%2FFriends%0A%2FUnsorted%2Fimages%2Ffriends%0A%23%2Fe%2Fnew%2Fweb%2FFriends">Friends</a></span>
-<span><a href="/coagulate?locations=%23%2Fe%2Fnew%2Fweb%2F%0A%2Fe%2FSridhar%2FWeb%2F">Web</a></span>
+<a href="/coagulate">Reset Locations</a><br><br>
+<a href="/coagulate?locations=%2Fmedia%2Fsarnobat%2Fe%2FDrive%20J%2Fpictures%2FOther%20(new)%2Fpictures%2Fmisc_sync_master%2F">Other</a><br>
+<a href="/coagulate?locations=%2FUnsorted%2FVideos%2F%0A%2FLarge%2FVideos%0A%2Fe%2Fnew%2Fvideo%0A%2Fe%2FVideos%0A%2Fd%2FVideos%0A%2Fmedia%2Fsarnobat%2Fc%2FDocuments%20and%20Settings%2FSridhar.SRIDHAR-E5FA83A%2FDesktop%2Fvideos%2F%0A%2FLarge%2FVideos_Home%2FAVCHD%2FAVCHD%2FBDMV%2FSTREAM%0A%2Fmedia%2Fsarnobat%2FRecord%2FVideos_Home%2FHome%20Video%2Fhome%20movies%20(high-definition)%0A%2Fmedia%2Fsarnobat%2FRecord%2FVideos_Home%2FHome%20Video%2Fsmall%20videos%20(non%20HD%20camcorder)">Videos</a><br>
+<a href="/coagulate/?locations=%2Fe%2FSridhar%2FPhotos%2Fcamera%20phone%20photos%2FiPhone%2F">Photos</a><br>
+<a href="/coagulate?locations=%2Fmedia%2Fsarnobat%2FRecord%2FRecord%20to%20DVD%20(non-videos)%2Fbooks%0A%2Fmedia%2Fsarnobat%2F3TB%2FComputer%20Knowledge%20MegaCollection%20v1.0%0A%2Fmedia%2Fsarnobat%2Fe%2Fnew%2Fbooks%0A%2Fmedia%2Fsarnobat%2Fe%2FSridhar%2FBooks%0A%2Fmedia%2Fsarnobat%2Fd%2FRecord%20these%2FBooks%0A%2Fe%2Fnew%2Fpdf">Books</a><br>
+<a href="/coagulate?locations=%2Fmedia%2Fsarnobat%2FUnsorted%2Fimages">Images</a><br>
+<a href="/coagulate?locations=%23%2Fe%2FSridhar%2FWeb%2FFriends%0A%2FUnsorted%2Fimages%2Ffriends%0A%23%2Fe%2Fnew%2Fweb%2FFriends">Friends</a><br>
+<a href="/coagulate?locations=%23%2Fe%2Fnew%2Fweb%2F%0A%2Fe%2FSridhar%2FWeb%2F">Web</a><br>
 <br>
 <div id="status"></div>
 
