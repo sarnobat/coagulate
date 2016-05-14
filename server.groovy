@@ -1128,8 +1128,9 @@ public class Coagulate {
 		
 		static void moveFileToSubfolder(String filePath,
 				String iSubfolderSimpleName) throws IllegalAccessError, IOException {
-			System.out.println("moveFileToSubfolder() - begin");
+			System.out.println("moveFileToSubfolder() - begin: " + filePath);
 			Path sourceFilePath = Paths.get(filePath);
+                        System.out.println("moveFileToSubfolder() - sourceFilePath = " + sourceFilePath);
 			if (!Files.exists(sourceFilePath)) {
 				throw new RuntimeException("No such source file: " + sourceFilePath.toAbsolutePath().toString());
 			}
@@ -1141,10 +1142,11 @@ public class Coagulate {
 			} else if (!Files.isDirectory(targetDir)) {
 				throw new RuntimeException("Target is an existing file");
 			}
-			if (fileAlreadyInDesiredSubdir(iSubfolderSimpleName, sourceFilePath)) {
-				//System.out.println("Not moving to self");
-				return;
-			}
+// I'm pretty sure we can delete this
+//			if (fileAlreadyInDesiredSubdir(iSubfolderSimpleName, sourceFilePath)) {
+//				System.out.println("moveFileToSubfolder() - Not moving to self");
+//				return;
+//			}
 			Operations.doMove(sourceFilePath, getUnconflictedDestinationFilePath(iSubfolderSimpleName, sourceFilePath));
 
 		}
