@@ -693,6 +693,7 @@ public class Coagulate {
 				dirs2.add(entry.getKey(), entry.getValue().json());
 			}
 			ret.add("dirs", dirs2);
+			ret.add("subDirObjs", createSubdirObjs(Paths.get(commonDirPath)));
 			return new DirObj(ret.build(), commonDirPath);
 		}
 
