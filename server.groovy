@@ -1050,6 +1050,7 @@ public class Coagulate {
 			@Override
 			public boolean apply(Path iPath) {
 				if (iPath.toFile().isDirectory()) {
+					// I think changing this causes problems
 					return false;
 				}
 				String filename = iPath.getFileName().toString();
@@ -1264,8 +1265,15 @@ public class Coagulate {
 		// Only works for files
 		private static Path determineDestinationPathAvoidingExisting(
 				String destinationFilePath) throws IllegalAccessError {
-			String destinationFilePathWithoutExtension = destinationFilePath
-					.substring(0, destinationFilePath.lastIndexOf('.'));
+			System.out.println("Coagulate.Operations.determineDestinationPathAvoidingExisting() = ");
+			int lastIndexOf = destinationFilePath.lastIndexOf('.');
+			String destinationFilePathWithoutExtension ;
+			if (lastIndexOf == -1) {
+				destinationFilePathWithoutExtension = destinationFilePath;
+			} else {
+				destinationFilePathWithoutExtension = destinationFilePath
+						.substring(0, lastIndexOf);	
+			}
 			String extension = FilenameUtils
 					.getExtension(destinationFilePath);
 			Path rDestinationFile = Paths.get(destinationFilePath);
