@@ -164,6 +164,9 @@ function dirToFilesInDirParameterized(dirContents) {
 
 function toPairs(obj) {
 	var ret = [];
+	if (obj == null) {
+		debugger;
+	}
 	var keys = Object.keys(obj).sort();// Sometimes you want to sort, sometimes shuffle. Make this toggleable
 	for (var i = 0; i < keys.length; i++) {
 		var key = keys[i];
@@ -231,6 +234,9 @@ function dirObjToHtmlWithButtons(val, dir) {
 		var pair = pairs[i];
 		var filename = Object.keys(pair)[0];
 		if (filename == 'dirs') {
+			continue;
+		}
+		if (filename == 'subDirObjs') {
 			continue;
 		}
 		var fileObj = pair[filename];
@@ -357,11 +363,21 @@ function lastPartOf(str) {
 	return str.substr(str.lastIndexOf('/') + 1);
 }
 
-function filesOnly(anObj) {
+function dirsOnly(anObj) {
 	if (anObj.dirs == null) {
 		return true;
 	}
-	return false;
+	return true;
+}
+
+function filesOnly(anObj) {
+	if (anObj.dirs != null) {
+		return false;
+	}
+	if (anObj.subDirObjs != null) {
+		return false;
+	}
+	return true;
 }
 
 // For thumbnails
@@ -392,6 +408,7 @@ function printDirsRecursive(dirItems, response, idIn, iLimit, loadImmediate) {
 				continue;
 			}
 			if (filepath == 'dirs') {
+			} else if (filepath == 'subDirObjs') {
 			} else {
 				++id;
 				if (id > iLimit) {
@@ -425,6 +442,10 @@ function printDirsRecursive(dirItems, response, idIn, iLimit, loadImmediate) {
 function createThumbnailItemHtml(accumulator, fileObj, loadImmediate, size) {	
 	
 	var fileSystem = fileObj.fileSystem;
+
+	if (fileSystem == null) {
+		debugger;
+	}
 
 	// File types to ignore	
 	var res = fileSystem.match(/.*\.((txt)|(lnk))/gi);
@@ -530,17 +551,69 @@ function loadImagesSequentially(i) {
 	});
 }
 
+// item = dirpath
+// key = parentDirpath
+// item2 = dirObj
+// 
+function createDirItemHtml(response, item, key, unused, dirObj, subDirs)
+{
+	console.debug('createDirItemHtml() - begin');
+
+	var image = dirObjToHtml2(dirObj);
+	
+	var width = WIDTH_250 + "px";
+	
+	var localLink = "<a href=\"file://" + dirObj.fileSystem.toString() +"\">" + "Local Link" + "</a>";
+	
+	var idstringUnescaped = "card-" + dirObj.fileSystem;	
+	var idstring = idstringUnescaped.replace(/'/g, "&apos;");
+	id += 1;
+
+	var buttonPanel = createButtonsPanelForDir(item, subDirs, key, idstring);
+	var dt = new Date(dirObj.created);
+	
+	var prettyDate = "----";
+	
+	var itemDecoded;
+	try {
+		itemDecoded = decodeURIComponent(item);
+	} catch (err) {
+		//debugger;
+		itemDecoded = "Malformed: " + item;
+	}
+
+	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
+		+   image + "<td><td>"
+		+   buttonPanel
+		+   "</td>"
+		+ "  </tr>"
+		+ "<tr>"
+		+ "<td colspan=2>"
+		+   prettyDate + '<br>' 
+		+   "<textarea rows=4 style='width:" + width+"; word-wrap:break-word;'>" 
+		+   itemDecoded + '\n\n' 
+		+   "</textarea></td>"
+		+ "<td><a href='" +dirObj.httpUrl+"'>" + dirObj.httpUrl + "</a><br>" +localLink
+		+ "  <br><br>"
+		//+ dirObj.thumbnailUrl
+	 	+ "</td>"
+		+ "  </tr>"
+		+ "  </table></td></tr>";
+
+	return toBeAppended;
+}
+
 // item = filepath
 // key = dirpath
 // item2 = fileObj
 // 
 function createItemHtml(response, item, key, unused, fileObj, subDirs)
-{	
-	console.debug('createItemHtml() - begin');
+{
+	//console.debug('createItemHtml() - begin');
 	var image = fileObjToHtml(fileObj);
 	
 	var res1 = fileObj.fileSystem.match(/.*fuse.hidden.*/gi);
-	if (res1 !=null) {
+	if (res1 != null) {
 		return;
 	}
 	var res2 = fileObj.fileSystem.match(/.*aufs/gi);
@@ -557,12 +630,12 @@ function createItemHtml(response, item, key, unused, fileObj, subDirs)
 	id += 1;
 
 	var buttonPanel = createButtonsPanel(item, subDirs, key, idstring);
-	console.debug('createItemHtml() - date = ' + fileObj.created);
-	console.debug('createItemHtml() - 2');
+	//console.debug('createItemHtml() - date = ' + fileObj.created);
+	//console.debug('createItemHtml() - 2');
 	var dt = new Date(fileObj.created)
-	console.debug('createItemHtml() - 3 ' + dt );
-	var prettyDate = "----";//prettyDate(dt);
-	console.debug('createItemHtml() - 4  ' + item);
+	//console.debug('createItemHtml() - 3 ' + dt );
+	var prettyDate = "----";
+	//console.debug('createItemHtml() - 4  ' + item);
 	
 	var itemDecoded;
 	try {
@@ -571,7 +644,8 @@ function createItemHtml(response, item, key, unused, fileObj, subDirs)
 		//debugger;
 		itemDecoded = "Malformed: " + item;
 	}
-	console.debug('createItemHtml() - appending');
+
+	//console.debug('createItemHtml() - appending');
 	var toBeAppended =	  "<tr id='" +idstring+"'><td><table><tr><td>"
 		+   image + "<td><td>"
 		+   buttonPanel
@@ -588,7 +662,7 @@ function createItemHtml(response, item, key, unused, fileObj, subDirs)
 		+ "  <br><br>"+fileObj.thumbnailUrl + "</td>"
 		+ "  </tr>"
 		+ "  </table></td></tr>";
-	console.debug('createItemHtml() - end');
+	//console.debug('createItemHtml() - end');
 	return toBeAppended;
 }
 
@@ -619,6 +693,43 @@ function prettyDate1(date2) {
     return ret;
 }
 
+// item = dirpath
+// key = parentDirpath
+function createButtonsPanelForDir(item, subdirs, key, idstring) {
+
+	var buttons = "<table><tr><td>";							
+	{
+		var escaped = item.replace(/'/g, "&apos;");
+		var idstringescaped = idstring.replace(/'/g, "&apos;");
+
+		buttons += "<button onclick='alert(\"unimplemented\");moveDirToParent(\"" + escaped + "\",\""+idstringescaped+"\")'>Wrong Category</button><br>";
+		var subdirsArray = Object.keys(subdirs).sort(sortFunction);
+		{
+			var buttonsAdded = 0;
+			for (var dir in subdirsArray) {
+				buttonsAdded++;
+				if (buttonsAdded%15 == 0) {
+					buttons += "</td><td>";
+				}
+				var dirPath = subdirsArray[dir];				
+				var dirName = dirPath.substr(dirPath.lastIndexOf('/') + 1);
+				var res1 = dirName.match(/\..*/gi);
+				
+				if (res1 != null) {
+					continue;
+				}
+				buttons += "<button onmousedown='this.style.cssText = \"background-color : orange\";' onclick='moveDir(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstringescaped+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
+			}
+		}
+	}
+	buttons += "<br>";
+	buttons += "<button onclick='alert(\"unimplemented\");moveDirToNonExistingFolder(this,\"" +escaped+"\",\""+idstringescaped+"\")'>MOVE to custom</button><br>";
+	buttons += "<br>";
+//	buttons += "<button onclick='copyFileToFolder(\"" + escaped + "\", \"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/favorites\",\""+idstringescaped+"\", this)'>COPY TO favorites</button><br>";
+	buttons += "</td></tr></table>";
+
+	return buttons;
+}
 
 // item = filepath
 // key = dirpath
@@ -706,31 +817,79 @@ function fileObjToHtml(fileObj) {
 	return toBeAppended;
 }
 
+function dirObjToHtml2(dirObj) {
+// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
+	var item = dirObj.fileSystem;
+	
+	{
+		var toBeAppended = "";
+		var httpUrl = dirObj.httpUrl;
+		var thumbnailUrl = dirObj.thumbnailUrl;
+		{
+			{
+				var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
+				if (res !=null) {
+					toBeAppended += '<a href=\'' + httpUrl + '\' target="_blank">';
+					toBeAppended += '<img src="http://www.htmlgoodies.com/images/1x1.gif" width="' + WIDTH_250 + 'px" height="1px"><br>';
+					toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl +'?width=' + WIDTH_250) + '" style="transform: rotate(0 deg)"/>';
+					toBeAppended += '</a>';
+				}
+			}
+		}
+	}	
+	return toBeAppended;
+}
+
 function DIR_TO_HTML_CARDS(dirObj) {
 	return dirToHtmlCards(dirObj);
 }
 
 function dirToHtmlCards(dirObj) {
-	console.debug('dirToHtmlCards() - begin');
+//	console.debug('dirToHtmlCards() - begin');
 	var dir = Object.keys(dirObj);
 	var files = toPairs(dirObj[dir]).slice(0, limitRoot).filter(filesOnly).sort(BY_CREATED).reverse();
 	var subdirs = dirObj[dir].dirs;
 	var html = "";
 	html += files.map(fileToHtmlParameterized(subdirs)).join('');
-	console.debug('dirToHtmlCards() - end: ' + 	html);
+	if (dirObj[dir].subDirObjs != null) {
+		var subdirObjs = toPairs(dirObj[dir].subDirObjs).slice(0, limitRoot).filter(dirsOnly).sort(BY_CREATED).reverse();
+		var h2 = subdirObjs.map(dirToHtmlParameterized(subdirs)).join('');
+	//	debugger;
+		html += h2;
+	}
+//	console.debug('dirToHtmlCards() - end: ' + 	html);
 	return html;
 }
 
 var id = 0;
 
+function dirToHtmlParameterized(subdirs) {
+//	console.debug('fileToHtmlParameterized() - begin');
+	return function dirToHtml(dirPair) {
+		var ret = "";
+		var dirPath = Object.keys(dirPair)[0];
+		var dirObj = dirPair[dirPath];
+
+		var parentDirPath = dirPath.substring(0, dirPath.lastIndexOf("/"));
+		console.debug('dirToHtmlParameterized() - dirPath = ' + dirPath);
+		console.debug('dirToHtmlParameterized() - parentDirPath = ' + parentDirPath);
+		ret += createDirItemHtml(null, dirPath, parentDirPath, null, dirObj, subdirs);
+
+		return ret;
+	};
+}
+
 function fileToHtmlParameterized(subdirs) {
-	console.debug('fileToHtmlParameterized() - begin');
+//	console.debug('fileToHtmlParameterized() - begin');
 	return function fileToHtml(filePair) {
 		var ret = "";
 		var filePath = Object.keys(filePair)[0];
 		var fileObj = filePair[filePath];
-	
-	
+		
+		if (fileObj.fileSystem == null) {
+			debugger;
+		}
+		
 		if (fileObj.fileSystem.match(/.*(img|nohup.out$|Thumbs.db|[pP]icasa.ini)/)) {
 			ret += "";
 		} else {
@@ -744,6 +903,13 @@ function fileToHtmlParameterized(subdirs) {
 function moveToNonExistingFolder(elem, fileToMove, idstring) {
 	var newCategorySimpleName = prompt("Category name:");
 	moveFile(elem, fileToMove, newCategorySimpleName, idstring);
+}
+
+function moveDir(button, dirPath, destinationDirSimpleName,id) {
+	$.getJSON(urlBase + "/moveDir?dirPath="+encodeURIComponent(dirPath) + "&destinationDirSimpleName=" + encodeURIComponent(destinationDirSimpleName),function(response){
+		removeImageElement(dirPath);
+		// TODO: Also remove from pairs global variable so it doesn't keep coming back when we shuffle
+	});
 }
 
 function moveFile(button, filePath, destinationDirSimpleName,id) {
