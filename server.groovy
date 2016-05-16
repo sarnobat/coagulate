@@ -1,3 +1,4 @@
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.not;
 
 import java.io.ByteArrayInputStream;
@@ -45,6 +46,7 @@ import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
+import javax.json.JsonValue;
 import javax.json.stream.JsonParsingException;
 import javax.net.ssl.SSLContext;
 import javax.ws.rs.GET;
@@ -94,6 +96,7 @@ import org.json.JSONObject;
 
 import com.google.api.client.util.IOUtils;
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
@@ -1123,11 +1126,6 @@ public class Coagulate {
 	
 	private static class Operations {
 
-		private static boolean fileAlreadyInDesiredSubdir(
-				String subfolderSimpleName, Path sourceFilePath) {
-			return subfolderSimpleName.equals(sourceFilePath.getParent().getFileName().toString());
-		}
-
 		private static Path getUnconflictedDestinationFilePath(String folderName, Path path)
 				throws IllegalAccessError, IOException {
 			String parentDirPath = path.getParent().toAbsolutePath().toString();
@@ -1250,6 +1248,7 @@ public class Coagulate {
 					.append(imageFile.getFileName().toString()).toString());
 		}
 
+		// Only works for files
 		private static Path determineDestinationPathAvoidingExisting(
 				String destinationFilePath) throws IllegalAccessError {
 			String destinationFilePathWithoutExtension = destinationFilePath
