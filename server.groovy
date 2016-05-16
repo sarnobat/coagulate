@@ -1032,7 +1032,20 @@ public class Coagulate {
 				}};
 			return IS_UNDER;
 		}
-		
+
+		@Deprecated // We don't need a separate predicate
+		private static final Predicate<Path> IS_DISPLAYABLE_DIR = new Predicate<Path>() {
+			@Override
+			public boolean apply(Path iPath) {
+				if (iPath.toFile().isDirectory()) {
+					return true;
+				} else {
+					return false;
+				}
+				
+			}
+		};
+
 		private static final Predicate<Path> IS_DISPLAYABLE = new Predicate<Path>() {
 			@Override
 			public boolean apply(Path iPath) {
