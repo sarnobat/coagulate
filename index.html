@@ -557,7 +557,7 @@ function loadImagesSequentially(i) {
 // 
 function createDirItemHtml(response, item, key, unused, dirObj, subDirs)
 {
-	console.debug('createDirItemHtml() - begin');
+//	console.debug('createDirItemHtml() - begin');
 
 	var image = dirObjToHtml2(dirObj);
 	
@@ -734,7 +734,7 @@ function createButtonsPanelForDir(item, subdirs, key, idstring) {
 // item = filepath
 // key = dirpath
 function createButtonsPanel(item, subdirs, key, idstring) {
-	console.debug('createButtonsPanel() - begin');
+//	console.debug('createButtonsPanel() - begin');
 	var buttons = "<table><tr><td>";							
 	{
 		var escaped = item.replace(/'/g, "&apos;");
@@ -767,7 +767,7 @@ function createButtonsPanel(item, subdirs, key, idstring) {
 	buttons += "<br>";
 	buttons += "<button onclick='copyFileToFolder(\"" + escaped + "\", \"/media/sarnobat/e/Drive J/pictures/Other (new)/pictures/misc_sync_master/favorites\",\""+idstringescaped+"\", this)'>COPY TO favorites</button><br>";
 	buttons += "</td></tr></table>";
-	console.debug('createButtonsPanel() - end');
+//	console.debug('createButtonsPanel() - end');
 	return buttons;
 }
 
@@ -851,12 +851,14 @@ function dirToHtmlCards(dirObj) {
 	var subdirs = dirObj[dir].dirs;
 	var html = "";
 	html += files.map(fileToHtmlParameterized(subdirs)).join('');
-	if (dirObj[dir].subDirObjs != null) {
+	if (dirObj[dir].subDirObjs == null) {
+		console.debug('subDirObjs is null');
+	} else {
 		var subdirObjs = toPairs(dirObj[dir].subDirObjs).slice(0, limitRoot).filter(dirsOnly).sort(BY_CREATED).reverse();
 		var h2 = subdirObjs.map(dirToHtmlParameterized(subdirs)).join('');
 	//	debugger;
 		html += h2;
-	}
+	} 
 //	console.debug('dirToHtmlCards() - end: ' + 	html);
 	return html;
 }
@@ -871,8 +873,8 @@ function dirToHtmlParameterized(subdirs) {
 		var dirObj = dirPair[dirPath];
 
 		var parentDirPath = dirPath.substring(0, dirPath.lastIndexOf("/"));
-		console.debug('dirToHtmlParameterized() - dirPath = ' + dirPath);
-		console.debug('dirToHtmlParameterized() - parentDirPath = ' + parentDirPath);
+//		console.debug('dirToHtmlParameterized() - dirPath = ' + dirPath);
+//		console.debug('dirToHtmlParameterized() - parentDirPath = ' + parentDirPath);
 		ret += createDirItemHtml(null, dirPath, parentDirPath, null, dirObj, subdirs);
 
 		return ret;
