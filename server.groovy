@@ -945,24 +945,46 @@ public class Coagulate {
 		private static final Function<Path, JsonObject> PATH_TO_JSON_ITEM = new Function<Path, JsonObject>() {
 			@Override
 			public JsonObject apply(Path iPath) {
-				long created;
-				try {
-					created = Files.readAttributes(iPath, BasicFileAttributes.class).creationTime().toMillis();
-				} catch (IOException e) {
-					System.err.println("PATH_TO_JSON_ITEM.apply() - " + e.getMessage());
-					created = 0;
+
+				if (iPath.toFile().isDirectory()) {
+					System.out.println("Coagulate.Mappings.PATH_TO_JSON_ITEM() - is a directory");
+					long created;
+					try {
+						created = Files.readAttributes(iPath, BasicFileAttributes.class)
+								.creationTime().toMillis();
+					} catch (IOException e) {
+						System.err.println("PATH_TO_JSON_ITEM.apply() - " + e.getMessage());
+						created = 0;
+					}
+					JsonObject json = Json
+							.createObjectBuilder()
+							.add("location",
+									iPath.getParent().toFile().getAbsolutePath().toString())
+							.add("fileSystem", iPath.toAbsolutePath().toString())
+							.add("httpUrl", httpLinkFor(iPath.toAbsolutePath().toString()))
+							.add("thumbnailUrl",
+									"http://www.pd4pic.com/images/windows-vista-folder-directory-open-explorer.png")
+							.add("created", created).build();
+					System.out.println("Coagulate.Mappings.PATH_TO_JSON_ITEM() - dirJson = " + json);
+					return json;
+				} else {
+					long created;
+					try {
+						created = Files.readAttributes(iPath, BasicFileAttributes.class)
+								.creationTime().toMillis();
+					} catch (IOException e) {
+						System.err.println("PATH_TO_JSON_ITEM.apply() - " + e.getMessage());
+						created = 0;
+					}
+					return Json
+							.createObjectBuilder()
+							.add("location",
+									iPath.getParent().toFile().getAbsolutePath().toString())
+							.add("fileSystem", iPath.toAbsolutePath().toString())
+							.add("httpUrl", httpLinkFor(iPath.toAbsolutePath().toString()))
+							.add("thumbnailUrl", httpLinkFor(thumbnailFor(iPath)))
+							.add("created", created).build();
 				}
-				return Json
-						.createObjectBuilder()
-						.add("location",
-								iPath.getParent().toFile().getAbsolutePath()
-								.toString())
-								.add("fileSystem", iPath.toAbsolutePath().toString())
-								.add("httpUrl",
-										httpLinkFor(iPath.toAbsolutePath().toString()))
-										.add("thumbnailUrl", httpLinkFor(thumbnailFor(iPath)))
-										.add("created", created)
-										.build();
 			}
 		};
 
