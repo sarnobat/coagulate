@@ -323,6 +323,32 @@ public class Coagulate {
 		}
 
 		@GET
+		@javax.ws.rs.Path("moveDir")
+		@Produces("application/json")
+		public Response moveDir(
+				@QueryParam("dirPath") String iFilePath,
+				@QueryParam("destinationDirSimpleName") String iDestinationDirSimpleName)
+				throws JSONException, IOException {
+			if (iFilePath.endsWith("htm") || iFilePath.endsWith(".html")) {
+				throw new RuntimeException("Need to move the _files folder too");
+			}
+			if (iDestinationDirSimpleName.equals("_ 1")) {
+				System.out.println("move() - dir name is wrong");
+				throw new RuntimeException("dir name is wrong: " + iDestinationDirSimpleName);
+			}
+			try {
+				Operations.moveFileToSubfolder(iFilePath, iDestinationDirSimpleName);
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new RuntimeException(e);
+			}
+			return Response.ok()
+					.header("Access-Control-Allow-Origin", "*")
+					.entity(new JSONObject().toString(4)).type("application/json")
+					.build();
+		}
+
+		@GET
 		@javax.ws.rs.Path("move")
 		@Produces("application/json")
 		public Response move(
@@ -2047,7 +2073,7 @@ public class Coagulate {
 			System.exit(-1);
 		}
 		try {
-//			System.out.println(Paths.get("/Unsorted/Videos/Atletico/1990s/_thumbnails/Juan Carlos Valerón - FIFA Futbol Mundial.mp4.jpg").toAbsolutePath());
+//			System.out.println(Paths.get("/Unsorted/Videos/Atletico/1990s/_thumbnails/Juan Carlos ValeroÃÅn - FIFA Futbol Mundial.mp4.jpg").toAbsolutePath());
 			JdkHttpServerFactory.createHttpServer(new URI(
 					"http://localhost:" + port + "/"), new ResourceConfig(
 					MyResource.class));
