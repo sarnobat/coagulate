@@ -621,14 +621,34 @@ public class Coagulate {
 		private static Set<DirPair> mergeDirectoryHierarchies(Set<DirPair> left, Set<DirPair> right) {
 			System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() left = " + left);
 			System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() right = " + right);
+			if (left.isEmpty()) {
+				System.out.println("Left is empty");
+			}
+			if (right.isEmpty()) {
+				System.out.println("Right is empty");
+			}
 			Map<String, DirPair> lm = mapFromSet(left);
 			Map<String, DirPair> rm = mapFromSet(right);
+			try {
+				//checkNotNull(lm);
+				//checkNotNull(rm);
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new RuntimeException(e);
+			}
 			//			System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() merging " + lm.keySet() + " with " + rm.keySet());
 			ImmutableSet.Builder<DirPair> ret = ImmutableSet.builder();
 			for (String dirPath : Sets.union(lm.keySet(), rm.keySet())) {
 				System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() dirPath = " + dirPath);
 				DirPair l = lm.get(dirPath);
 				DirPair r = rm.get(dirPath);
+				try {
+					//checkNotNull(l, lm);
+					//checkNotNull(r, rm);
+				} catch (Exception e) {
+					e.printStackTrace();
+					throw new RuntimeException(e);
+				}
 				//System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() merging " + l.getDirPath());
 				if (lm.containsKey(dirPath) && rm.containsKey(dirPath)) {
 					ret.add(new DirPair(dirPath, mergeDirectoryHierarchiesInternal(l.getDirObj(), r.getDirObj())));
