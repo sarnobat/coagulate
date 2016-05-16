@@ -449,9 +449,9 @@ public class Coagulate {
 			// Get one leaf node
 			try {
 				int addedCount = 0;
-				Predicates.Contains predicate = new Predicates.Contains(filesToIgnore);
+				Predicates.Contains ignoreFiles = new Predicates.Contains(filesToIgnore);
 				for (Path p : FluentIterable.from(getSubPaths(iDirectoryPath, Predicates.IS_FILE))
-						.filter(not(predicate)).filter(Predicates.IS_DISPLAYABLE).toSet()) {
+						.filter(not(ignoreFiles)).filter(Predicates.IS_DISPLAYABLE).toSet()) {
 					String absolutePath = p.toAbsolutePath().toString();
 					filesInDir.put(absolutePath,
 							new FileObj(Mappings.PATH_TO_JSON_ITEM.apply(p)));
@@ -664,7 +664,8 @@ public class Coagulate {
 
 		private static <T> Map<String, T> mergeLeafNodes(Map<String, T> leafNodes,
 				Map<String, T> leafNodes2) {
-			Builder<String, T> putAll = ImmutableMap.<String, T> builder().putAll(leafNodes);
+			ImmutableMap.Builder<String, T> putAll = ImmutableMap.<String, T> builder().putAll(
+					leafNodes);
 			for (String key : leafNodes2.keySet()) {
 				if (leafNodes.keySet().contains(key)) {
 					
@@ -697,6 +698,8 @@ public class Coagulate {
 			private final Set<String> _filesAlreadyObtained;
 			private final int depth;
 			PathToDirPair (Set<String> filesAlreadyObtained, int iDepth) {
+				System.out
+						.println("Coagulate.RecursiveLimitByTotal2.PathToDirPair.PathToDirPair()");
 				_filesAlreadyObtained = ImmutableSet.copyOf(filesAlreadyObtained);
 				depth = iDepth;
 			}
