@@ -521,23 +521,39 @@ public class Coagulate {
 		private static Set<DirPair> swoopRepeatedlyUntilLimitExceeded(Set<DirPair> dirPairsAccumulated, String[] iDirectoryPaths, int iLimit, Integer iDepth) {
 			System.out
 					.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() dirPairsAccumulated = " + dirPairsAccumulated);
-			if (iLimit < 1) {
-				return dirPairsAccumulated;
+			try {
+				if (iLimit < 1) {
+					return dirPairsAccumulated;
+				}
+				// For each dir path, we ultimately call {@link
+				// PathToDirObj#dipIntoDirRecursive}
+				Set<DirPair> dirPairs = FluentIterable
+						.from(ImmutableList.copyOf(iDirectoryPaths))
+						.transform(
+								new PathToDirPair(getFilesAlreadyObtained(dirPairsAccumulated,
+										iDepth), iDepth.intValue())).toSet();
+				System.out
+						.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() dirPairs = " + dirPairs);
+				int filesObtained = countFiles(dirPairs);
+				System.out
+						.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() - filesObtained = "
+								+ filesObtained);
+				int newLimit = iLimit - filesObtained;
+				if (filesObtained == 0) {
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() 3");
+					return dirPairsAccumulated;
+				}
+				Set<DirPair> mergeDirectoryHierarchies = mergeDirectoryHierarchies(dirPairsAccumulated, dirPairs);
+				return swoopRepeatedlyUntilLimitExceeded(
+						mergeDirectoryHierarchies, iDirectoryPaths,
+						newLimit, iDepth);
+			} catch (Exception e) {
+				System.out
+						.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded()"
+								+ e);
+				throw new RuntimeException(e);
 			}
-			// For each dir path, we ultimately call {@link PathToDirObj#dipIntoDirRecursive}
-			Set<DirPair> dirPairs = FluentIterable.from(ImmutableList.copyOf(iDirectoryPaths))
-					.transform(new PathToDirPair(getFilesAlreadyObtained(dirPairsAccumulated, iDepth), iDepth.intValue()))
-					.toSet();
-			int filesObtained = countFiles(dirPairs);
-			System.out
-					.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() - filesObtained = " + filesObtained);
-			int newLimit = iLimit - filesObtained;
-			if (filesObtained == 0) {
-				return dirPairsAccumulated;
-			}
-			return swoopRepeatedlyUntilLimitExceeded(
-					mergeDirectoryHierarchies(dirPairsAccumulated, dirPairs), iDirectoryPaths,
-					newLimit, iDepth);
 		}
 		
 		private static Set<String> getFilesAlreadyObtained(Set<DirPair> dirPairsAccumulated, Integer iDepth) {
