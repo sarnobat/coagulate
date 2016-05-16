@@ -1316,7 +1316,7 @@ public class Coagulate {
 			@Override
 			public HttpAsyncRequestConsumer<HttpRequest> processRequest(final HttpRequest request,
 					final HttpContext context) {
-				System.out.println("Coagulate.NioFileServer.HttpFileHandler.processRequest() - begin");
+//				System.out.println("Coagulate.NioFileServer.HttpFileHandler.processRequest() - begin");
 				// Buffer request content in memory for simplicity
 				return new BasicAsyncRequestConsumer();
 			}
@@ -1324,7 +1324,7 @@ public class Coagulate {
 			@Override
 			public void handle(final HttpRequest request, final HttpAsyncExchange httpexchange,
 					final HttpContext context) throws HttpException, IOException {
-				System.out.println("Coagulate.NioFileServer.HttpFileHandler.handle() - begin");
+//				System.out.println("Coagulate.NioFileServer.HttpFileHandler.handle() - begin");
 				HttpResponse response = httpexchange.getResponse();
 				handleInternal(request, response, context);
 				httpexchange.submitResponse(new BasicAsyncResponseProducer(response));
