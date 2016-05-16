@@ -415,14 +415,13 @@ public class Coagulate {
 		}
 
 		private static JsonObject createFilesJsonRecursive(String[] iDirectoryPaths, int iLimit, Integer iDepth) {
-			Set<DirPair> dirPairs1 = swoopRepeatedlyUntilLimitExceeded(new HashSet<DirPair>(),
-					iDirectoryPaths, iLimit, iDepth);
-			// For sort mode
-			Map<String, Map<String, FileObj>> moreFilesAtTopLevel = getFilesInDirImmediate(iDirectoryPaths, iLimit);
-			Set<DirPair> dirPairs = addExtraFiles(dirPairs1, moreFilesAtTopLevel, iDepth);
+			System.out.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursive()");
 			JsonObjectBuilder json = Json.createObjectBuilder();
-			for (DirPair p : dirPairs) {
-				// TODO: ensure we aren't overwriting existing key data 
+			for (DirPair p : addExtraFiles(
+					swoopRepeatedlyUntilLimitExceeded(new HashSet<DirPair>(), iDirectoryPaths,
+							iLimit, iDepth), getFilesInDirImmediate(iDirectoryPaths, iLimit),
+					iDepth)) {
+				// TODO: ensure we aren't overwriting existing key data
 				json.add(p.getDirPath(), p.getDirObj().json());
 			}
 			return json.build();
