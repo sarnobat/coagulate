@@ -805,6 +805,7 @@ function fileObjToHtml(fileObj) {
 			var matchesVideo = item.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi)|(mts))/gi);
 			if (matchesVideo != null) {
 				toBeAppended += '<img src=\"' +thumbnailUrl+'\">';
+				toBeAppended += '';
 			}
 		}
 		{
@@ -853,7 +854,10 @@ function dirToHtmlCards(dirObj) {
 	html += files.map(fileToHtmlParameterized(subdirs)).join('');
 	if (dirObj[dir].subDirObjs == null) {
 		console.debug('subDirObjs is null');
+		console.debug(dirObj[dir]);
+		debugger;
 	} else {
+		console.debug('subDirObjs is non-null');
 		var subdirObjs = toPairs(dirObj[dir].subDirObjs).slice(0, limitRoot).filter(dirsOnly).sort(BY_CREATED).reverse();
 		var h2 = subdirObjs.map(dirToHtmlParameterized(subdirs)).join('');
 	//	debugger;
