@@ -1,4 +1,3 @@
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.not;
 
 import java.io.ByteArrayInputStream;
@@ -96,12 +95,10 @@ import org.json.JSONObject;
 
 import com.google.api.client.util.IOUtils;
 import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.jcraft.jsch.JSchException;
@@ -413,7 +410,8 @@ public class Coagulate {
 					.build();
 			return response;
 		}
-
+		
+		// TODO: This code is getting too difficult to understand. Refactor
 		private static JsonObject createFilesJsonRecursive(String[] iDirectoryPaths, int iLimit, Integer iDepth) {
 			System.out.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursive()");
 			JsonObjectBuilder json = Json.createObjectBuilder();
@@ -465,6 +463,9 @@ public class Coagulate {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+			
+			filesInDir.put("subDirObjs", new FileObj(jsonFromString(createSubdirObjs(iDirectoryPath).toString())));
+			
 			ImmutableMap<String, FileObj> build1 = filesInDir.build();
 			return build1;
 		}
@@ -522,7 +523,11 @@ public class Coagulate {
 			System.out
 					.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() dirPairsAccumulated = " + dirPairsAccumulated);
 			try {
+				System.out
+						.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() iLimit = " + iLimit);
 				if (iLimit < 1) {
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() limit exceeded");
 					return dirPairsAccumulated;
 				}
 				// For each dir path, we ultimately call {@link
@@ -622,10 +627,10 @@ public class Coagulate {
 			System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() left = " + left);
 			System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() right = " + right);
 			if (left.isEmpty()) {
-				System.out.println("Left is empty");
+				System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() Left is empty");
 			}
 			if (right.isEmpty()) {
-				System.out.println("Right is empty");
+				System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() Right is empty");
 			}
 			Map<String, DirPair> lm = mapFromSet(left);
 			Map<String, DirPair> rm = mapFromSet(right);
@@ -651,12 +656,20 @@ public class Coagulate {
 				}
 				//System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() merging " + l.getDirPath());
 				if (lm.containsKey(dirPath) && rm.containsKey(dirPath)) {
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() 2");
 					ret.add(new DirPair(dirPath, mergeDirectoryHierarchiesInternal(l.getDirObj(), r.getDirObj())));
 				} else if (lm.containsKey(dirPath)) {
+					System.out
+					.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() 3");
 					ret.add(l);
 				} else if (rm.containsKey(dirPath)) {
+					System.out
+					.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() 4");
 					ret.add(r);
 				} else {
+					System.out
+					.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() 5");
 					throw new RuntimeException("Impossible");
 				}
 			}
@@ -675,8 +688,8 @@ public class Coagulate {
 		}
 
 		private static DirObj mergeDirectoryHierarchiesInternal(DirObj dir1, DirObj dir2) {
-			System.out
-					.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchiesInternal()");
+//			System.out
+//					.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchiesInternal()");
 			if (!dir1.getPath().equals(dir2.getPath())) {
 				throw new RuntimeException("Must merge on a per-directory basis");
 			}
@@ -693,7 +706,8 @@ public class Coagulate {
 				dirs2.add(entry.getKey(), entry.getValue().json());
 			}
 			ret.add("dirs", dirs2);
-			ret.add("subDirObjs", createSubdirObjs(Paths.get(commonDirPath)));
+			System.out
+					.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchiesInternal() - subDirObjs");
 			return new DirObj(ret.build(), commonDirPath);
 		}
 
@@ -719,10 +733,6 @@ public class Coagulate {
 			}
 			
 			return subdirObjsObj.build();
-		}
-
-		private static JsonObject createSubdirObjs() {
-			return Json.createObjectBuilder().build();
 		}
 
 		private static Map<String, DirObj> mergeOverlappingDirNodes(Map<String, DirObj> dirs1,
@@ -1032,7 +1042,7 @@ public class Coagulate {
 			public JsonObject apply(Path iPath) {
 
 				if (iPath.toFile().isDirectory()) {
-					System.out.println("Coagulate.Mappings.PATH_TO_JSON_ITEM() - is a directory");
+//					System.out.println("Coagulate.Mappings.PATH_TO_JSON_ITEM() - is a directory");
 					long created;
 					try {
 						created = Files.readAttributes(iPath, BasicFileAttributes.class)
@@ -1050,7 +1060,7 @@ public class Coagulate {
 							.add("thumbnailUrl",
 									"http://www.pd4pic.com/images/windows-vista-folder-directory-open-explorer.png")
 							.add("created", created).build();
-					System.out.println("Coagulate.Mappings.PATH_TO_JSON_ITEM() - dirJson = " + json);
+//					System.out.println("Coagulate.Mappings.PATH_TO_JSON_ITEM() - dirJson = " + json);
 					return json;
 				} else {
 					long created;
@@ -1479,8 +1489,8 @@ public class Coagulate {
 				final File file = Paths.get(URLDecoder.decode(target, "UTF-8").replace("/_ 1", "/_+1")).toFile();// ,
 //																 URLDecoder.decode(target,
 //																 "UTF-8"));
-				System.out.println("NHttpFileServer.HttpFileHandler.handleInternal() - serving "
-						+ file.getAbsolutePath());
+//				System.out.println("NHttpFileServer.HttpFileHandler.handleInternal() - serving "
+//						+ file.getAbsolutePath());
 				if (!file.canRead()) {
 					throw new RuntimeException("cannot read");
 				}
@@ -2189,6 +2199,7 @@ public class Coagulate {
 		}
 
 	private static final int port = 4451;
+	@SuppressWarnings("unused")
 	private static final int fsPort = 4452;
 
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
@@ -2200,7 +2211,6 @@ public class Coagulate {
 			System.exit(-1);
 		}
 		try {
-//			System.out.println(Paths.get("/Unsorted/Videos/Atletico/1990s/_thumbnails/Juan Carlos ValeroÃÅn - FIFA Futbol Mundial.mp4.jpg").toAbsolutePath());
 			JdkHttpServerFactory.createHttpServer(new URI(
 					"http://localhost:" + port + "/"), new ResourceConfig(
 					MyResource.class));
