@@ -31,7 +31,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -93,6 +92,7 @@ import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import com.google.api.client.util.IOUtils;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -101,9 +101,7 @@ import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 import com.jcraft.jsch.JSchException;
 import com.pastdev.jsch.DefaultSessionFactory;
@@ -542,12 +540,6 @@ public class Coagulate {
 
 		private static Map<String, FileObj> getMoreFiles(String dirPath, int iLimit) {
 			return getFilesInsideDir(Paths.get(dirPath), iLimit, ImmutableSet.<String> of(), iLimit);
-		}
-
-		private static Map<String, FileObj> getFilesInsideDir(String aDirectoryPath,
-				int filesPerLevel, List<String> filesToIgnore, int iLimit) {
-			return getFilesInsideDir(Paths.get(aDirectoryPath), filesPerLevel,
-					ImmutableSet.copyOf(filesToIgnore), iLimit);
 		}
 
 		private static Map<String, FileObj> getFilesInsideDir(Path iDirectoryPath,
