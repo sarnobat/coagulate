@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -406,7 +407,7 @@ public class Coagulate {
 			JsonObject response = Json
 					.createObjectBuilder()
 					.add("itemsRecursive",
-							createFilesJsonRecursive(
+							createFilesJsonRecursiveNew(
 									iDirectoryPathsString.split("\\n"), 
 									iLimit, iDepth))
 					.build();
@@ -416,18 +417,57 @@ public class Coagulate {
 		private static JsonValue createFilesJsonRecursiveNew(String[] iDirectoryPaths, int iLimit,
 				Integer iDepth) {
 			
-			Set<DirPair> allDirsAccumulated = new HashSet<DirPair>();
+			List<DirPair> allDirsAccumulated = new LinkedList<DirPair>();
+			Set<String> dirPathsFullyRead = new HashSet<String>();
 			// TODO: My first functional attempt at this failed. See if any of
 			// it can be translated to functional again.
 			while (totalFiles(allDirsAccumulated) < iLimit) {
+				boolean noMoreFilesToRead = false;
 				for (String aDirectoryPath : iDirectoryPaths) {
+					if (dirPathsFullyRead.contains(aDirectoryPath)) {
+						continue;
+					}
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() dipping into " + aDirectoryPath);
 					Set<FileObj> filesAlreadyAdded = getFiles(allDirsAccumulated);
 					DirPair newFiles = new PathToDirPair(getFilePaths(filesAlreadyAdded), iDepth)
 							.apply(aDirectoryPath);
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() new files = " + newFiles);
+					if (getFiles(newFiles.getDirObj()).size() > 0) {
+						if (allDirsAccumulated.contains(newFiles)) {
+							Set<String> alreadyAccumulatedFilePaths = getFilePaths(filesAlreadyAdded);
+							Set<String> newFilePaths = getFilePaths(getFiles(newFiles.getDirObj()));
+//							throw new RuntimeException(
+//									"This shouldn't happen because we pass the list of already added files");
+						}
+					}
+					int sizeBefore = allDirsAccumulated.size(); 
 					allDirsAccumulated.add(newFiles);
-					if (totalFiles(allDirsAccumulated) > iLimit) {
+					int sizeAfter = allDirsAccumulated.size();
+					if (getFiles(newFiles.getDirObj()).size() == 0) {
+						dirPathsFullyRead.add(aDirectoryPath);
+						System.out
+								.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() no files left in "
+										+ aDirectoryPath);
+						if (dirPathsFullyRead.size() == iDirectoryPaths.length) {
+							noMoreFilesToRead = true;
+							System.out
+									.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() no files left in any directory");
+							break;
+						}
+					}
+					int totalFiles = totalFiles(allDirsAccumulated);
+//					System.out
+//							.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() found " + newFiles.size() + " new files in " + aDirectoryPath);
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() total files = " + totalFiles);
+					if (totalFiles > iLimit) {
 						break;
 					}
+				}
+				if (noMoreFilesToRead) {
+					break;
 				}
 			}
 			
@@ -442,7 +482,7 @@ public class Coagulate {
 			return jsonObject.build();
 		}
 
-		private static Multimap<String, DirObj> toMultiMap(Set<DirPair> allDirsAccumulated) {
+		private static Multimap<String, DirObj> toMultiMap(Collection<DirPair> allDirsAccumulated) {
 			Multimap<String, DirObj> m = ArrayListMultimap.create();
 			for (DirPair dirPair : allDirsAccumulated) {
 				m.put(dirPair.getDirPath(), dirPair.getDirObj());
@@ -478,11 +518,11 @@ public class Coagulate {
 			}
 		}
 
-		private static int totalFiles(Set<DirPair> allDirsAccumulated) {
+		private static int totalFiles(Collection<DirPair> allDirsAccumulated) {
 			return getFilePaths(getFiles(allDirsAccumulated)).size();
 		}
 
-		private static Set<String> getFilePaths(Set<FileObj> filesAlreadyAdded) {
+		private static Set<String> getFilePaths(Collection<FileObj> filesAlreadyAdded) {
 			Set<String> s = new HashSet<String>();
 			for (FileObj f : filesAlreadyAdded) {
 				s.add(f.getFileAbsolutePath());
@@ -490,7 +530,7 @@ public class Coagulate {
 			return ImmutableSet.copyOf(s);
 		}
 
-		private static Set<FileObj> getFiles(Set<DirPair> allDirsAccumulated) {
+		private static Set<FileObj> getFiles(Collection<DirPair> allDirsAccumulated) {
 			Set<FileObj> s = new HashSet<FileObj>();
 			for (DirPair p : allDirsAccumulated) {
 				DirObj dirObj = p.getDirObj();
@@ -862,7 +902,7 @@ public class Coagulate {
 
 			@Override
 			public DirPair apply(String input) {
-				System.out.println("Coagulate.RecursiveLimitByTotal2.PathToDirPair.apply() " + input);
+//				System.out.println("Coagulate.RecursiveLimitByTotal2.PathToDirPair.apply() " + input);
 				DirObj dirObj = new PathToDirObj(_filesAlreadyObtained, depth).apply(input);
 				return new DirPair(input, dirObj);
 			}
@@ -906,6 +946,8 @@ public class Coagulate {
 				ImmutableSet<Entry<String, JsonObject>> entrySet = getFilesInsideDir(iDirectoryPath, filesPerLevel2,
 						fileAbsolutePathsToIgnore, iLimit, filesToIgnoreAtLevel).entrySet();
 				for (Entry<String, JsonObject> e : entrySet) {
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal2.PathToDirObj.dipIntoDirRecursive() " + e.getKey());
 					dirHierarchyJson.add(e.getKey(), e.getValue());
 				}
 				// For ALL subdirectories, recurse
@@ -922,7 +964,8 @@ public class Coagulate {
 							dirsJson.add(p.toAbsolutePath().toString(), Json.createObjectBuilder().build());
 						}
 					}
-					dirHierarchyJson.add("dirs", dirsJson.build());
+					JsonObject build = dirsJson.build();
+					dirHierarchyJson.add("dirs", build);
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
@@ -2271,6 +2314,7 @@ public class Coagulate {
 	private static final int fsPort = 4452;
 
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
+
 
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
