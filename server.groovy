@@ -413,7 +413,6 @@ public class Coagulate {
 		
 		// TODO: This code is getting too difficult to understand. Refactor
 		private static JsonObject createFilesJsonRecursive(String[] iDirectoryPaths, int iLimit, Integer iDepth) {
-			System.out.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursive()");
 			JsonObjectBuilder json = Json.createObjectBuilder();
 			for (DirPair p : addExtraFiles(
 					swoopRepeatedlyUntilLimitExceeded(new HashSet<DirPair>(), iDirectoryPaths,
@@ -520,14 +519,8 @@ public class Coagulate {
 		}
 
 		private static Set<DirPair> swoopRepeatedlyUntilLimitExceeded(Set<DirPair> dirPairsAccumulated, String[] iDirectoryPaths, int iLimit, Integer iDepth) {
-			System.out
-					.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() dirPairsAccumulated = " + dirPairsAccumulated);
 			try {
-				System.out
-						.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() iLimit = " + iLimit);
 				if (iLimit < 1) {
-					System.out
-							.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() limit exceeded");
 					return dirPairsAccumulated;
 				}
 				// For each dir path, we ultimately call {@link
@@ -537,16 +530,9 @@ public class Coagulate {
 						.transform(
 								new PathToDirPair(getFilesAlreadyObtained(dirPairsAccumulated,
 										iDepth), iDepth.intValue())).toSet();
-				System.out
-						.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() dirPairs = " + dirPairs);
 				int filesObtained = countFiles(dirPairs);
-				System.out
-						.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() - filesObtained = "
-								+ filesObtained);
 				int newLimit = iLimit - filesObtained;
 				if (filesObtained == 0) {
-					System.out
-							.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() 3");
 					return dirPairsAccumulated;
 				}
 				Set<DirPair> mergeDirectoryHierarchies = mergeDirectoryHierarchies(dirPairsAccumulated, dirPairs);
@@ -562,19 +548,14 @@ public class Coagulate {
 		}
 		
 		private static Set<String> getFilesAlreadyObtained(Set<DirPair> dirPairsAccumulated, Integer iDepth) {
-			System.out.println("Coagulate.RecursiveLimitByTotal2.getFilesAlreadyObtained() 1");
 			ImmutableSet.Builder<String> builder = ImmutableSet.builder();
-			System.out.println("Coagulate.RecursiveLimitByTotal2.getFilesAlreadyObtained() 2");
 			for(DirPair p : dirPairsAccumulated) {
-				System.out.println("Coagulate.RecursiveLimitByTotal2.getFilesAlreadyObtained() 3");
 				builder.addAll(getFilesInDir(p.getDirObj(), iDepth));
 			}
-			System.out.println("Coagulate.RecursiveLimitByTotal2.getFilesAlreadyObtained() 4");
 			return builder.build();
 		}
 
 		private static Set<String> getFilesInDir(DirObj iDirObj, Integer iDepth) {
-			System.out.println("Coagulate.RecursiveLimitByTotal2.getFilesInDir()");
 			Set<String> keysInShard = new HashSet<String>();
 			// TODO : why is this done twice?
 			keysInShard.addAll(iDirObj.getFiles().keySet());
@@ -591,7 +572,6 @@ public class Coagulate {
 		}
 
 		private static int countFiles(Set<DirPair> directoryHierarchies) {
-			System.out.println("Coagulate.RecursiveLimitByTotal2.countFiles()");
 			int total = 0;
 			for (DirPair aHierarchy : directoryHierarchies) {
 				total += countFilesInHierarchy2(aHierarchy.json());
@@ -600,7 +580,6 @@ public class Coagulate {
 		}
 
 		private static int countFilesInHierarchy2(JsonObject aHierarchy) {
-			System.out.println("Coagulate.RecursiveLimitByTotal2.countFilesInHierarchy2()");
 			if (aHierarchy.keySet().size() != 1) {
 				System.err.println(new JSONObject(aHierarchy.toString()).toString(2));
 				throw new RuntimeException("developerError");
@@ -624,56 +603,22 @@ public class Coagulate {
 		}
 
 		private static Set<DirPair> mergeDirectoryHierarchies(Set<DirPair> left, Set<DirPair> right) {
-			System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() left = " + left);
-			System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() right = " + right);
-			if (left.isEmpty()) {
-				System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() Left is empty");
-			}
-			if (right.isEmpty()) {
-				System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() Right is empty");
-			}
 			Map<String, DirPair> lm = mapFromSet(left);
 			Map<String, DirPair> rm = mapFromSet(right);
-			try {
-				//checkNotNull(lm);
-				//checkNotNull(rm);
-			} catch (Exception e) {
-				e.printStackTrace();
-				throw new RuntimeException(e);
-			}
-			//			System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() merging " + lm.keySet() + " with " + rm.keySet());
 			ImmutableSet.Builder<DirPair> ret = ImmutableSet.builder();
 			for (String dirPath : Sets.union(lm.keySet(), rm.keySet())) {
-				System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() dirPath = " + dirPath);
 				DirPair l = lm.get(dirPath);
 				DirPair r = rm.get(dirPath);
-				try {
-					//checkNotNull(l, lm);
-					//checkNotNull(r, rm);
-				} catch (Exception e) {
-					e.printStackTrace();
-					throw new RuntimeException(e);
-				}
-				//System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() merging " + l.getDirPath());
 				if (lm.containsKey(dirPath) && rm.containsKey(dirPath)) {
-					System.out
-							.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() 2");
 					ret.add(new DirPair(dirPath, mergeDirectoryHierarchiesInternal(l.getDirObj(), r.getDirObj())));
 				} else if (lm.containsKey(dirPath)) {
-					System.out
-					.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() 3");
 					ret.add(l);
 				} else if (rm.containsKey(dirPath)) {
-					System.out
-					.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() 4");
 					ret.add(r);
 				} else {
-					System.out
-					.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() 5");
 					throw new RuntimeException("Impossible");
 				}
 			}
-			System.out.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchies() - end");
 			ImmutableSet<DirPair> build = ret.build();
 			return build;
 		}
@@ -706,8 +651,6 @@ public class Coagulate {
 				dirs2.add(entry.getKey(), entry.getValue().json());
 			}
 			ret.add("dirs", dirs2);
-			System.out
-					.println("Coagulate.RecursiveLimitByTotal2.mergeDirectoryHierarchiesInternal() - subDirObjs");
 			return new DirObj(ret.build(), commonDirPath);
 		}
 
@@ -790,8 +733,6 @@ public class Coagulate {
 			private final Set<String> _filesAlreadyObtained;
 			private final int depth;
 			PathToDirPair (Set<String> filesAlreadyObtained, int iDepth) {
-				System.out
-						.println("Coagulate.RecursiveLimitByTotal2.PathToDirPair.PathToDirPair()");
 				_filesAlreadyObtained = ImmutableSet.copyOf(filesAlreadyObtained);
 				depth = iDepth;
 			}
@@ -858,8 +799,8 @@ public class Coagulate {
 						}
 					}
 					dirHierarchyJson.add("dirs", dirsJson.build());
-				} catch (IOException e) {
-	e.printStackTrace();
+					} catch (IOException e) {
+						e.printStackTrace();
 					}
 				}
 				JsonObject build = dirHierarchyJson.build();
@@ -894,8 +835,6 @@ public class Coagulate {
 			private static ImmutableMap<String, JsonObject> getFilesInsideDir(Path iDirectoryPath,
 					int filesPerLevel, Set<String> filesToIgnore, int iLimit,
 					Set<String> filesToIgnoreAtLevel) {
-//				System.out
-//						.println("Coagulate.RecursiveLimitByTotal2.PathToDirObj.getFilesInsideDir() - " + iDirectoryPath);
 				ImmutableMap.Builder<String, JsonObject> filesInDir = ImmutableMap.builder();
 				// Get one leaf node
 				try {
@@ -2203,6 +2142,7 @@ public class Coagulate {
 	private static final int fsPort = 4452;
 
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
+		
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
 			NioFileServer.startServer(4452);
