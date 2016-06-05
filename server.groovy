@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -411,6 +412,21 @@ public class Coagulate {
 			return response;
 		}
 		
+		private static JsonValue createFilesJsonRecursiveNew(String[] iDirectoryPaths, int iLimit,
+				Integer iDepth) {
+			JsonObjectBuilder json = Json.createObjectBuilder();
+			for (String aDirectoryPath : iDirectoryPaths) {
+				json.add(aDirectoryPath, createRecursiveHierarchy(aDirectoryPath));
+			}
+			JsonObject jsonObject = json.build();
+			return jsonObject;
+		}
+
+		private static JsonObject createRecursiveHierarchy(String aDirectoryPath) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
 		@Deprecated // TODO: Multiple dir paths not working.
 		// This code is getting too difficult to understand. Refactor
 		private static JsonObject createFilesJsonRecursive(String[] iDirectoryPaths, int iLimit, Integer iDepth) {
@@ -2146,9 +2162,6 @@ public class Coagulate {
 
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
 		
-		if (true) {
-			System.exit(0);
-		}
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
 			NioFileServer.startServer(4452);
