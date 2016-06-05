@@ -411,7 +411,8 @@ public class Coagulate {
 			return response;
 		}
 		
-		// TODO: This code is getting too difficult to understand. Refactor
+		@Deprecated // TODO: Multiple dir paths not working.
+		// This code is getting too difficult to understand. Refactor
 		private static JsonObject createFilesJsonRecursive(String[] iDirectoryPaths, int iLimit, Integer iDepth) {
 			JsonObjectBuilder json = Json.createObjectBuilder();
 			for (DirPair p : addExtraFiles(
@@ -530,6 +531,8 @@ public class Coagulate {
 						.transform(
 								new PathToDirPair(getFilesAlreadyObtained(dirPairsAccumulated,
 										iDepth), iDepth.intValue())).toSet();
+				System.out
+						.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() " + dirPairs);
 				int filesObtained = countFiles(dirPairs);
 				int newLimit = iLimit - filesObtained;
 				if (filesObtained == 0) {
@@ -2143,6 +2146,9 @@ public class Coagulate {
 
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
 		
+		if (true) {
+			System.exit(0);
+		}
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
 			NioFileServer.startServer(4452);
