@@ -414,25 +414,32 @@ public class Coagulate {
 		
 		private static JsonValue createFilesJsonRecursiveNew(String[] iDirectoryPaths, int iLimit,
 				Integer iDepth) {
-			JsonObjectBuilder json = Json.createObjectBuilder();
-			for (String aDirectoryPath : iDirectoryPaths) {
-				json.add(aDirectoryPath, createRecursiveHierarchy(aDirectoryPath));
-			}
-			JsonObject jsonObject = json.build();
+			JSONObject allDirsAccumulated = new JSONObject();
+			// TODO: My functional attempt at this failed. See if any of it can be translated to functional again.
+//			while (totalFiles(allDirsAccumulated) < iLimit) {
+//				for (String aDirectoryPath : iDirectoryPaths) {
+//					List<String> filesAlreadyAdded = getFiles(allDirsAccumulated);
+//					Map<String, FileObj> newFiles = getFilesInsideDir(aDirectoryPath, 1,
+//							filesAlreadyAdded, Integer.MAX_VALUE);
+//					//json.add(aDirectoryPath, createRecursiveHierarchy(aDirectoryPath));
+//					addNewFiles(allDirsAccumulated, newFiles);
+//					if (totalFiles(allDirsAccumulated) > iLimit) {
+//						break;
+//					}
+//				}
+//			}
+//			
+			JsonObject jsonObject = jsonFromString(allDirsAccumulated.toString());
 			return jsonObject;
-		}
-
-		private static JsonObject createRecursiveHierarchy(String aDirectoryPath) {
-			// TODO Auto-generated method stub
-			return null;
 		}
 
 		@Deprecated // TODO: Multiple dir paths not working.
 		// This code is getting too difficult to understand. Refactor
 		private static JsonObject createFilesJsonRecursive(String[] iDirectoryPaths, int iLimit, Integer iDepth) {
 			JsonObjectBuilder json = Json.createObjectBuilder();
+			HashSet<DirPair> dirPairsAccumulated = new HashSet<DirPair>();
 			for (DirPair p : addExtraFiles(
-					swoopRepeatedlyUntilLimitExceeded(new HashSet<DirPair>(), iDirectoryPaths,
+					swoopRepeatedlyUntilLimitExceeded(dirPairsAccumulated, iDirectoryPaths,
 							iLimit, iDepth), getFilesInDirImmediate(iDirectoryPaths, iLimit),
 					iDepth)) {
 				// TODO: ensure we aren't overwriting existing key data
@@ -447,17 +454,19 @@ public class Coagulate {
 			for (String dirPath : iDirectoryPaths) {
 				ret.put(dirPath, getMoreFiles(dirPath, iLimit));
 			}
-			return ret.build();
+			ImmutableMap<String, Map<String, FileObj>> build = ret.build();
+			if (build.size() < 2) {
+				throw new RuntimeException("Lost a dir");
+			}
+			return build;
 		}
 
 		private static Map<String, FileObj> getMoreFiles(String dirPath, int iLimit) {
-			return getFilesInsideDir(Paths.get(dirPath), iLimit, ImmutableSet.<String> of(), iLimit,
-					ImmutableSet.<String> of());
+			return getFilesInsideDir(Paths.get(dirPath), iLimit, ImmutableSet.<String> of(), iLimit);
 		}
 
 		private static Map<String, FileObj> getFilesInsideDir(Path iDirectoryPath,
-				int filesPerLevel, Set<String> filesToIgnore, int iLimit,
-				Set<String> filesToIgnoreAtLevel) {
+				int filesPerLevel, Set<String> filesToIgnore, int iLimit) {
 			ImmutableMap.Builder<String, FileObj> filesInDir = ImmutableMap.builder();
 			// Get one leaf node
 			try {
@@ -505,8 +514,15 @@ public class Coagulate {
 		
 		private static Set<DirPair> addExtraFiles(Set<DirPair> dirPairs,
 				Map<String, Map<String, FileObj>> moreFilesAtTopLevel, Integer iDepth) {
+			if (moreFilesAtTopLevel.size() < 2) {
+				throw new RuntimeException("Lost a dir");
+			}
+			if (dirPairs.size() < 2) {
+				throw new RuntimeException("Lost a dir");
+			}
 			ImmutableSet.Builder<DirPair> ret = ImmutableSet.builder();
 			for (DirPair dirPair : dirPairs) {
+				System.err.println("Coagulate.RecursiveLimitByTotal2.addExtraFiles() dirPair " + dirPair.getDirPath());
 				Map<String, FileObj> newFiles = moreFilesAtTopLevel.get(dirPair.getDirPath());
 				
 				JsonObject build = augmentDirJson(dirPair, newFiles);
@@ -535,26 +551,36 @@ public class Coagulate {
 			return build;
 		}
 
-		private static Set<DirPair> swoopRepeatedlyUntilLimitExceeded(Set<DirPair> dirPairsAccumulated, String[] iDirectoryPaths, int iLimit, Integer iDepth) {
+		private static Set<DirPair> swoopRepeatedlyUntilLimitExceeded(
+				Set<DirPair> dirPairsAccumulated, String[] iDirectoryPaths, int iLimit,
+				Integer iDepth) {
+//			if (dirPairsAccumulated.size() < 2) {
+//				throw new RuntimeException("Lost a dir");
+//			}
 			try {
 				if (iLimit < 1) {
 					return dirPairsAccumulated;
 				}
 				// For each dir path, we ultimately call {@link
 				// PathToDirObj#dipIntoDirRecursive}
-				Set<DirPair> dirPairs = FluentIterable
+				FluentIterable<DirPair> transform = FluentIterable
 						.from(ImmutableList.copyOf(iDirectoryPaths))
 						.transform(
 								new PathToDirPair(getFilesAlreadyObtained(dirPairsAccumulated,
-										iDepth), iDepth.intValue())).toSet();
-				System.out
-						.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() " + dirPairs);
+										iDepth), iDepth.intValue()));
+				Set<DirPair> dirPairs = transform.toSet();
 				int filesObtained = countFiles(dirPairs);
+				int filesObtained2 = countFiles(transform.toList());
+				if (filesObtained != filesObtained2) {
+//					throw new RuntimeException(transform.toList().toString());
+				}
 				int newLimit = iLimit - filesObtained;
 				if (filesObtained == 0) {
 					return dirPairsAccumulated;
 				}
 				Set<DirPair> mergeDirectoryHierarchies = mergeDirectoryHierarchies(dirPairsAccumulated, dirPairs);
+				System.out
+						.println("Coagulate.RecursiveLimitByTotal2.swoopRepeatedlyUntilLimitExceeded() mergeDirectoryHierarchies size = " + mergeDirectoryHierarchies.size());
 				return swoopRepeatedlyUntilLimitExceeded(
 						mergeDirectoryHierarchies, iDirectoryPaths,
 						newLimit, iDepth);
@@ -590,7 +616,7 @@ public class Coagulate {
 			return keysInShard;
 		}
 
-		private static int countFiles(Set<DirPair> directoryHierarchies) {
+		private static int countFiles(Collection<DirPair> directoryHierarchies) {
 			int total = 0;
 			for (DirPair aHierarchy : directoryHierarchies) {
 				total += countFilesInHierarchy2(aHierarchy.json());
@@ -758,6 +784,7 @@ public class Coagulate {
 
 			@Override
 			public DirPair apply(String input) {
+				System.out.println("Coagulate.RecursiveLimitByTotal2.PathToDirPair.apply() " + input);
 				DirObj dirObj = new PathToDirObj(_filesAlreadyObtained, depth).apply(input);
 				return new DirPair(input, dirObj);
 			}
@@ -964,6 +991,7 @@ public class Coagulate {
 		}
 
 		// TODO: remove this and just use the supertype?
+		@Deprecated
 		private static class DirPair extends HashMap<String, DirObj> {
 			private static final long serialVersionUID = 1L;
 			private final String dirPath;
