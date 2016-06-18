@@ -142,6 +142,21 @@ public class Coagulate {
 					.entity(new JSONObject().toString(4)).type("application/json")
 					.build();
 		}
+		
+		@GET
+		@javax.ws.rs.Path("moveDirToParent")
+		@Produces("application/json")
+		public Response moveDirToParent(@QueryParam("filePath") String sourceFilePathString)
+				throws JSONException {
+			if (sourceFilePathString.endsWith("htm") || sourceFilePathString.endsWith(".html")) {
+				throw new RuntimeException("Need to move the _files folder too");
+			}
+			Operations.doMoveToParent(sourceFilePathString);
+			return Response.ok()
+					.header("Access-Control-Allow-Origin", "*")
+					.entity(new JSONObject().toString(4)).type("application/json")
+					.build();
+		}
 
 		private final List<String> whitelisted = ImmutableList.of(
 				"/e/Videos/",
@@ -455,9 +470,25 @@ public class Coagulate {
 			JsonObjectBuilder jsonObject = Json.createObjectBuilder();
 			for (String dirPath : merged.keySet()) {
 				DirObj dirObj = merged.get(dirPath);
-				jsonObject.add(dirPath, dirObj.json());
+				JSONObject json = new JSONObject(dirObj.json().toString());
+				JsonObject json2 = new SubDirObj(RecursiveLimitByTotal2.jsonFromString(RecursiveLimitByTotal2.createSubdirObjs(dirPath).toString())).json();
+				json.put("subDirObjs", new JSONObject(json2.toString()));
+				// correct
+				System.out
+						.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() " + json2);
+				String string = json.toString();
+				// incorrect
+				System.out
+						.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() " + string);
+				JsonObject jsonFromString = jsonFromString(string);
+				// incorrect
+				System.out
+						.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() subdirobjs " + jsonFromString);
+				jsonObject.add(dirPath, jsonFromString);
 			}
-			return jsonObject.build();
+			JsonObject build = jsonObject.build();
+			System.out.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() - " + build);
+			return build;
 		}
 
 		private static Multimap<String, DirObj> toMultiMap(Collection<DirPair> allDirsAccumulated) {
@@ -503,7 +534,13 @@ public class Coagulate {
 		private static Set<String> getFilePaths(Collection<FileObj> filesAlreadyAdded) {
 			Set<String> s = new HashSet<String>();
 			for (FileObj f : filesAlreadyAdded) {
-				s.add(f.getFileAbsolutePath());
+				String fileAbsolutePath = f.getFileAbsolutePath();
+				if (fileAbsolutePath == null) {
+					// TODO: fix this
+					System.err.println("Coagulate.RecursiveLimitByTotal2.getFilePaths() fileAbsolutePath = " + f.json());
+				} else {
+					s.add(fileAbsolutePath);
+				}
 			}
 			return ImmutableSet.copyOf(s);
 		}
@@ -626,6 +663,10 @@ public class Coagulate {
 			}
 			ret.add("dirs", dirs2);
 			return new DirObj(ret.build(), commonDirPath);
+		}
+
+		private static JsonValue createSubdirObjs(String dirPath) {
+			return createSubdirObjs(Paths.get(dirPath));
 		}
 
 		// Retain this
@@ -760,16 +801,17 @@ public class Coagulate {
 				ImmutableSet<Entry<String, JsonObject>> entrySet = getFilesInsideDir(iDirectoryPath, filesPerLevel2,
 						fileAbsolutePathsToIgnore, iLimit, filesToIgnoreAtLevel).entrySet();
 				for (Entry<String, JsonObject> e : entrySet) {
-					System.out
-							.println("Coagulate.RecursiveLimitByTotal2.PathToDirObj.dipIntoDirRecursive() " + e.getKey());
+//					System.out
+//							.println("Coagulate.RecursiveLimitByTotal2.PathToDirObj.dipIntoDirRecursive() " + e.getKey());
 					dirHierarchyJson.add(e.getKey(), e.getValue());
 				}
 				
 				// Subdirectories as leaf nodes (for moving directories around)
-				dirHierarchyJson.add("subDirObjs",
-						new FileObj(RecursiveLimitByTotal2.jsonFromString(RecursiveLimitByTotal2.createSubdirObjs(iDirectoryPath).toString()))
-								.json());
-				
+//				JsonObject jsonFromString = RecursiveLimitByTotal2.jsonFromString(RecursiveLimitByTotal2.createSubdirObjs(iDirectoryPath).toString());
+//				System.out
+//						.println("Coagulate.RecursiveLimitByTotal2.PathToDirObj.dipIntoDirRecursive() jsonFromString = " + new JSONObject(jsonFromString.toString()).toString(2));
+//				dirHierarchyJson.add("subDirObjs", new SubDirObj(jsonFromString).json());
+
 				// For ALL subdirectories, recurse
 
 				if (depth >= 0) {
@@ -903,7 +945,7 @@ public class Coagulate {
 		private static final Predicate<String> DIRS = new Predicate<String>() {
 			@Override
 			public boolean apply(String input) {
-				return "dirs".equalsIgnoreCase(input);
+				return "dirs".equalsIgnoreCase(input) || "subDirObjs".equalsIgnoreCase(input);
 			}
 		};
 		
@@ -924,9 +966,10 @@ public class Coagulate {
 			private final JsonObject fileJson;
 
 			FileObj(JsonObject fileJson) {
-				this.fileJson = fileJson;
-				System.out.println("Coagulate.RecursiveLimitByTotal2.FileObj.FileObj() fileJson = " + fileJson);
-				Preconditions.checkNotNull(fileJson.getString("fileSystem"));
+				this.fileJson = Preconditions.checkNotNull(fileJson);
+				// Check if this throws a null pointer
+				fileJson.getString("fileSystem");
+//				System.out.println("Coagulate.RecursiveLimitByTotal2.FileObj.FileObj() fileJson = " + fileJson);
 			}
 
 			public JsonObject json() {
@@ -934,7 +977,20 @@ public class Coagulate {
 			}
 			
 			public String getFileAbsolutePath() {
+				Preconditions.checkNotNull(fileJson);
 				return fileJson.getString("fileSystem");
+			}
+		}
+		private static class SubDirObj {
+			private final JsonObject fileJson;
+
+			SubDirObj(JsonObject fileJson) {
+				this.fileJson = fileJson;
+//				System.out.println("Coagulate.RecursiveLimitByTotal2.FileObj.FileObj() fileJson = " + fileJson);
+			}
+
+			public JsonObject json() {
+				return fileJson;
 			}
 		}
 
@@ -2138,6 +2194,8 @@ public class Coagulate {
 
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
 
+		JsonObject j = RecursiveLimitByTotal2.getDirectoryHierarchies("/e/Sridhar/Photos/2012-09-16 Dad in Bay Area/products and services", 100, 1);
+		System.err.println(new JSONObject(j.toString()).toString(2));
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
 			NioFileServer.startServer(4452);
