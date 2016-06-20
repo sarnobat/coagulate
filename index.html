@@ -506,10 +506,16 @@ function createThumbnailItemHtml(accumulator, fileObj, loadImmediate, size) {
 }
 
 function addSubdirLinks(response) {
-
 	var subdirectories = Object.keys(response.itemsRecursive);
 	for(var dirIndex in subdirectories) { 
-
+		var subdir = subdirectories[dirIndex];
+		var items = response.itemsRecursive[subdir];
+		var dirs = items.dirs;
+		if (dirs == null) {
+			//debugger;
+			// Nothing in the dir (I think)
+			continue;
+		}
 		var filesInDir = Object.keys(response.itemsRecursive[subdirectories[dirIndex]].dirs);
 
 		if (filesInDir.length < 1) {
@@ -853,7 +859,10 @@ function dirToHtmlCards(dirObj) {
 	html += files.map(fileToHtmlParameterized(subdirs)).join('');
 	if (dirObj[dir].subDirObjs == null) {
 		console.debug('subDirObjs is null');
+		console.debug(dirObj[dir]);
+		debugger;
 	} else {
+		console.debug('subDirObjs is non-null');
 		var subdirObjs = toPairs(dirObj[dir].subDirObjs).slice(0, limitRoot).filter(dirsOnly).sort(BY_CREATED).reverse();
 		var h2 = subdirObjs.map(dirToHtmlParameterized(subdirs)).join('');
 	//	debugger;
