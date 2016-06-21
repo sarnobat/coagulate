@@ -444,7 +444,7 @@ public class Coagulate {
 						continue;
 					}
 					Set<FileObj> filesAlreadyAdded = getFiles(allDirsAccumulated);
-					DirPair newFiles = new PathToDirPair(getFilePaths(filesAlreadyAdded), iDepth)
+					DirPair newFiles = new PathToDirPair(getFilePaths(filesAlreadyAdded), iDepth, iLimit)
 							.apply(aDirectoryPath);
 					allDirsAccumulated.add(newFiles);
 					if (getFiles(newFiles.getDirObj()).size() == 0) {
@@ -749,15 +749,18 @@ public class Coagulate {
 			// Absolute paths
 			private final Set<String> _filesAlreadyObtained;
 			private final int depth;
-			PathToDirPair (Set<String> filesAlreadyObtained, int iDepth) {
+			private final int _limit;;
+			
+			PathToDirPair (Set<String> filesAlreadyObtained, int iDepth, int iLimit) {
 				_filesAlreadyObtained = ImmutableSet.copyOf(filesAlreadyObtained);
 				depth = iDepth;
+				_limit = iLimit;
 			}
 
 			@Override
 			public DirPair apply(String input) {
 //				System.out.println("Coagulate.RecursiveLimitByTotal2.PathToDirPair.apply() " + input);
-				DirObj dirObj = new PathToDirObj(_filesAlreadyObtained, depth).apply(input);
+				DirObj dirObj = new PathToDirObj(_filesAlreadyObtained, depth, _limit).apply(input);
 				return new DirPair(input, dirObj);
 			}
 		}
@@ -766,9 +769,11 @@ public class Coagulate {
 			
 			private final Set<String> _filesAbsolutePathsAlreadyObtained;
 			private final int depth;
-			PathToDirObj (Set<String> filesAlreadyObtained, int iDepth) {
+			private final int _limit;
+			PathToDirObj (Set<String> filesAlreadyObtained, int iDepth, int iLimit) {
 				_filesAbsolutePathsAlreadyObtained = ImmutableSet.copyOf(filesAlreadyObtained);
 				depth = iDepth;
+				_limit = iLimit;
 			}
 			
 			@Override
@@ -776,7 +781,7 @@ public class Coagulate {
 				JsonObject j;
 				try {
 					j = dipIntoDirRecursive(Paths.get(dirPath), 1, _filesAbsolutePathsAlreadyObtained, 0,
-							100000, 0, false, depth);
+							_limit, 0, true, depth);
 					
 				} catch (CannotDipIntoDirException e) {
 					throw new RuntimeException(e);
@@ -798,6 +803,8 @@ public class Coagulate {
 				// Immediate files
 				int filesPerLevel2 = isTopLevel ? filesPerLevel + iLimit/2 // /5 
 						: filesPerLevel; 
+				System.out
+						.println("Coagulate.RecursiveLimitByTotal2.PathToDirObj.dipIntoDirRecursive() isTopLevel = " + isTopLevel + ", so adding " + filesPerLevel2 + " files.");
 				ImmutableSet<Entry<String, JsonObject>> entrySet = getFilesInsideDir(iDirectoryPath, filesPerLevel2,
 						fileAbsolutePathsToIgnore, iLimit, filesToIgnoreAtLevel).entrySet();
 				for (Entry<String, JsonObject> e : entrySet) {
@@ -884,6 +891,8 @@ public class Coagulate {
 							break;
 						}
 					}
+					System.out
+							.println("Coagulate.RecursiveLimitByTotal2.PathToDirObj.getFilesInsideDir() Added " + addedCount + " files from " + iDirectoryPath);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
