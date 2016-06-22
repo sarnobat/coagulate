@@ -126,7 +126,6 @@ public class Coagulate {
 	public static class ServletResource { // Must be public
 	
 		public ServletResource() {
-			System.out.println("Coagulate.MyResource.MyResource()");
 		}
 
 		//
@@ -1119,8 +1118,8 @@ public class Coagulate {
 	        }
 
 	        @Override
-	        public ValueType getValueType() {
-	            return ValueType.OBJECT;
+	        public JsonValue.ValueType getValueType() {
+	            return JsonValue.ValueType.OBJECT;
 	        }
 
 	        @Override
