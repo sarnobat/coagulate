@@ -27,6 +27,8 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -43,9 +45,12 @@ import java.util.TimeZone;
 
 import javax.annotation.Nullable;
 import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
+import javax.json.JsonString;
 import javax.json.JsonValue;
 import javax.json.stream.JsonParsingException;
 import javax.net.ssl.SSLContext;
@@ -507,22 +512,10 @@ public class Coagulate {
 				JSONObject json = new JSONObject(dirObj.json().toString());
 				JsonObject json2 = new SubDirObj(FileLister.jsonFromString(FileLister.createSubdirObjs(dirPath).toString())).json();
 				json.put("subDirObjs", new JSONObject(json2.toString()));
-				// correct
-//				System.out
-//						.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() " + json2);
-				String string = json.toString();
-				// incorrect
-//				System.out
-//						.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() " + string);
-				JsonObject jsonFromString = jsonFromString(string);
-				// incorrect
-//				System.out
-//						.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() subdirobjs " + jsonFromString);
-				jsonObject.add(dirPath, jsonFromString);
+				// Pointless conversion followed by unconversion
+				jsonObject.add(dirPath, jsonFromString(json.toString()));
 			}
-			JsonObject build = jsonObject.build();
-//			System.out.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() - " + build);
-			return build;
+			return jsonObject.build();
 		}
 
 		private static Multimap<String, DirObj> toMultiMap(Collection<DirPair> allDirsAccumulated) {
@@ -1006,37 +999,140 @@ public class Coagulate {
 			return new JSONObject(dir.toString()).toString(2);
 		}
 
-		private static class FileObj {
+		@SuppressWarnings("serial")
+		private static class FileObj extends SimpleEntry<String, JsonObject> {
 			private final JsonObject fileJson;
 
 			FileObj(JsonObject fileJson) {
+				super(fileJson.getString("fileSystem"), fileJson);
 				this.fileJson = Preconditions.checkNotNull(fileJson);
-				// Check if this throws a null pointer
-				fileJson.getString("fileSystem");
-//				System.out.println("Coagulate.RecursiveLimitByTotal2.FileObj.FileObj() fileJson = " + fileJson);
 			}
 
+			@Deprecated // Use getValue()
 			public JsonObject json() {
 				return fileJson;
 			}
-			
+
+			@Deprecated // Use getKey()
 			public String getFileAbsolutePath() {
 				Preconditions.checkNotNull(fileJson);
 				return fileJson.getString("fileSystem");
 			}
 		}
-		private static class SubDirObj {
+
+		private static class SubDirObj extends JsonObjectImpl implements JsonObject {
 			private final JsonObject fileJson;
 
 			SubDirObj(JsonObject fileJson) {
+				super(fileJson);
 				this.fileJson = fileJson;
-//				System.out.println("Coagulate.RecursiveLimitByTotal2.FileObj.FileObj() fileJson = " + fileJson);
 			}
 
+			// Just use "this".
+			@Deprecated
 			public JsonObject json() {
 				return fileJson;
 			}
 		}
+		
+		private static class JsonObjectImpl extends AbstractMap<String, JsonValue> implements JsonObject {
+	        private final Map<String, JsonValue> valueMap;      // unmodifiable
+
+	        JsonObjectImpl(Map<String, JsonValue> valueMap) {
+	            this.valueMap = valueMap;
+	        }
+
+	        @Override
+	        public JsonArray getJsonArray(String name) {
+	            return (JsonArray)get(name);
+	        }
+
+	        @Override
+	        public JsonObject getJsonObject(String name) {
+	            return (JsonObject)get(name);
+	        }
+
+	        @Override
+	        public JsonNumber getJsonNumber(String name) {
+	            return (JsonNumber)get(name);
+	        }
+
+	        @Override
+	        public JsonString getJsonString(String name) {
+	            return (JsonString)get(name);
+	        }
+
+	        @Override
+	        public String getString(String name) {
+	            return getJsonString(name).getString();
+	        }
+
+	        @Override
+	        public String getString(String name, String defaultValue) {
+	            try {
+	                return getString(name);
+	            } catch (Exception e) {
+	                return defaultValue;
+	            }
+	        }
+
+	        @Override
+	        public int getInt(String name) {
+	            return getJsonNumber(name).intValue();
+	        }
+
+	        @Override
+	        public int getInt(String name, int defaultValue) {
+	            try {
+	                return getInt(name);
+	            } catch (Exception e) {
+	                return defaultValue;
+	            }
+	        }
+
+	        @Override
+	        public boolean getBoolean(String name) {
+	            JsonValue value = get(name);
+	            if (value == null) {
+	                throw new NullPointerException();
+	            } else if (value == JsonValue.TRUE) {
+	                return true;
+	            } else if (value == JsonValue.FALSE) {
+	                return false;
+	            } else {
+	                throw new ClassCastException();
+	            }
+	        }
+
+	        @Override
+	        public boolean getBoolean(String name, boolean defaultValue) {
+	            try {
+	                return getBoolean(name);
+	            } catch (Exception e) {
+	                return defaultValue;
+	            }
+	        }
+
+	        @Override
+	        public boolean isNull(String name) {
+	            return get(name).equals(JsonValue.NULL);
+	        }
+
+	        @Override
+	        public ValueType getValueType() {
+	            return ValueType.OBJECT;
+	        }
+
+	        @Override
+	        public Set<Entry<String, JsonValue>> entrySet() {
+	            return valueMap.entrySet();
+	        }
+
+	        @Override
+	        public String toString() {
+	            return "not implemented";
+	        }
+	    }
 
 		// TODO: remove this and just use the supertype?
 		@Deprecated
