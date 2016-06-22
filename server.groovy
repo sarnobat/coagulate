@@ -931,7 +931,8 @@ public class Coagulate {
 			}
 		};
 		
-		private static class DirObj {
+		@SuppressWarnings("serial")
+		private static class DirObj extends SimpleEntry<String, JsonObject> {
 
 			private final String dirPath;
 			private final JsonObject dirJson;
@@ -942,23 +943,32 @@ public class Coagulate {
 			}
 			
 			DirObj(JsonObject dirJson, String dirPath) {
+				super(dirPath, dirJson);
 				this.dirJson = validateIsDirectoryNode(dirJson);
 				this.dirPath = dirPath;
 			}
 			
 			Map<String, FileObj> getFiles() {
+				return getFiles(dirJson);
+			}
+
+			private static Map<String, FileObj> getFiles(JsonObject dirNodeJson) {
 				ImmutableMap.Builder<String, FileObj> ret = ImmutableMap.builder();
-				for (String path :FluentIterable.from(dirJson.keySet()).filter(not(DIRS)).toSet()) {
-					JsonObject fileJson = dirJson.getJsonObject(path);
+				for (String path :FluentIterable.from(dirNodeJson.keySet()).filter(not(DIRS)).toSet()) {
+					JsonObject fileJson = dirNodeJson.getJsonObject(path);
 					ret.put(path, new FileObj(fileJson));
 				}
 				return ret.build();
 			}
 
 			public Map<String, DirObj> getDirs() {
+				return getDirs(dirJson);
+			}
+
+			private static Map<String, DirObj> getDirs(JsonObject dirNodeJson) {
 				ImmutableMap.Builder<String, DirObj> ret = ImmutableMap.builder();
-				if (dirJson.containsKey("dirs")) {
-					JsonObject dirs = dirJson.getJsonObject("dirs");
+				if (dirNodeJson.containsKey("dirs")) {
+					JsonObject dirs = dirNodeJson.getJsonObject("dirs");
 					for (String path :FluentIterable.from(dirs.keySet()).toSet()) {
 						JsonObject fileJson = dirs.getJsonObject(path);
 						ret.put(path, new DirObj(fileJson, path));
@@ -969,10 +979,12 @@ public class Coagulate {
 				return ret.build();
 			}
 
+			@Deprecated // use getValue()
 			public JsonObject json() {
 				return dirJson;
 			}
 
+			@Deprecated // use getVKey()
 			public String getPath() {
 				return dirPath;
 			}
@@ -1135,11 +1147,12 @@ public class Coagulate {
 
 		// TODO: remove this and just use the supertype?
 		@Deprecated
-		private static class DirPair extends HashMap<String, DirObj> {
+		private static class DirPair extends AbstractMap.SimpleEntry<String, DirObj> {
 			private static final long serialVersionUID = 1L;
 			private final String dirPath;
 			private DirObj dirObj;
 			DirPair(String dirPath, DirObj dirObj) {
+				super(dirPath, dirObj);
 				this.dirPath = dirPath;
 				dirObj.json();// check parsing succeeds
 				this.dirObj = dirObj;
@@ -1149,10 +1162,12 @@ public class Coagulate {
 				return jsonFromString("{ \"" + dirPath + "\" : " + dirObj.json().toString() + "}");
 			}
 
+			@Deprecated // use getKey()
 			public String getDirPath() {
 				return dirPath;
 			}
 
+			@Deprecated // Use getValue()
 			DirObj getDirObj() {
 				return dirObj;	
 			}
