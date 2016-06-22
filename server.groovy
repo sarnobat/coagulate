@@ -560,10 +560,10 @@ public class Coagulate {
 		private static Set<String> getFilePaths(Collection<FileObj> filesAlreadyAdded) {
 			Set<String> s = new HashSet<String>();
 			for (FileObj f : filesAlreadyAdded) {
-				String fileAbsolutePath = f.getFileAbsolutePath();
+				String fileAbsolutePath = f.getKey();
 				if (fileAbsolutePath == null) {
 					// TODO: fix this
-					System.err.println("Coagulate.RecursiveLimitByTotal2.getFilePaths() fileAbsolutePath = " + f.json());
+					System.err.println("Coagulate.RecursiveLimitByTotal2.getFilePaths() fileAbsolutePath = " + f.getValue());
 				} else {
 					s.add(fileAbsolutePath);
 				}
@@ -682,7 +682,7 @@ public class Coagulate {
 			
 			JsonObjectBuilder ret = Json.createObjectBuilder();
 			for (Entry<String, FileObj> entry : files.entrySet()) {
-				ret.add(entry.getKey(), entry.getValue().json());
+				ret.add(entry.getKey(), entry.getValue().getValue());
 			}
 			JsonObjectBuilder dirs2 = Json.createObjectBuilder();
 			for (Entry<String, DirObj> entry : dirs.entrySet()) {
@@ -715,7 +715,7 @@ public class Coagulate {
 			JsonObjectBuilder subdirObjsObj = Json.createObjectBuilder();
 			
 			for (Entry<String, FileObj> entry : build1.entrySet()) {
-				subdirObjsObj.add(entry.getKey(), entry.getValue().json());
+				subdirObjsObj.add(entry.getKey(), entry.getValue().getValue());
 			}
 			
 			return subdirObjsObj.build();
@@ -1012,22 +1012,8 @@ public class Coagulate {
 
 		@SuppressWarnings("serial")
 		private static class FileObj extends SimpleEntry<String, JsonObject> {
-			private final JsonObject fileJson;
-
 			FileObj(JsonObject fileJson) {
-				super(fileJson.getString("fileSystem"), fileJson);
-				this.fileJson = Preconditions.checkNotNull(fileJson);
-			}
-
-			@Deprecated // Use getValue()
-			public JsonObject json() {
-				return fileJson;
-			}
-
-			@Deprecated // Use getKey()
-			public String getFileAbsolutePath() {
-				Preconditions.checkNotNull(fileJson);
-				return fileJson.getString("fileSystem");
+				super(fileJson.getString("fileSystem"), Preconditions.checkNotNull(fileJson));
 			}
 		}
 
