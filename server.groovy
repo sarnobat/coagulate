@@ -118,9 +118,9 @@ import com.pastdev.jsch.nio.file.UnixSshPath;
 //@Grab(group='com.pastdev', module='jsch-nio', version='0.1.5')
 public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
-	public static class Servlet { // Must be public
+	public static class ServletResource { // Must be public
 	
-		public Servlet() {
+		public ServletResource() {
 			System.out.println("Coagulate.MyResource.MyResource()");
 		}
 
@@ -136,7 +136,7 @@ public class Coagulate {
 			if (sourceFilePathString.endsWith("htm") || sourceFilePathString.endsWith(".html")) {
 				throw new RuntimeException("Need to move the _files folder too");
 			}
-			Operations.doMoveToParent(sourceFilePathString);
+			FileMover.doMoveToParent(sourceFilePathString);
 			return Response.ok()
 					.header("Access-Control-Allow-Origin", "*")
 					.entity(new JSONObject().toString(4)).type("application/json")
@@ -151,7 +151,7 @@ public class Coagulate {
 			if (sourceFilePathString.endsWith("htm") || sourceFilePathString.endsWith(".html")) {
 				throw new RuntimeException("Need to move the _files folder too");
 			}
-			Operations.doMoveToParent(sourceFilePathString);
+			FileMover.doMoveToParent(sourceFilePathString);
 			return Response.ok()
 					.header("Access-Control-Allow-Origin", "*")
 					.entity(new JSONObject().toString(4)).type("application/json")
@@ -224,7 +224,7 @@ public class Coagulate {
 
 
 				return Response.ok().entity(stream)
-						.type(FileServerGroovy.getMimeType(absolutePath)).build();
+						.type(FileServerNanoGroovy.getMimeType(absolutePath)).build();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -267,6 +267,27 @@ public class Coagulate {
 			private static ClientSession session ;
 		}
 
+		private static class Predicates {
+		
+			static Predicate<String> IS_UNDER(final String absolutePath) {
+				Predicate<String> IS_UNDER = new Predicate<String>() {
+					@Override
+					public boolean apply(@Nullable String permittedDirectory) {
+						if (absolutePath.startsWith(permittedDirectory)) {
+							return true;
+						}
+						if (absolutePath.startsWith(permittedDirectory.replace("/media/sarnobat",""))) {
+							return true;
+						}
+						if (absolutePath.replace("/media/sarnobat","").startsWith(permittedDirectory)) {
+							return true;
+						}
+						return false;
+					}};
+				return IS_UNDER;
+			}
+		}
+
 		@GET
 		@javax.ws.rs.Path("static/{absolutePath : .+}")
 		@Produces("application/json")
@@ -300,7 +321,7 @@ public class Coagulate {
 			if (FluentIterable.from(ImmutableList.copyOf(whitelisted)).anyMatch(IS_UNDER)){
 				try {
 	
-					Coagulate.FileServerGroovy.Response r = FileServerGroovy
+					Coagulate.FileServerNanoGroovy.Response r = FileServerNanoGroovy
 							.serveFile(absolutePath, new Properties(),
 									Paths.get("/").toFile(), true);
 					mimeType = r.mimeType;
@@ -330,7 +351,7 @@ public class Coagulate {
 			}
 
 			try {
-				Operations.copyFileToFolder(iFilePath, iDestinationDirPath);
+				FileMover.copyFileToFolder(iFilePath, iDestinationDirPath);
 			} catch (Exception e) {
 				e.printStackTrace();
 				throw new RuntimeException(e);
@@ -356,7 +377,7 @@ public class Coagulate {
 				throw new RuntimeException("dir name is wrong: " + iDestinationDirSimpleName);
 			}
 			try {
-				Operations.moveFileToSubfolder(iFilePath, iDestinationDirSimpleName);
+				FileMover.moveFileToSubfolder(iFilePath, iDestinationDirSimpleName);
 			} catch (Exception e) {
 				e.printStackTrace();
 				throw new RuntimeException(e);
@@ -382,7 +403,7 @@ public class Coagulate {
 				throw new RuntimeException("dir name is wrong: " + iDestinationDirSimpleName);
 			}
 			try {
-				Operations.moveFileToSubfolder(iFilePath, iDestinationDirSimpleName);
+				FileMover.moveFileToSubfolder(iFilePath, iDestinationDirSimpleName);
 			} catch (Exception e) {
 				e.printStackTrace();
 				throw new RuntimeException(e);
@@ -578,6 +599,7 @@ public class Coagulate {
 			return flat;
 		}
 		
+		@SuppressWarnings("unused")
 		@Deprecated
 		private static Map<String, FileObj> getFilesInsideDir(Path iDirectoryPath,
 				int filesPerLevel, Set<String> filesToIgnore, int iLimit) {
@@ -1045,160 +1067,161 @@ public class Coagulate {
 				return json().toString();
 			}
 		}
-	}
 
-	private static class Mappings {
-		
-		private static final Function<Path, JsonObject> PATH_TO_JSON_ITEM = new Function<Path, JsonObject>() {
-			@Override
-			public JsonObject apply(Path iPath) {
-
-				if (iPath.toFile().isDirectory()) {
-//					System.out.println("Coagulate.Mappings.PATH_TO_JSON_ITEM() - is a directory");
-					long created;
-					try {
-						created = Files.readAttributes(iPath, BasicFileAttributes.class)
-								.creationTime().toMillis();
-					} catch (IOException e) {
-						System.err.println("PATH_TO_JSON_ITEM.apply() - " + e.getMessage());
-						created = 0;
-					}
-					JsonObject json = Json
-							.createObjectBuilder()
-							.add("location",
-									iPath.getParent().toFile().getAbsolutePath().toString())
-							.add("fileSystem", iPath.toAbsolutePath().toString())
-							.add("httpUrl", httpLinkFor(iPath.toAbsolutePath().toString()))
-							.add("thumbnailUrl",
-									"http://www.pd4pic.com/images/windows-vista-folder-directory-open-explorer.png")
-							.add("created", created).build();
-//					System.out.println("Coagulate.Mappings.PATH_TO_JSON_ITEM() - dirJson = " + json);
-					return json;
-				} else {
-					long created;
-					try {
-						created = Files.readAttributes(iPath, BasicFileAttributes.class)
-								.creationTime().toMillis();
-					} catch (IOException e) {
-						System.err.println("PATH_TO_JSON_ITEM.apply() - " + e.getMessage());
-						created = 0;
-					}
-					return Json
-							.createObjectBuilder()
-							.add("location",
-									iPath.getParent().toFile().getAbsolutePath().toString())
-							.add("fileSystem", iPath.toAbsolutePath().toString())
-							.add("httpUrl", httpLinkFor(iPath.toAbsolutePath().toString()))
-							.add("thumbnailUrl", httpLinkFor(thumbnailFor(iPath)))
-							.add("created", created).build();
-				}
-			}
-		};
-
-		private static String httpLinkFor(String iAbsolutePath) {
-//			String prefix = "http://netgear.rohidekar.com:4451/cmsfs/static4/";
-			int fsPort = port + 1;
-			String prefix = "http://netgear.rohidekar.com:4" + fsPort;
-			if (iAbsolutePath.contains("Coru")) {
-//				try {
-//					System.out.println("Coagulate.Mappings.httpLinkFor() " + URLEncoder.encode(iAbsolutePath, "UTF-8"));
-//					System.out.println("Coagulate.Mappings.httpLinkFor() " + iAbsolutePath);
-//					return prefix + URLEncoder.encode(iAbsolutePath, "UTF-8");
-//				} catch (UnsupportedEncodingException e) {
-//					e.printStackTrace();
-//				}
-			}
-			return prefix + iAbsolutePath;
-		}
-
-		private static String thumbnailFor(Path iPath) {
-			return iPath.getParent().toFile().getAbsolutePath() + "/_thumbnails/" + iPath.getFileName().getFileName() + ".jpg";
-		}
-	}
-
-	private static class Predicates {
-
-		static final DirectoryStream.Filter<Path> IS_FILE = new DirectoryStream.Filter<Path>() {
-			public boolean accept(Path entry) throws IOException {
-				return !Files.isDirectory(entry);
-			}
-		};
-		
-		static final DirectoryStream.Filter<Path> IS_DIRECTORY = new DirectoryStream.Filter<Path>() {
-			public boolean accept(Path entry) throws IOException {
-				return Files.isDirectory(entry);
-			}
-		};
-		
-		static class Contains implements Predicate<Path> {
-
-			private final Collection<String> files ;
-
-			public Contains(Collection<String> files) {
-				this.files = files;
-			}
-
-			@Override
-			public boolean apply(@Nullable Path input) {
-				return files.contains(input.toAbsolutePath().toString());
-			}
-		}
-
-		static Predicate<String> IS_UNDER(final String absolutePath) {
-			Predicate<String> IS_UNDER = new Predicate<String>() {
-				@Override
-				public boolean apply(@Nullable String permittedDirectory) {
-					if (absolutePath.startsWith(permittedDirectory)) {
-						return true;
-					}
-					if (absolutePath.startsWith(permittedDirectory.replace("/media/sarnobat",""))) {
-						return true;
-					}
-					if (absolutePath.replace("/media/sarnobat","").startsWith(permittedDirectory)) {
-						return true;
-					}
-					return false;
-				}};
-			return IS_UNDER;
-		}
-
-		@Deprecated // We don't need a separate predicate
-		private static final Predicate<Path> IS_DISPLAYABLE_DIR = new Predicate<Path>() {
-			@Override
-			public boolean apply(Path iPath) {
-				if (iPath.toFile().isDirectory()) {
-					return true;
-				} else {
-					return false;
-				}
+		private static class Mappings {
 				
-			}
-		};
-
-		private static final Predicate<Path> IS_DISPLAYABLE = new Predicate<Path>() {
-			@Override
-			public boolean apply(Path iPath) {
-				if (iPath.toFile().isDirectory()) {
-					// I think changing this causes problems
-					return false;
-				}
-				String filename = iPath.getFileName().toString();
-				if (filename.contains(".txt")) {
-					return false;
-				}
-				if (filename.contains(".ini")) {
-					return false;
-				}
-				if (filename.contains("DS_Store")) {
-					return false;
-				}
-				if (filename.endsWith(".html") || filename.endsWith(".htm")) {
-					return false;
-				}
-				return true;
-			}
-		};
+				private static final Function<Path, JsonObject> PATH_TO_JSON_ITEM = new Function<Path, JsonObject>() {
+					@Override
+					public JsonObject apply(Path iPath) {
 		
+						if (iPath.toFile().isDirectory()) {
+		//					System.out.println("Coagulate.Mappings.PATH_TO_JSON_ITEM() - is a directory");
+							long created;
+							try {
+								created = Files.readAttributes(iPath, BasicFileAttributes.class)
+										.creationTime().toMillis();
+							} catch (IOException e) {
+								System.err.println("PATH_TO_JSON_ITEM.apply() - " + e.getMessage());
+								created = 0;
+							}
+							JsonObject json = Json
+									.createObjectBuilder()
+									.add("location",
+											iPath.getParent().toFile().getAbsolutePath().toString())
+									.add("fileSystem", iPath.toAbsolutePath().toString())
+									.add("httpUrl", httpLinkFor(iPath.toAbsolutePath().toString()))
+									.add("thumbnailUrl",
+											"http://www.pd4pic.com/images/windows-vista-folder-directory-open-explorer.png")
+									.add("created", created).build();
+		//					System.out.println("Coagulate.Mappings.PATH_TO_JSON_ITEM() - dirJson = " + json);
+							return json;
+						} else {
+							long created;
+							try {
+								created = Files.readAttributes(iPath, BasicFileAttributes.class)
+										.creationTime().toMillis();
+							} catch (IOException e) {
+								System.err.println("PATH_TO_JSON_ITEM.apply() - " + e.getMessage());
+								created = 0;
+							}
+							return Json
+									.createObjectBuilder()
+									.add("location",
+											iPath.getParent().toFile().getAbsolutePath().toString())
+									.add("fileSystem", iPath.toAbsolutePath().toString())
+									.add("httpUrl", httpLinkFor(iPath.toAbsolutePath().toString()))
+									.add("thumbnailUrl", httpLinkFor(thumbnailFor(iPath)))
+									.add("created", created).build();
+						}
+					}
+				};
+		
+				private static String httpLinkFor(String iAbsolutePath) {
+		//			String prefix = "http://netgear.rohidekar.com:4451/cmsfs/static4/";
+					int fsPort = port + 1;
+					String prefix = "http://netgear.rohidekar.com:4" + fsPort;
+					if (iAbsolutePath.contains("Coru")) {
+		//				try {
+		//					System.out.println("Coagulate.Mappings.httpLinkFor() " + URLEncoder.encode(iAbsolutePath, "UTF-8"));
+		//					System.out.println("Coagulate.Mappings.httpLinkFor() " + iAbsolutePath);
+		//					return prefix + URLEncoder.encode(iAbsolutePath, "UTF-8");
+		//				} catch (UnsupportedEncodingException e) {
+		//					e.printStackTrace();
+		//				}
+					}
+					return prefix + iAbsolutePath;
+				}
+		
+				private static String thumbnailFor(Path iPath) {
+					return iPath.getParent().toFile().getAbsolutePath() + "/_thumbnails/" + iPath.getFileName().getFileName() + ".jpg";
+				}
+			}
+
+		private static class Predicates {
+		
+			static final DirectoryStream.Filter<Path> IS_FILE = new DirectoryStream.Filter<Path>() {
+				public boolean accept(Path entry) throws IOException {
+					return !Files.isDirectory(entry);
+				}
+			};
+			
+			static final DirectoryStream.Filter<Path> IS_DIRECTORY = new DirectoryStream.Filter<Path>() {
+				public boolean accept(Path entry) throws IOException {
+					return Files.isDirectory(entry);
+				}
+			};
+			
+			static class Contains implements Predicate<Path> {
+		
+				private final Collection<String> files ;
+		
+				public Contains(Collection<String> files) {
+					this.files = files;
+				}
+		
+				@Override
+				public boolean apply(@Nullable Path input) {
+					return files.contains(input.toAbsolutePath().toString());
+				}
+			}
+		
+			@SuppressWarnings("unused")
+			static Predicate<String> IS_UNDER(final String absolutePath) {
+				Predicate<String> IS_UNDER = new Predicate<String>() {
+					@Override
+					public boolean apply(@Nullable String permittedDirectory) {
+						if (absolutePath.startsWith(permittedDirectory)) {
+							return true;
+						}
+						if (absolutePath.startsWith(permittedDirectory.replace("/media/sarnobat",""))) {
+							return true;
+						}
+						if (absolutePath.replace("/media/sarnobat","").startsWith(permittedDirectory)) {
+							return true;
+						}
+						return false;
+					}};
+				return IS_UNDER;
+			}
+		
+			@Deprecated // We don't need a separate predicate
+			private static final Predicate<Path> IS_DISPLAYABLE_DIR = new Predicate<Path>() {
+				@Override
+				public boolean apply(Path iPath) {
+					if (iPath.toFile().isDirectory()) {
+						return true;
+					} else {
+						return false;
+					}
+					
+				}
+			};
+		
+			private static final Predicate<Path> IS_DISPLAYABLE = new Predicate<Path>() {
+				@Override
+				public boolean apply(Path iPath) {
+					if (iPath.toFile().isDirectory()) {
+						// I think changing this causes problems
+						return false;
+					}
+					String filename = iPath.getFileName().toString();
+					if (filename.contains(".txt")) {
+						return false;
+					}
+					if (filename.contains(".ini")) {
+						return false;
+					}
+					if (filename.contains("DS_Store")) {
+						return false;
+					}
+					if (filename.endsWith(".html") || filename.endsWith(".htm")) {
+						return false;
+					}
+					return true;
+				}
+			};
+			
+		}
 	}
 
 	@SuppressWarnings("unused")
@@ -1267,14 +1290,14 @@ public class Coagulate {
 		}
 	}
 	
-	private static class Operations {
+	private static class FileMover {
 
 		private static Path getUnconflictedDestinationFilePath(String folderName, Path path)
 				throws IllegalAccessError, IOException {
 			String parentDirPath = path.getParent().toAbsolutePath().toString();
 			String destinationFolderPath = parentDirPath + "/" + folderName;
 			Path subfolder = getOrCreateDestinationFolder(destinationFolderPath);
-			return Operations.allocateFile(path, subfolder);
+			return FileMover.allocateFile(path, subfolder);
 		}
 
 		private static java.nio.file.Path getOrCreateDestinationFolder(
@@ -1295,9 +1318,7 @@ public class Coagulate {
 		
 		static void moveFileToSubfolder(String filePath,
 				String iSubfolderSimpleName) throws IllegalAccessError, IOException {
-			System.out.println("moveFileToSubfolder() - begin: " + filePath);
 			Path sourceFilePath = Paths.get(filePath);
-                        System.out.println("moveFileToSubfolder() - sourceFilePath = " + sourceFilePath);
 			if (!Files.exists(sourceFilePath)) {
 				throw new RuntimeException("No such source file: " + sourceFilePath.toAbsolutePath().toString());
 			}
@@ -1314,7 +1335,7 @@ public class Coagulate {
 //				System.out.println("moveFileToSubfolder() - Not moving to self");
 //				return;
 //			}
-			Operations.doMove(sourceFilePath, getUnconflictedDestinationFilePath(iSubfolderSimpleName, sourceFilePath));
+			FileMover.doMove(sourceFilePath, getUnconflictedDestinationFilePath(iSubfolderSimpleName, sourceFilePath));
 
 		}
 
@@ -1349,7 +1370,7 @@ public class Coagulate {
 				throws IllegalAccessError {
 			// if destination file exists, rename the file to be moved(while
 			// loop)
-			return Operations.determineDestinationPathAvoidingExisting(folder
+			return FileMover.determineDestinationPathForFileAvoidingExisting(folder
 					.normalize().toAbsolutePath().toString()
 					+ "/" + fileSimpleName);
 		}
@@ -1357,9 +1378,9 @@ public class Coagulate {
 		private static void doMove(Path path, Path destinationFile)
 				throws IllegalAccessError {
 			try {
-				Files.move(path, destinationFile);// By default, it won't
-													// overwrite existing
-				System.out.println("Success: file now at " + destinationFile.toAbsolutePath());
+				// By default, it won't overwrite existing
+				Files.move(path, destinationFile);
+				System.out.println("Coagulate.FileMover.doMove() - Success: file now at " + destinationFile.toAbsolutePath());
 			} catch (IOException e) {
 				e.printStackTrace();
 				throw new IllegalAccessError("Moving did not work");
@@ -1379,22 +1400,21 @@ public class Coagulate {
 			Path parent = sourceFile.getParent().getParent().toAbsolutePath();
 			String parentPath = parent.toAbsolutePath().toString();
 			String destinationFilePath = parentPath + "/" + filename;
-			return determineDestinationPathAvoidingExisting(destinationFilePath);
+			return determineDestinationPathForFileAvoidingExisting(destinationFilePath);
 		}
 
 		private static Path allocateFile(Path imageFile, Path subfolder)
 				throws IllegalAccessError {
 			// if destination file exists, rename the file to be moved(while
 			// loop)
-			return determineDestinationPathAvoidingExisting(new StringBuffer()
+			return determineDestinationPathForFileAvoidingExisting(new StringBuffer()
 					.append(subfolder.normalize().toAbsolutePath().toString()).append("/")
 					.append(imageFile.getFileName().toString()).toString());
 		}
 
 		// Only works for files
-		private static Path determineDestinationPathAvoidingExisting(
+		private static Path determineDestinationPathForFileAvoidingExisting(
 				String destinationFilePath) throws IllegalAccessError {
-			System.out.println("Coagulate.Operations.determineDestinationPathAvoidingExisting() = ");
 			int lastIndexOf = destinationFilePath.lastIndexOf('.');
 			String destinationFilePathWithoutExtension ;
 			if (lastIndexOf == -1) {
@@ -1420,14 +1440,14 @@ public class Coagulate {
 	}
 
 	/** Based on Apache Commons NIO's NHttpFileServer sample */
-	private static class NioFileServer {
+	private static class FileServerNio {
 		static void startServer(int port) throws NoSuchAlgorithmException,
 				KeyManagementException, KeyStoreException, UnrecoverableKeyException,
 				CertificateException, IOException, InterruptedException {
 			SSLContext sslcontext = null;
 			if (port == 8443) {
 				// Initialize SSL context
-				URL url = NioFileServer.class.getResource("/my.keystore");
+				URL url = FileServerNio.class.getResource("/my.keystore");
 				if (url == null) {
 					System.out.println("Keystore not found");
 					System.exit(1);
@@ -1576,7 +1596,9 @@ public class Coagulate {
 		}
 	}
 
-	private static class FileServerGroovy {
+	// I think this doesn't use NIO
+	@Deprecated
+	private static class FileServerNanoGroovy {
 			// ==================================================
 			// API parts
 			// ==================================================
@@ -1681,7 +1703,7 @@ public class Coagulate {
 			 * Serves file from homeDir and its' subdirectories (only).
 			 * Uses only URI, ignores all headers and HTTP parameters.
 			 * 
-			 * @deprecated - Use {@link Servlet#getFileSsh}
+			 * @deprecated - Use {@link ServletResource#getFileSsh}
 			 */
 			@Deprecated 
 			public static Response serveFile(String url, Properties header, File homeDir,
@@ -2218,7 +2240,7 @@ public class Coagulate {
 
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
-			NioFileServer.startServer(4452);
+			FileServerNio.startServer(4452);
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(-1);
@@ -2226,7 +2248,7 @@ public class Coagulate {
 		try {
 			JdkHttpServerFactory.createHttpServer(new URI(
 					"http://localhost:" + port + "/"), new ResourceConfig(
-					Servlet.class));
+					ServletResource.class));
 		} catch (Exception e) {
 			//e.printStackTrace();
 			System.out.println("Port already listened on.");
