@@ -582,13 +582,12 @@ public class Coagulate {
 		}
 
 		private static Collection<FileObj> getFiles(DirObj iDirObj) {
-			Collection<FileObj> flat = new HashSet<FileObj>();
-			Collection<FileObj> values = iDirObj.getFiles().values();
-			flat.addAll(values);
+			Collection<FileObj> flatFileList = new HashSet<FileObj>();
+			flatFileList.addAll(iDirObj.getFilesInDirImmediate().values());
 			for (DirObj aDirObj : iDirObj.getDirs().values()) {
-				flat.addAll(getFiles(aDirObj));
+				flatFileList.addAll(getFiles(aDirObj));
 			}
-			return flat;
+			return flatFileList;
 		}
 		
 		@SuppressWarnings("unused")
@@ -677,7 +676,7 @@ public class Coagulate {
 				throw new RuntimeException("Must merge on a per-directory basis");
 			}
 			String commonDirPath = dir1.getPath();
-			Map<String, FileObj> files = mergeLeafNodes(dir1.getFiles(), dir2.getFiles());
+			Map<String, FileObj> files = mergeLeafNodes(dir1.getFilesInDirImmediate(), dir2.getFilesInDirImmediate());
 			Map<String, DirObj> dirs = mergeOverlappingDirNodes(dir1.getDirs(), dir2.getDirs(), commonDirPath);
 			
 			JsonObjectBuilder ret = Json.createObjectBuilder();
@@ -948,17 +947,17 @@ public class Coagulate {
 				this.dirPath = dirPath;
 			}
 			
-			Map<String, FileObj> getFiles() {
-				return getFiles(dirJson);
+			Map<String, FileObj> getFilesInDirImmediate() {
+				return getFilesInDirImmediate(dirJson);
 			}
 
-			private static Map<String, FileObj> getFiles(JsonObject dirNodeJson) {
-				ImmutableMap.Builder<String, FileObj> ret = ImmutableMap.builder();
+			private static Map<String, FileObj> getFilesInDirImmediate(JsonObject dirNodeJson) {
+				ImmutableMap.Builder<String, FileObj> immediateFilesInDir = ImmutableMap.builder();
 				for (String path :FluentIterable.from(dirNodeJson.keySet()).filter(not(DIRS)).toSet()) {
 					JsonObject fileJson = dirNodeJson.getJsonObject(path);
-					ret.put(path, new FileObj(fileJson));
+					immediateFilesInDir.put(path, new FileObj(fileJson));
 				}
-				return ret.build();
+				return immediateFilesInDir.build();
 			}
 
 			public Map<String, DirObj> getDirs() {
@@ -969,12 +968,10 @@ public class Coagulate {
 				ImmutableMap.Builder<String, DirObj> ret = ImmutableMap.builder();
 				if (dirNodeJson.containsKey("dirs")) {
 					JsonObject dirs = dirNodeJson.getJsonObject("dirs");
-					for (String path :FluentIterable.from(dirs.keySet()).toSet()) {
-						JsonObject fileJson = dirs.getJsonObject(path);
-						ret.put(path, new DirObj(fileJson, path));
+					for (String childDirPath :FluentIterable.from(dirs.keySet()).toSet()) {
+						JsonObject childDirJson = dirs.getJsonObject(childDirPath);
+						ret.put(childDirPath, new DirObj(childDirJson, childDirPath));
 					}
-				} else {
-//					System.out.println("Coagulate.RecursiveLimitByTotal.DirObj.getDirs() - no subdirs" );
 				}
 				return ret.build();
 			}
@@ -1025,7 +1022,7 @@ public class Coagulate {
 				this.fileJson = fileJson;
 			}
 
-			// Just use "this".
+			// Just use the object you passed in.
 			@Deprecated
 			public JsonObject json() {
 				return fileJson;
