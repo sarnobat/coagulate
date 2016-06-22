@@ -780,6 +780,8 @@ public class Coagulate {
 			public DirObj apply(String dirPath) {
 				JsonObject j;
 				try {
+				// FYI - from the shell you can do:
+				// find $PWD -type d | while read dir;do find $dir -type f -maxdepth 1 | head -1;done	
 					j = dipIntoDirRecursive(Paths.get(dirPath), 1, _filesAbsolutePathsAlreadyObtained, 0,
 							_limit, 0, true, depth);
 					
