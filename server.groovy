@@ -118,9 +118,9 @@ import com.pastdev.jsch.nio.file.UnixSshPath;
 //@Grab(group='com.pastdev', module='jsch-nio', version='0.1.5')
 public class Coagulate {
 	@javax.ws.rs.Path("cmsfs")
-	public static class MyResource { // Must be public
+	public static class Servlet { // Must be public
 	
-		public MyResource() {
+		public Servlet() {
 			System.out.println("Coagulate.MyResource.MyResource()");
 		}
 
@@ -401,8 +401,8 @@ public class Coagulate {
 			System.out.println("list() - begin: " + iDirectoryPathsString + ", depth = " + iDepth);
 			try {
 				// To create JSONObject, do new JSONObject(aJsonObject.toString). But the other way round I haven't figured out
-				JsonObject response = RecursiveLimitByTotal2.getDirectoryHierarchies(
-								iDirectoryPathsString, Integer.parseInt(iLimit), iDepth);
+				JsonObject response = getDirectoryHierarchies(iDirectoryPathsString,
+						Integer.parseInt(iLimit), iDepth);
 				System.out.println("list() - end");
 				return Response.ok().header("Access-Control-Allow-Origin", "*")
 						.entity(response.toString()).type("application/json")
@@ -415,21 +415,34 @@ public class Coagulate {
 						.type("application/json").build();
 			}
 		}
-	}
 
-	private static class RecursiveLimitByTotal2 {
-
-		static JsonObject getDirectoryHierarchies(String iDirectoryPathsString, int iLimit, Integer iDepth) {
-			JsonObject response = Json
+		@Deprecated // move to outer class
+		private static JsonObject getDirectoryHierarchies(String iDirectoryPathsString, int iLimit, Integer iDepth) {
+			return Json
 					.createObjectBuilder()
 					.add("itemsRecursive",
-							createFilesJsonRecursiveNew(
-									iDirectoryPathsString.split("\\n"), 
-									iLimit, iDepth))
+							new FileLister(iLimit, iDepth).apply(iDirectoryPathsString))
 					.build();
-			return response;
 		}
-		
+	}
+
+	private static class FileLister implements Function<String, JsonValue> {
+
+		private final int _limit;
+		private final Integer _depth;
+
+		FileLister(int iLimit, Integer iDepth) {
+			_limit = iLimit;
+			_depth = iDepth;
+		}
+
+		@Override
+		public JsonValue apply(String iDirectoryPathsString) {
+			return createFilesJsonRecursiveNew(
+					iDirectoryPathsString.split("\\n"), 
+					_limit, _depth);
+		}
+
 		private static JsonValue createFilesJsonRecursiveNew(String[] iDirectoryPaths, int iLimit,
 				Integer iDepth) {
 			
@@ -471,7 +484,7 @@ public class Coagulate {
 			for (String dirPath : merged.keySet()) {
 				DirObj dirObj = merged.get(dirPath);
 				JSONObject json = new JSONObject(dirObj.json().toString());
-				JsonObject json2 = new SubDirObj(RecursiveLimitByTotal2.jsonFromString(RecursiveLimitByTotal2.createSubdirObjs(dirPath).toString())).json();
+				JsonObject json2 = new SubDirObj(FileLister.jsonFromString(FileLister.createSubdirObjs(dirPath).toString())).json();
 				json.put("subDirObjs", new JSONObject(json2.toString()));
 				// correct
 //				System.out
@@ -1668,7 +1681,7 @@ public class Coagulate {
 			 * Serves file from homeDir and its' subdirectories (only).
 			 * Uses only URI, ignores all headers and HTTP parameters.
 			 * 
-			 * @deprecated - Use {@link MyResource#getFileSsh}
+			 * @deprecated - Use {@link Servlet#getFileSsh}
 			 */
 			@Deprecated 
 			public static Response serveFile(String url, Properties header, File homeDir,
@@ -2203,8 +2216,6 @@ public class Coagulate {
 
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
 
-		JsonObject j = RecursiveLimitByTotal2.getDirectoryHierarchies("/e/Sridhar/Photos/2012-09-16 Dad in Bay Area/products and services", 100, 1);
-		System.err.println(new JSONObject(j.toString()).toString(2));
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
 			NioFileServer.startServer(4452);
@@ -2215,7 +2226,7 @@ public class Coagulate {
 		try {
 			JdkHttpServerFactory.createHttpServer(new URI(
 					"http://localhost:" + port + "/"), new ResourceConfig(
-					MyResource.class));
+					Servlet.class));
 		} catch (Exception e) {
 			//e.printStackTrace();
 			System.out.println("Port already listened on.");
