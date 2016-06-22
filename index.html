@@ -834,10 +834,16 @@ function dirObjToHtml2(dirObj) {
 		{
 			{
 				var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
-				if (res !=null) {
+				var imgUrl;
+				if (res ==null) {
+					imgUrl = dirObj.thumbnailUrl;
+				} else {
+				    imgUrl = httpUrl +'?width=' + WIDTH_250;
+				}
+				{
 					toBeAppended += '<a href=\'' + httpUrl + '\' target="_blank">';
 					toBeAppended += '<img src="http://www.htmlgoodies.com/images/1x1.gif" width="' + WIDTH_250 + 'px" height="1px"><br>';
-					toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl +'?width=' + WIDTH_250) + '" style="transform: rotate(0 deg)"/>';
+					toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(imgUrl) + '" style="transform: rotate(0 deg)"/>';
 					toBeAppended += '</a>';
 				}
 			}

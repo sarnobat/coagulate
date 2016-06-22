@@ -474,20 +474,20 @@ public class Coagulate {
 				JsonObject json2 = new SubDirObj(RecursiveLimitByTotal2.jsonFromString(RecursiveLimitByTotal2.createSubdirObjs(dirPath).toString())).json();
 				json.put("subDirObjs", new JSONObject(json2.toString()));
 				// correct
-				System.out
-						.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() " + json2);
+//				System.out
+//						.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() " + json2);
 				String string = json.toString();
 				// incorrect
-				System.out
-						.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() " + string);
+//				System.out
+//						.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() " + string);
 				JsonObject jsonFromString = jsonFromString(string);
 				// incorrect
-				System.out
-						.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() subdirobjs " + jsonFromString);
+//				System.out
+//						.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() subdirobjs " + jsonFromString);
 				jsonObject.add(dirPath, jsonFromString);
 			}
 			JsonObject build = jsonObject.build();
-			System.out.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() - " + build);
+//			System.out.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() - " + build);
 			return build;
 		}
 
@@ -803,8 +803,8 @@ public class Coagulate {
 				// Immediate files
 				int filesPerLevel2 = isTopLevel ? filesPerLevel + iLimit/2 // /5 
 						: filesPerLevel; 
-				System.out
-						.println("Coagulate.RecursiveLimitByTotal2.PathToDirObj.dipIntoDirRecursive() isTopLevel = " + isTopLevel + ", so adding " + filesPerLevel2 + " files.");
+//				System.out
+//						.println("Coagulate.RecursiveLimitByTotal2.PathToDirObj.dipIntoDirRecursive() isTopLevel = " + isTopLevel + ", so adding " + filesPerLevel2 + " files.");
 				ImmutableSet<Entry<String, JsonObject>> entrySet = getFilesInsideDir(iDirectoryPath, filesPerLevel2,
 						fileAbsolutePathsToIgnore, iLimit, filesToIgnoreAtLevel).entrySet();
 				for (Entry<String, JsonObject> e : entrySet) {
@@ -891,8 +891,8 @@ public class Coagulate {
 							break;
 						}
 					}
-					System.out
-							.println("Coagulate.RecursiveLimitByTotal2.PathToDirObj.getFilesInsideDir() Added " + addedCount + " files from " + iDirectoryPath);
+//					System.out
+//							.println("Coagulate.RecursiveLimitByTotal2.PathToDirObj.getFilesInsideDir() Added " + addedCount + " files from " + iDirectoryPath);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
