@@ -423,12 +423,12 @@ public class Coagulate {
 		@Produces("application/json")
 		public Response list(@QueryParam("dirs") String iDirectoryPathsString, @QueryParam("limit") String iLimit, @QueryParam("depth") Integer iDepth)
 				throws JSONException, IOException {
-			System.out.println("list() - begin: " + iDirectoryPathsString + ", depth = " + iDepth);
+			System.out.println("Coagulate.ServletResource.list() - begin: " + iDirectoryPathsString + ", depth = " + iDepth);
 			try {
 				// To create JSONObject, do new JSONObject(aJsonObject.toString). But the other way round I haven't figured out
 				JsonObject response = getDirectoryHierarchies(iDirectoryPathsString,
 						Integer.parseInt(iLimit), iDepth);
-				System.out.println("list() - end");
+				System.out.println("Coagulate.ServletResource.list() - end");
 				return Response.ok().header("Access-Control-Allow-Origin", "*")
 						.entity(response.toString()).type("application/json")
 						.build();
@@ -1227,18 +1227,11 @@ public class Coagulate {
 				};
 		
 				private static String httpLinkFor(String iAbsolutePath) {
-		//			String prefix = "http://netgear.rohidekar.com:4451/cmsfs/static4/";
-					int fsPort = port + 1;
-					String prefix = "http://netgear.rohidekar.com:4" + fsPort;
-					if (iAbsolutePath.contains("Coru")) {
-		//				try {
-		//					System.out.println("Coagulate.Mappings.httpLinkFor() " + URLEncoder.encode(iAbsolutePath, "UTF-8"));
-		//					System.out.println("Coagulate.Mappings.httpLinkFor() " + iAbsolutePath);
-		//					return prefix + URLEncoder.encode(iAbsolutePath, "UTF-8");
-		//				} catch (UnsupportedEncodingException e) {
-		//					e.printStackTrace();
-		//				}
+					int fsPort = Coagulate.port + 1;
+					if (fsPort != Coagulate.fsPort) {
+						throw new RuntimeException("fsPort is different to what is expected");
 					}
+					String prefix = "http://netgear.rohidekar.com:4" + fsPort;
 					return prefix + iAbsolutePath;
 				}
 		
@@ -1451,9 +1444,9 @@ public class Coagulate {
 
 		private static void doCopy(Path sourceFilePath, Path destinationFilePath) {
 			try {
-				Files.copy(sourceFilePath, destinationFilePath);// By default, it won't
-													// overwrite existing
-				System.out.println("Success: copied file now at " + destinationFilePath.toAbsolutePath());
+				// By default, it won't overwrite existing
+				Files.copy(sourceFilePath, destinationFilePath);
+				System.out.println("Coagulate.FileMover.doCopy() - Success: copied file now at " + destinationFilePath.toAbsolutePath());
 			} catch (IOException e) {
 				e.printStackTrace();
 				throw new IllegalAccessError("Copying did not work");
@@ -2343,7 +2336,6 @@ public class Coagulate {
 		}
 
 	private static final int port = 4451;
-	@SuppressWarnings("unused")
 	private static final int fsPort = 4452;
 
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
