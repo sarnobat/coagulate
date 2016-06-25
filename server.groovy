@@ -422,7 +422,7 @@ public class Coagulate {
 		@GET
 		@javax.ws.rs.Path("list2")
 		@Produces("application/json")
-		public Response list(@QueryParam("dirs") String iDirectoryPathsString, @QueryParam("limit") String iLimit, @QueryParam("depth") Integer iDepth)
+		public Response listOld(@QueryParam("dirs") String iDirectoryPathsString, @QueryParam("limit") String iLimit, @QueryParam("depth") Integer iDepth)
 				throws JSONException, IOException {
 			try {
 				// To create JSONObject, do new JSONObject(aJsonObject.toString). But the other way round I haven't figured out
@@ -453,7 +453,7 @@ public class Coagulate {
 		@GET
 		@javax.ws.rs.Path("list")
 		@Produces("application/json")
-		public Response list2(@QueryParam("dirs") String iDirectoryPathsString,
+		public Response list(@QueryParam("dirs") String iDirectoryPathsString,
 				@QueryParam("limit") String iLimit, @QueryParam("depth") Integer iDepth)
 				throws JSONException, IOException {
 			try {
@@ -504,9 +504,6 @@ public class Coagulate {
 				jsonObject.add(aDirectoryPath,
 						new DirContentsJson(iDepth, iLimit).apply(aDirectoryPath).get(aDirectoryPath));
 			}
-			// the subdirObjs get added inside the above
-//			JsonObjectBuilder jsonObject2 = Json.createObjectBuilder();
-//			jsonObject2.add();
 			return jsonObject.build();
 		}
 
@@ -807,15 +804,10 @@ public class Coagulate {
 							if (dirPathsFullyRead.contains(aDirectoryPath)) {
 								continue;
 							}
-							System.out.println("Coagulate.FileLister.createFilesJsonRecursiveNew() - " + aDirectoryPath);
 							Set<String> filesAlreadyAdded = getFiles(allDirsAccumulated);
 							_filesAbsolutePathsAlreadyObtained.addAll(filesAlreadyAdded);
-							System.out
-									.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.apply() before dip");
 							JsonObject j = dipIntoDirRecursive(Paths.get(dirPath), 1,
 									_filesAbsolutePathsAlreadyObtained, 0, _limit, 0, true, depth);
-							System.out
-									.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.apply() after dip");
 							DirObj dirObj = new DirObj(dirPath, j);
 							DirPair newFiles = new DirPair(dirPath, dirObj);
 
@@ -825,7 +817,6 @@ public class Coagulate {
 								break;
 							}
 							int totalFiles = totalFiles(allDirsAccumulated);
-							System.out.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.apply() total files = " + totalFiles);
 							if (totalFiles > _limit) {
 								break;
 							}
@@ -994,12 +985,10 @@ public class Coagulate {
 					private static JsonObject dipIntoDirRecursive(Path iDirectoryPath,
 							int filesPerLevel, Set<String> fileAbsolutePathsToIgnore, int maxDepth,
 							int iLimit, int dipNumber, boolean isTopLevel, int depth) {
-//System.out.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.dipIntoDirRecursive() begin");
 						JsonObjectBuilder dirHierarchyJson = Json.createObjectBuilder();
 						Set<String> filesToIgnoreAtLevel = new HashSet<String>();
 						// Sanity check
 						if (!iDirectoryPath.toFile().isDirectory()) {
-//							System.out.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.dipIntoDirRecursive() end 1");
 							return dirHierarchyJson.build();
 						}
 
@@ -1014,7 +1003,6 @@ public class Coagulate {
 						}
 
 						// For ALL subdirectories, recurse
-
 						if (depth >= 0) {
 							try {
 								JsonObjectBuilder dirsJson = Json.createObjectBuilder();
@@ -1038,9 +1026,7 @@ public class Coagulate {
 							}
 						}
 
-						JsonObject build = dirHierarchyJson.build();
-//						System.out.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.dipIntoDirRecursive() end 2");
-						return build;
+						return dirHierarchyJson.build();
 					}
       			
 					private static Set<Path> getSubPaths(Path iDirectoryPath, Filter<Path> isfile2)
@@ -1084,7 +1070,6 @@ public class Coagulate {
 									.filter(not(predicate)).filter(Predicates.IS_DISPLAYABLE)
 									.toSet()) {
 								String absolutePath = p.toAbsolutePath().toString();
-//								System.out.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.getFilesInsideDir() " + absolutePath);
 								filesInDir.put(absolutePath,
 										Mappings.FILE_PATH_TO_JSON_ITEM.apply(p));
 								++addedCount;
@@ -1103,26 +1088,6 @@ public class Coagulate {
 						return build1;
 					}
 				}
-      
-      			private static class PathToDirPair implements Function<String, DirPair> {
-      					
-      						// Absolute paths
-      						private final Set<String> _filesAlreadyObtained;
-      						private final int depth;
-      						private final int _limit;;
-      						
-      						PathToDirPair (Set<String> filesAlreadyObtained, int iDepth, int iLimit) {
-      							_filesAlreadyObtained = ImmutableSet.copyOf(filesAlreadyObtained);
-      							depth = iDepth;
-      							_limit = iLimit;
-      						}
-      					
-      						@Override
-      						public DirPair apply(String input) {
-      							DirObj dirObj = new Mappings.PathToDirObj(depth, _limit).apply(input);
-      							return new DirPair(input, dirObj);
-      						}
-      					}
       
       			private static final Function<Path, JsonObject> FILE_PATH_TO_JSON_ITEM = new Function<Path, JsonObject>() {
       				@Override
@@ -1168,15 +1133,27 @@ public class Coagulate {
       					throw new RuntimeException("fsPort is different to what is expected");
       				}
       				String prefix = "http://netgear.rohidekar.com:4" + fsPort;
-      				return prefix + iAbsolutePath;
+      				return prefix + iAbsolutePath.replace("+", "%2B").replace("ã", "&atilde");//.replace("+", "%2B");
       			}
+      			
+
+      			private static String convertToURLEscapingIllegalCharacters(String string){
+      			    try {
+      			        String decodedURL = URLDecoder.decode(string, "UTF-8");
+      			        URL url = new URL(decodedURL);
+      					URI uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(),
+      							url.getPath(), url.getQuery(), url.getRef()); 
+      			        return uri.toASCIIString(); 
+      			    } catch (Exception ex) {
+      			        ex.printStackTrace();
+      			        return null;
+      			    }
+      			}
+      			
       
       			private static String thumbnailFor(Path iPath) {
       				// This must be on a single line for Groovy
       				String string = iPath.getParent().toFile().getAbsolutePath() + "/_thumbnails/" + iPath.getFileName().getFileName() + ".jpg";
-      //				System.err.println("Coagulate.FileLister.Mappings.thumbnailFor() encoding = " + System.getProperty("LC_CTYPE"));
-      //				System.err.println("Coagulate.FileLister.Mappings.thumbnailFor() encoding = " + System.getProperty("file.encoding"));
-      //				System.err.println("Coagulate.FileLister.Mappings.thumbnailFor() encoding = " + System.getProperty("sun.jnu.encoding"));
       				if (!Paths.get(string).toFile().exists()) {
       					if (string.endsWith("mp4")) {
       
@@ -1233,19 +1210,6 @@ public class Coagulate {
       			}};
       		return IS_UNDER;
       	}
-      
-      	@Deprecated // We don't need a separate predicate
-      	private static final Predicate<Path> IS_DISPLAYABLE_DIR = new Predicate<Path>() {
-      		@Override
-      		public boolean apply(Path iPath) {
-      			if (iPath.toFile().isDirectory()) {
-      				return true;
-      			} else {
-      				return false;
-      			}
-      			
-      		}
-      	};
       
       	private static final Predicate<Path> IS_DISPLAYABLE = new Predicate<Path>() {
       		@Override
@@ -2040,12 +2004,8 @@ public class Coagulate {
 			private static String thumbnailFor(Path iPath) {
 				// This must be on a single line for Groovy
 				String string = iPath.getParent().toFile().getAbsolutePath() + "/_thumbnails/" + iPath.getFileName().getFileName() + ".jpg";
-//				System.err.println("Coagulate.FileLister.Mappings.thumbnailFor() encoding = " + System.getProperty("LC_CTYPE"));
-//				System.err.println("Coagulate.FileLister.Mappings.thumbnailFor() encoding = " + System.getProperty("file.encoding"));
-//				System.err.println("Coagulate.FileLister.Mappings.thumbnailFor() encoding = " + System.getProperty("sun.jnu.encoding"));
 				if (!Paths.get(string).toFile().exists()) {
 					if (string.endsWith("mp4")) {
-
 						System.err.println("Coagulate.FileLister.Mappings.thumbnailFor() - warning: non-existent thumbnail: " + string);
 					}
 				}
@@ -2440,7 +2400,7 @@ public class Coagulate {
 //				System.out.println("NHttpFileServer.HttpFileHandler.handleInternal() - serving "
 //						+ file.getAbsolutePath());
 				if (!file.canRead()) {
-					throw new RuntimeException("cannot read");
+//					throw new RuntimeException("cannot read");
 				}
 				if (!file.exists()) {
 
@@ -3147,16 +3107,18 @@ public class Coagulate {
 				gmtFrmt.setTimeZone(TimeZone.getTimeZone("GMT"));
 			}
 		}
-
+	
 	private static final int port = 4451;
 	private static final int fsPort = 4452;
 
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
 
 //		System.out.println("Coagulate.main() " + new FileLister(100, 2).apply("/sarnobat.garagebandbroken/Desktop/git-repo/"));
-//		if (true) {
+//		System.out.println(URLParamEncoder.encode("B-BANG-estilo-verã.jpg"));
+//		System.out.println(convertToURLEscapingIllegalCharacters("http://netgear.rohidekar.com:44452/media/sarnobat/Unsorted/images/B-BANG-estilo-verã.jpg"));
+		if (true) {
 //			System.exit(-1);
-//		}
+		}
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
 			FileServerNio.startServer(4452);
