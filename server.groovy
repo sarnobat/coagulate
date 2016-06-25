@@ -418,8 +418,9 @@ public class Coagulate {
 					.build();
 		}
 
+    @Deprecated // This doesn't follow the true Unix filter form
 		@GET
-		@javax.ws.rs.Path("list")
+		@javax.ws.rs.Path("list2")
 		@Produces("application/json")
 		public Response list(@QueryParam("dirs") String iDirectoryPathsString, @QueryParam("limit") String iLimit, @QueryParam("depth") Integer iDepth)
 				throws JSONException, IOException {
@@ -445,8 +446,39 @@ public class Coagulate {
 			return Json
 					.createObjectBuilder()
 					.add("itemsRecursive",
-							new FileLister(iLimit, iDepth).apply(iDirectoryPathsString))
+							new FileListerOld(iLimit, iDepth).apply(iDirectoryPathsString))
 					.build();
+		}
+
+		@GET
+		@javax.ws.rs.Path("list")
+		@Produces("application/json")
+		public Response list2(@QueryParam("dirs") String iDirectoryPathsString,
+				@QueryParam("limit") String iLimit, @QueryParam("depth") Integer iDepth)
+				throws JSONException, IOException {
+			try {
+				// To create JSONObject, do new
+				// JSONObject(aJsonObject.toString). But the other way round I
+				// haven't figured out
+				JsonObject response = getDirectoryHierarchies2(iDirectoryPathsString,
+						Integer.parseInt(iLimit), iDepth);
+				System.out.println("Coagulate.ServletResource.list() - end");
+				return Response.ok().header("Access-Control-Allow-Origin", "*")
+						.entity(response.toString()).type("application/json").build();
+			} catch (Exception e) {
+				e.printStackTrace();
+				return Response.serverError().header("Access-Control-Allow-Origin", "*")
+						.entity("{ 'foo' : " + e.getMessage() + " }").type("application/json")
+						.build();
+			}
+		}
+
+		private static JsonObject getDirectoryHierarchies2(String iDirectoryPathsString,
+				int iLimit, Integer iDepth) {
+			return Json
+					.createObjectBuilder()
+					.add("itemsRecursive",
+							new FileLister(iLimit, iDepth).apply(iDirectoryPathsString)).build();
 		}
 	}
 
@@ -462,10 +494,819 @@ public class Coagulate {
 
 		@Override
 		public JsonValue apply(String iDirectoryPathsString) {
-			return createFilesJsonRecursiveNew(
-					iDirectoryPathsString.split("\\n"), 
-					_limit, _depth);
+			return createFilesJsonRecursiveNew(iDirectoryPathsString.split("\\n"), _limit, _depth);
 		}
+
+		private static JsonValue createFilesJsonRecursiveNew(String[] iDirectories, int iLimit,
+				Integer iDepth) {
+			JsonObjectBuilder jsonObject = Json.createObjectBuilder();
+			for (String aDirectoryPath : iDirectories) {
+				jsonObject.add(aDirectoryPath,
+						new DirContentsJson(iDepth, iLimit).apply(aDirectoryPath).get(aDirectoryPath));
+			}
+			// the subdirObjs get added inside the above
+//			JsonObjectBuilder jsonObject2 = Json.createObjectBuilder();
+//			jsonObject2.add();
+			return jsonObject.build();
+		}
+
+		// This should be recursive
+		private static class DirContentsJson implements Function<String, JsonObject> {
+
+			private final int depth;
+			private final int _limit;
+
+			DirContentsJson(int iDepth, int iLimit) {
+				depth = iDepth;
+				_limit = iLimit;
+			}
+
+			@Override
+			public JsonObject apply(String aDirectoryPath) {
+				return new Mappings.PathToDirObj(depth, _limit).apply(aDirectoryPath).json();
+			}
+
+			@SuppressWarnings("serial")
+			private static class DirObj extends AbstractMap.SimpleEntry<String, JsonObject> {
+
+				private final String dirPath;
+				private final JsonObject dirJson;
+
+				@Override
+				public String toString() {
+					return json().toString();
+				}
+
+				DirObj(String dirPath, JsonObject dirJson) {
+					super(dirPath, dirJson);
+					this.dirJson = validateIsDirectoryNode(dirJson);
+					this.dirPath = dirPath;
+				}
+
+				private static JsonObject validateIsDirectoryNode(JsonObject dir) {
+					if (!dir.isEmpty()) {
+						if (dir.containsKey("location")) {
+							throw new RuntimeException("Not a directory node: " + prettyPrint(dir));
+						}
+					}
+					return dir;
+				}
+
+				private static String prettyPrint(JsonObject dir) {
+					return new JSONObject(dir.toString()).toString(2);
+				}
+
+				Map<String, FileObj> getFilesInDirImmediate() {
+					return getFilesInDirImmediate(dirJson);
+				}
+
+				private static Map<String, FileObj> getFilesInDirImmediate(JsonObject dirNodeJson) {
+					ImmutableMap.Builder<String, FileObj> immediateFilesInDir = ImmutableMap.builder();
+					for (String path :FluentIterable.from(dirNodeJson.keySet()).filter(not(DIRS)).toSet()) {
+						JsonObject fileJson = dirNodeJson.getJsonObject(path);
+						immediateFilesInDir.put(path, new FileObj(fileJson));
+					}
+					return immediateFilesInDir.build();
+				}
+
+				Map<String, Path> getFilePathsInDirImmediate() {
+					return getFilePathsInDirImmediate(dirJson);
+				}
+
+				private static Map<String, Path> getFilePathsInDirImmediate(JsonObject dirNodeJson) {
+					ImmutableMap.Builder<String, Path> immediateFilesInDir = ImmutableMap
+							.builder();
+					for (String path : FluentIterable.from(dirNodeJson.keySet()).filter(not(DIRS))
+							.toSet()) {
+						JsonObject fileJson = dirNodeJson.getJsonObject(path);
+						immediateFilesInDir.put(path, new FileObj(fileJson).getPath());
+					}
+					return immediateFilesInDir.build();
+				}
+
+				private static final Predicate<String> DIRS = new Predicate<String>() {
+					@Override
+					public boolean apply(String input) {
+						return "dirs".equalsIgnoreCase(input) || "subDirObjs".equalsIgnoreCase(input);
+					}
+				};
+
+				public Map<String, DirObj> getDirs() {
+					return getDirs(dirJson);
+				}
+
+				private static Map<String, DirObj> getDirs(JsonObject dirNodeJson) {
+					ImmutableMap.Builder<String, DirObj> ret = ImmutableMap.builder();
+					if (dirNodeJson.containsKey("dirs")) {
+						JsonObject dirs = dirNodeJson.getJsonObject("dirs");
+						for (String childDirPath : FluentIterable.from(dirs.keySet()).toSet()) {
+							JsonObject childDirJson = dirs.getJsonObject(childDirPath);
+							ret.put(childDirPath, new DirObj(childDirPath, childDirJson));
+						}
+					}
+					return ret.build();
+				}
+
+				@Deprecated
+				// use getValue()
+				public JsonObject json() {
+					return dirJson;
+				}
+
+				@Deprecated
+				// use getVKey()
+				public String getPath() {
+					return dirPath;
+				}
+			}
+
+			// TODO: remove this and just use the supertype. DirObj is enough,
+			// we don't need this AND DirObj.
+			@SuppressWarnings("serial")
+			@Deprecated
+			private static class DirPair extends AbstractMap.SimpleEntry<String, DirObj> {
+				private final String dirPath;
+				private DirObj dirObj;
+
+				DirPair(String dirPath, DirObj dirObj) {
+					super(dirPath, dirObj);
+					this.dirPath = dirPath;
+					dirObj.json();// check parsing succeeds
+					this.dirObj = dirObj;
+				}
+
+				public JsonObject json() {
+					return jsonFromString("{ \"" + dirPath + "\" : " + dirObj.json().toString() + "}");
+				}
+
+				private static JsonObject jsonFromString(String string) {
+					if (string.contains("ebm:[locati")) {
+						System.err.println("Coagulate.RecursiveLimitByTotal2.jsonFromString() - "
+								+ string);
+						throw new RuntimeException("No square brackets allowed");
+					}
+					JsonReader jsonReader = Json.createReader(new StringReader(string));
+					JsonObject object;
+					try {
+						object = jsonReader.readObject();
+					} catch (JsonParsingException e) {
+						System.err.println("Coagulate.RecursiveLimitByTotal2.jsonFromString()\n"
+								+ string);
+						throw new RuntimeException(e);
+					}
+					jsonReader.close();
+					return object;
+				}
+
+				@Override
+				public String toString() {
+					return json().toString();
+				}
+			}
+
+			@SuppressWarnings("serial")
+			private static class FileObj extends SimpleEntry<String, JsonObject> {
+				FileObj(JsonObject fileJson) {
+					super(fileJson.getString("fileSystem"), Preconditions.checkNotNull(fileJson));
+				}
+
+				public Path getPath() {
+					return Paths.get(getKey());
+				}
+			}
+
+			private static class JsonObjectImpl extends AbstractMap<String, JsonValue> implements
+					JsonObject {
+				private final Map<String, JsonValue> valueMap; // unmodifiable
+
+				JsonObjectImpl(Map<String, JsonValue> valueMap) {
+					this.valueMap = valueMap;
+				}
+
+				@Override
+				public JsonArray getJsonArray(String name) {
+					return (JsonArray) get(name);
+				}
+
+				@Override
+				public JsonObject getJsonObject(String name) {
+					return (JsonObject) get(name);
+				}
+
+				@Override
+				public JsonNumber getJsonNumber(String name) {
+					return (JsonNumber) get(name);
+				}
+
+				@Override
+				public JsonString getJsonString(String name) {
+					return (JsonString) get(name);
+				}
+
+				@Override
+				public String getString(String name) {
+					return getJsonString(name).getString();
+				}
+
+				@Override
+				public String getString(String name, String defaultValue) {
+					try {
+						return getString(name);
+					} catch (Exception e) {
+						return defaultValue;
+					}
+				}
+
+				@Override
+				public int getInt(String name) {
+					return getJsonNumber(name).intValue();
+				}
+
+				@Override
+				public int getInt(String name, int defaultValue) {
+					try {
+						return getInt(name);
+					} catch (Exception e) {
+						return defaultValue;
+					}
+				}
+
+				@Override
+				public boolean getBoolean(String name) {
+					JsonValue value = get(name);
+					if (value == null) {
+						throw new NullPointerException();
+					} else if (value == JsonValue.TRUE) {
+						return true;
+					} else if (value == JsonValue.FALSE) {
+						return false;
+					} else {
+						throw new ClassCastException();
+					}
+				}
+
+				@Override
+				public boolean getBoolean(String name, boolean defaultValue) {
+					try {
+						return getBoolean(name);
+					} catch (Exception e) {
+						return defaultValue;
+					}
+				}
+
+				@Override
+				public boolean isNull(String name) {
+					return get(name).equals(JsonValue.NULL);
+				}
+
+				@Override
+				public JsonValue.ValueType getValueType() {
+					return JsonValue.ValueType.OBJECT;
+				}
+
+				@Override
+				public Set<Entry<String, JsonValue>> entrySet() {
+					return valueMap.entrySet();
+				}
+
+				@Override
+				public String toString() {
+					return "not implemented";
+				}
+			}
+
+			private static class Mappings {
+
+				// Even though I thought Functions involving custom types are
+				// bad, this does help with code comprehension.
+				private static class PathToDirObj implements Function<String, DirObj> {
+
+					private final Set<String> _filesAbsolutePathsAlreadyObtained = new HashSet<String>();
+					private final int depth;
+					private final int _limit;
+
+					PathToDirObj(int iDepth, int iLimit) {
+						depth = iDepth;
+						_limit = iLimit;
+					}
+
+					@Override
+					public DirObj apply(String dirPath) {
+						String aDirectoryPath = dirPath;
+						List<DirPair> allDirsAccumulated = new LinkedList<DirPair>();
+						Set<String> dirPathsFullyRead = new HashSet<String>();
+						while (totalFiles(allDirsAccumulated) < _limit) {
+							boolean noMoreFilesToRead = false;
+							// for (String aDirectoryPath : iDirectoryPaths) {
+							if (aDirectoryPath.trim().startsWith("#")) {
+								continue;
+							}
+							if (aDirectoryPath.trim().length() == 0) {
+								continue;
+							}
+							if (dirPathsFullyRead.contains(aDirectoryPath)) {
+								continue;
+							}
+							System.out.println("Coagulate.FileLister.createFilesJsonRecursiveNew() - " + aDirectoryPath);
+							Set<String> filesAlreadyAdded = getFiles(allDirsAccumulated);
+							_filesAbsolutePathsAlreadyObtained.addAll(filesAlreadyAdded);
+							System.out
+									.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.apply() before dip");
+							JsonObject j = dipIntoDirRecursive(Paths.get(dirPath), 1,
+									_filesAbsolutePathsAlreadyObtained, 0, _limit, 0, true, depth);
+							System.out
+									.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.apply() after dip");
+							DirObj dirObj = new DirObj(dirPath, j);
+							DirPair newFiles = new DirPair(dirPath, dirObj);
+
+							allDirsAccumulated.add(newFiles);
+							if (getFiles(newFiles.getValue()).size() == 0) {
+								noMoreFilesToRead = true;
+								break;
+							}
+							int totalFiles = totalFiles(allDirsAccumulated);
+							System.out.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.apply() total files = " + totalFiles);
+							if (totalFiles > _limit) {
+								break;
+							}
+							if (noMoreFilesToRead) {
+								break;
+							}
+						}
+
+						Multimap<String, DirObj> unmerged = toMultiMap(allDirsAccumulated);
+						Map<String, DirObj> merged = mergeHierarhcies(unmerged);
+
+						JsonObjectBuilder jsonObject = Json.createObjectBuilder();
+
+						DirObj dirObj = merged.get(dirPath);
+						JSONObject json = new JSONObject(dirObj.json().toString());
+						JsonObject json2 = new SubDirObj(FileListerOld.jsonFromString(FileListerOld
+								.createSubdirObjs(dirPath).toString())).json();
+						json.put("subDirObjs", new JSONObject(json2.toString()));
+						// Pointless conversion followed by unconversion
+						jsonObject.add(dirPath, jsonFromString(json.toString()));
+						
+						return new DirObj(dirPath, jsonObject.build());
+					}
+
+					private static JsonObject jsonFromString(String string) {
+						if (string.contains("ebm:[locati")) {
+							System.err.println("Coagulate.RecursiveLimitByTotal2.jsonFromString() - "
+									+ string);
+							throw new RuntimeException("No square brackets allowed");
+						}
+						JsonReader jsonReader = Json.createReader(new StringReader(string));
+						JsonObject object;
+						try {
+							object = jsonReader.readObject();
+						} catch (JsonParsingException e) {
+							System.err.println("Coagulate.RecursiveLimitByTotal2.jsonFromString()\n"
+									+ string);
+							throw new RuntimeException(e);
+						}
+						jsonReader.close();
+						return object;
+					}
+
+
+					private static Multimap<String, DirObj> toMultiMap(Collection<DirPair> allDirsAccumulated) {
+						Multimap<String, DirObj> m = ArrayListMultimap.create();
+						for (DirPair dirPair : allDirsAccumulated) {
+							m.put(dirPair.getKey(), dirPair.getValue());
+						}
+						return m;
+					}
+
+					private static Map<String, DirObj> mergeHierarhcies(Multimap<String, DirObj> unmerged) {
+						Map<String, DirObj> m = new HashMap<String, DirObj>();
+						for (String dirPath : unmerged.keySet()) {
+							m.put(dirPath, mergeDirObjs(unmerged.get(dirPath)));
+						}
+						return ImmutableMap.copyOf(m);
+					}
+
+					private static DirObj mergeDirObjs(Collection<DirObj> dirObjs) {
+						if (dirObjs.size() == 1) {
+							return dirObjs.iterator().next();
+						} else if (dirObjs.size() > 1) {
+							List<DirObj> l = ImmutableList.copyOf(dirObjs);
+							return mergeDirsFold(l.get(0), l.subList(1, dirObjs.size()));
+						} else {
+							throw new RuntimeException("Impossible");
+						}
+					}
+
+					private static DirObj mergeDirsFold(DirObj dirObj, List<DirObj> dirObjs) {
+						if (dirObjs.size() == 0) {
+							return dirObj;
+						} else {
+							DirObj accumulatedSoFar = mergeDirectoryHierarchiesInternal(dirObj, dirObjs.get(0));
+							return mergeDirsFold(accumulatedSoFar, dirObjs.subList(1, dirObjs.size()));
+						}
+					}
+
+					private static DirObj mergeDirectoryHierarchiesInternal(DirObj dir1, DirObj dir2) {
+						if (!dir1.getPath().equals(dir2.getPath())) {
+							throw new RuntimeException("Must merge on a per-directory basis");
+						}
+						String commonDirPath = dir1.getPath();
+						Map<String, FileObj> files = mergeLeafNodes(dir1.getFilesInDirImmediate(), dir2.getFilesInDirImmediate());
+						Map<String, DirObj> dirs = mergeOverlappingDirNodes(dir1.getDirs(), dir2.getDirs(), commonDirPath);
+						
+						JsonObjectBuilder ret = Json.createObjectBuilder();
+						for (Entry<String, FileObj> entry : files.entrySet()) {
+							ret.add(entry.getKey(), entry.getValue().getValue());
+						}
+						JsonObjectBuilder dirs2 = Json.createObjectBuilder();
+						for (Entry<String, DirObj> entry : dirs.entrySet()) {
+							dirs2.add(entry.getKey(), entry.getValue().json());
+						}
+						ret.add("dirs", dirs2);
+						return new DirObj(commonDirPath, ret.build());
+					}
+
+
+					private static Map<String, DirObj> mergeOverlappingDirNodes(Map<String, DirObj> dirs1,
+							Map<String, DirObj> dirs2, String commonDirPath) {
+						ImmutableMap.Builder<String, DirObj> ret = ImmutableMap.builder();
+						for (String dirPath : Sets.union(dirs1.keySet(), dirs2.keySet())) {
+							if (dirs1.containsKey(dirPath) && dirs2.containsKey(dirPath)) {
+								ret.put(dirPath,
+										mergeDirectoryHierarchiesInternal(dirs1.get(dirPath),
+												dirs2.get(dirPath)));
+							} else if (dirs1.containsKey(dirPath) && !dirs2.containsKey(dirPath)) {
+								ret.put(dirPath, dirs1.get(dirPath));
+							} else if (!dirs1.containsKey(dirPath) && dirs2.containsKey(dirPath)) {
+								ret.put(dirPath, dirs2.get(dirPath));
+							} else {
+								throw new RuntimeException("Impossible");
+							}
+						}
+						return ret.build();
+					}
+
+					private static <T> Map<String, T> mergeLeafNodes(Map<String, T> leafNodes,
+							Map<String, T> leafNodes2) {
+						ImmutableMap.Builder<String, T> putAll = ImmutableMap.<String, T> builder().putAll(
+								leafNodes);
+						for (String key : leafNodes2.keySet()) {
+							if (leafNodes.keySet().contains(key)) {
+								
+							} else {
+								putAll.put(key, leafNodes2.get(key));
+							}
+						}
+						return putAll.build();
+					}
+
+					private static int totalFiles(Collection<DirPair> allDirsAccumulated) {
+						return getFilePaths(getFiles(allDirsAccumulated)).size();
+					}
+
+					private static Set<String> getFilePaths(Collection<String> filesAlreadyAdded) {
+						Set<String> s = new HashSet<String>();
+						for (String f : filesAlreadyAdded) {
+							s.add(f);
+						}
+						return ImmutableSet.copyOf(s);
+					}
+
+					private static Set<String> getFiles(Collection<DirPair> allDirsAccumulated) {
+						Set<String> s = new HashSet<String>();
+						for (DirPair p : allDirsAccumulated) {
+							DirObj dirObj = p.getValue();
+							Collection<String> flat = getFiles(dirObj);
+							s.addAll(flat);
+						}
+						return ImmutableSet.copyOf(s);
+					}
+
+					private static Collection<String> getFiles(DirObj iDirObj) {
+						Collection<String> flatFileList = new HashSet<String>();
+						flatFileList.addAll(iDirObj.getFilePathsInDirImmediate().keySet());
+						for (DirObj aDirObj : iDirObj.getDirs().values()) {
+							flatFileList.addAll(getFiles(aDirObj));
+						}
+						return flatFileList;
+					}
+					
+					private static JsonObject dipIntoDirRecursive(Path iDirectoryPath,
+							int filesPerLevel, Set<String> fileAbsolutePathsToIgnore, int maxDepth,
+							int iLimit, int dipNumber, boolean isTopLevel, int depth) {
+//System.out.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.dipIntoDirRecursive() begin");
+						JsonObjectBuilder dirHierarchyJson = Json.createObjectBuilder();
+						Set<String> filesToIgnoreAtLevel = new HashSet<String>();
+						// Sanity check
+						if (!iDirectoryPath.toFile().isDirectory()) {
+//							System.out.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.dipIntoDirRecursive() end 1");
+							return dirHierarchyJson.build();
+						}
+
+						// Immediate files
+						int filesPerLevel2 = isTopLevel ? filesPerLevel + iLimit / 2
+								: filesPerLevel;
+						ImmutableSet<Entry<String, JsonObject>> entrySet = getFilesInsideDir(
+								iDirectoryPath, filesPerLevel2, fileAbsolutePathsToIgnore, iLimit,
+								filesToIgnoreAtLevel).entrySet();
+						for (Entry<String, JsonObject> e : entrySet) {
+							dirHierarchyJson.add(e.getKey(), e.getValue());
+						}
+
+						// For ALL subdirectories, recurse
+
+						if (depth >= 0) {
+							try {
+								JsonObjectBuilder dirsJson = Json.createObjectBuilder();
+								for (Path p : getSubPaths(iDirectoryPath, Predicates.IS_DIRECTORY)) {
+									System.out.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.dipIntoDirRecursive() p = " + p);
+									JsonObject contentsRecursive = dipIntoDirRecursive(p,
+											filesPerLevel, fileAbsolutePathsToIgnore, --maxDepth,
+											iLimit, ++dipNumber, false, depth - 1);
+									if (depth > 0) {
+										dirsJson.add(p.toAbsolutePath().toString(),
+												contentsRecursive);
+									} else {
+										dirsJson.add(p.toAbsolutePath().toString(), Json
+												.createObjectBuilder().build());
+									}
+								}
+								JsonObject build = dirsJson.build();
+								dirHierarchyJson.add("dirs", build);
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+						}
+
+						JsonObject build = dirHierarchyJson.build();
+//						System.out.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.dipIntoDirRecursive() end 2");
+						return build;
+					}
+      			
+					private static Set<Path> getSubPaths(Path iDirectoryPath, Filter<Path> isfile2)
+							throws IOException {
+						DirectoryStream<Path> filesInDir2 = null;
+						Set<Path> filesInDir;
+						try {
+							filesInDir2 = Files.newDirectoryStream(iDirectoryPath, isfile2);
+							filesInDir = FluentIterable.from(filesInDir2).filter(SHOULD_DIP_INTO)
+									.toSet();
+						} catch (AccessDeniedException e) {
+							filesInDir = ImmutableSet.of();
+						} finally {
+							if (filesInDir2 != null) {
+								filesInDir2.close();
+							}
+						}
+						return filesInDir;
+					}
+
+					private static final Predicate<Path> SHOULD_DIP_INTO = new Predicate<Path>() {
+						@Override
+						public boolean apply(Path input) {
+							Set<String> forbidden = ImmutableSet.of("_thumbnails");
+							return !forbidden.contains(input.getName(input.getNameCount() - 1)
+									.toString());
+						}
+					};
+
+					private static ImmutableMap<String, JsonObject> getFilesInsideDir(
+							Path iDirectoryPath, int filesPerLevel, Set<String> filesToIgnore,
+							int iLimit, Set<String> filesToIgnoreAtLevel) {
+						ImmutableMap.Builder<String, JsonObject> filesInDir = ImmutableMap
+								.builder();
+						// Get one leaf node
+						try {
+							int addedCount = 0;
+							Predicates.Contains predicate = new Predicates.Contains(filesToIgnore);
+							for (Path p : FluentIterable
+									.from(getSubPaths(iDirectoryPath, Predicates.IS_FILE))
+									.filter(not(predicate)).filter(Predicates.IS_DISPLAYABLE)
+									.toSet()) {
+								String absolutePath = p.toAbsolutePath().toString();
+//								System.out.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.getFilesInsideDir() " + absolutePath);
+								filesInDir.put(absolutePath,
+										Mappings.FILE_PATH_TO_JSON_ITEM.apply(p));
+								++addedCount;
+								filesToIgnoreAtLevel.add(p.toAbsolutePath().toString());
+								if (filesToIgnore.size() > iLimit) {
+									break;
+								}
+								if (addedCount >= filesPerLevel) {
+									break;
+								}
+							}
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+						ImmutableMap<String, JsonObject> build1 = filesInDir.build();
+						return build1;
+					}
+				}
+      
+      			private static class PathToDirPair implements Function<String, DirPair> {
+      					
+      						// Absolute paths
+      						private final Set<String> _filesAlreadyObtained;
+      						private final int depth;
+      						private final int _limit;;
+      						
+      						PathToDirPair (Set<String> filesAlreadyObtained, int iDepth, int iLimit) {
+      							_filesAlreadyObtained = ImmutableSet.copyOf(filesAlreadyObtained);
+      							depth = iDepth;
+      							_limit = iLimit;
+      						}
+      					
+      						@Override
+      						public DirPair apply(String input) {
+      							DirObj dirObj = new Mappings.PathToDirObj(depth, _limit).apply(input);
+      							return new DirPair(input, dirObj);
+      						}
+      					}
+      
+      			private static final Function<Path, JsonObject> FILE_PATH_TO_JSON_ITEM = new Function<Path, JsonObject>() {
+      				@Override
+      				public JsonObject apply(Path iPath) {
+      					String thumbnailHttpUrl = getThumbnailHttpUrlFor(iPath);
+      					return Json
+      							.createObjectBuilder()
+      							.add("location",
+      									iPath.getParent().toFile().getAbsolutePath().toString())
+      							.add("fileSystem", iPath.toAbsolutePath().toString())
+      							.add("httpUrl", httpLinkFor(iPath.toAbsolutePath().toString()))
+      							.add("thumbnailUrl", thumbnailHttpUrl)
+      							.add("created", getCreated(iPath)).build();
+      				}
+      
+      			};
+      
+      			private static String getThumbnailHttpUrlFor(Path iPath) {
+      				String thumbnailHttpUrl;
+      				if (iPath.toFile().isDirectory()) {
+      					thumbnailHttpUrl = "http://www.pd4pic.com/images/windows-vista-folder-directory-open-explorer.png";
+      				} else {
+      					thumbnailHttpUrl = httpLinkFor(thumbnailFor(iPath));
+      				}
+      				return thumbnailHttpUrl;
+      			}
+      
+      			private static long getCreated(Path iPath) {
+      				long created;
+      				try {
+      					created = Files.readAttributes(iPath, BasicFileAttributes.class)
+      							.creationTime().toMillis();
+      				} catch (IOException e) {
+      					System.err.println("PATH_TO_JSON_ITEM.apply() - Couldn't determine creation time for " + e.getMessage());
+      					created = 0;
+      				}
+      				return created;
+      			}
+      
+      			private static String httpLinkFor(String iAbsolutePath) {
+      				int fsPort = Coagulate.port + 1;
+      				if (fsPort != Coagulate.fsPort) {
+      					throw new RuntimeException("fsPort is different to what is expected");
+      				}
+      				String prefix = "http://netgear.rohidekar.com:4" + fsPort;
+      				return prefix + iAbsolutePath;
+      			}
+      
+      			private static String thumbnailFor(Path iPath) {
+      				// This must be on a single line for Groovy
+      				String string = iPath.getParent().toFile().getAbsolutePath() + "/_thumbnails/" + iPath.getFileName().getFileName() + ".jpg";
+      //				System.err.println("Coagulate.FileLister.Mappings.thumbnailFor() encoding = " + System.getProperty("LC_CTYPE"));
+      //				System.err.println("Coagulate.FileLister.Mappings.thumbnailFor() encoding = " + System.getProperty("file.encoding"));
+      //				System.err.println("Coagulate.FileLister.Mappings.thumbnailFor() encoding = " + System.getProperty("sun.jnu.encoding"));
+      				if (!Paths.get(string).toFile().exists()) {
+      					if (string.endsWith("mp4")) {
+      
+      						System.err.println("Coagulate.FileLister.Mappings.thumbnailFor() - warning: non-existent thumbnail: " + string);
+      					}
+      				}
+      				return string;
+      			}
+      		}
+
+      private static class Predicates {
+      
+      	static final DirectoryStream.Filter<Path> IS_FILE = new DirectoryStream.Filter<Path>() {
+      		public boolean accept(Path entry) throws IOException {
+      			return !Files.isDirectory(entry);
+      		}
+      	};
+      	
+      	static final DirectoryStream.Filter<Path> IS_DIRECTORY = new DirectoryStream.Filter<Path>() {
+      		public boolean accept(Path entry) throws IOException {
+      			return Files.isDirectory(entry);
+      		}
+      	};
+      	
+      	static class Contains implements Predicate<Path> {
+      
+      		private final Collection<String> files ;
+      
+      		public Contains(Collection<String> files) {
+      			this.files = files;
+      		}
+      
+      		@Override
+      		public boolean apply(@Nullable Path input) {
+      			return files.contains(input.toAbsolutePath().toString());
+      		}
+      	}
+      
+      	@SuppressWarnings("unused")
+      	static Predicate<String> IS_UNDER(final String absolutePath) {
+      		Predicate<String> IS_UNDER = new Predicate<String>() {
+      			@Override
+      			public boolean apply(@Nullable String permittedDirectory) {
+      				if (absolutePath.startsWith(permittedDirectory)) {
+      					return true;
+      				}
+      				if (absolutePath.startsWith(permittedDirectory.replace("/media/sarnobat",""))) {
+      					return true;
+      				}
+      				if (absolutePath.replace("/media/sarnobat","").startsWith(permittedDirectory)) {
+      					return true;
+      				}
+      				return false;
+      			}};
+      		return IS_UNDER;
+      	}
+      
+      	@Deprecated // We don't need a separate predicate
+      	private static final Predicate<Path> IS_DISPLAYABLE_DIR = new Predicate<Path>() {
+      		@Override
+      		public boolean apply(Path iPath) {
+      			if (iPath.toFile().isDirectory()) {
+      				return true;
+      			} else {
+      				return false;
+      			}
+      			
+      		}
+      	};
+      
+      	private static final Predicate<Path> IS_DISPLAYABLE = new Predicate<Path>() {
+      		@Override
+      		public boolean apply(Path iPath) {
+      			if (iPath.toFile().isDirectory()) {
+      				// I think changing this causes problems
+      				return false;
+      			}
+      			String filename = iPath.getFileName().toString();
+      			if (filename.contains(".txt")) {
+      				return false;
+      			}
+      			if (filename.contains(".ini")) {
+      				return false;
+      			}
+      			if (filename.contains("DS_Store")) {
+      				return false;
+      			}
+      			if (filename.endsWith(".html") || filename.endsWith(".htm")) {
+      				return false;
+      			}
+      			return true;
+      		}
+      	};
+      	
+      }
+
+      private static class SubDirObj extends JsonObjectImpl implements JsonObject {
+      	private final JsonObject fileJson;
+      
+      	SubDirObj(JsonObject fileJson) {
+      		super(fileJson);
+      		this.fileJson = fileJson;
+      	}
+      
+      	// Just use the object you passed in.
+      	@Deprecated
+      	public JsonObject json() {
+      		return fileJson;
+      	}
+      }
+    }
+  }
+
+  @Deprecated
+	private static class FileListerOld implements Function<String, JsonValue> {
+
+		private final int _limit;
+		private final Integer _depth;
+
+		FileListerOld(int iLimit, Integer iDepth) {
+			_limit = iLimit;
+			_depth = iDepth;
+		}
+
+    @Override
+    public JsonValue apply(String iDirectoryPathsString) {
+      return createFilesJsonRecursiveNew(
+          iDirectoryPathsString.split("\\n"),
+          _limit, _depth);
+    }
 
 		private static JsonValue createFilesJsonRecursiveNew(String[] iDirectoryPaths, int iLimit,
 				Integer iDepth) {
@@ -515,7 +1356,7 @@ public class Coagulate {
 			for (String dirPath : merged.keySet()) {
 				DirObj dirObj = merged.get(dirPath);
 				JSONObject json = new JSONObject(dirObj.json().toString());
-				JsonObject json2 = new SubDirObj(FileLister.jsonFromString(FileLister.createSubdirObjs(dirPath).toString())).json();
+				JsonObject json2 = new SubDirObj(FileListerOld.jsonFromString(FileListerOld.createSubdirObjs(dirPath).toString())).json();
 				json.put("subDirObjs", new JSONObject(json2.toString()));
 				// Pointless conversion followed by unconversion
 				jsonObject.add(dirPath, jsonFromString(json.toString()));
@@ -2312,17 +3153,9 @@ public class Coagulate {
 
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
 
-//		 System.getProperties().setProperty("file.encoding","UTF-8");
-//		if (!"UTF-8".equals(System.getProperty("file.encoding"))) {
-//			throw new RuntimeException(System.getProperty("file.encoding"));
-//		}
-//		System.getProperties().setProperty("LC_CTYPE","UTF-8");
-//		if (!"UTF-8".equals(System.getProperty("LC_CTYPE"))) {
-//			throw new RuntimeException(System.getProperty("LC_CTYPE"));
-//		}
-//		System.getProperties().setProperty("sun.jnu.encoding","UTF-8");
-//		if (!"UTF-8".equals(System.getProperty("sun.jnu.encoding"))) {
-//			throw new RuntimeException(System.getProperty("sun.jnu.encoding"));
+//		System.out.println("Coagulate.main() " + new FileLister(100, 2).apply("/sarnobat.garagebandbroken/Desktop/git-repo/"));
+//		if (true) {
+//			System.exit(-1);
 //		}
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
