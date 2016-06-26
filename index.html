@@ -801,14 +801,15 @@ function fileObjToHtml(fileObj) {
 				if (res !=null) {
 					toBeAppended += '<a href=\'' + httpUrl + '\' target="_blank">';
 					if (httpUrl.endsWith('2BNapa.png')) {
-						debugger;
+					// thumbnail
+//						debugger;
 					}
 					var degreesToOrient = 0;
 					if (fileObj.exif) {
 						degreesToOrient = 90*(parseInt(fileObj.exif.orientation) - 1);
 					}
 					toBeAppended += '<img src="http://www.htmlgoodies.com/images/1x1.gif" width="' + WIDTH_250 + 'px" height="1px"><br>';
-					toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + httpUrl +'?width=' + WIDTH_250 + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
+					toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURIComponent(httpUrl) +'?width=' + WIDTH_250 + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
 					toBeAppended += '</a>';
 				}
 			}

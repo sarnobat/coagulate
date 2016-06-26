@@ -1069,8 +1069,10 @@ public class Coagulate {
 									.from(getSubPaths(iDirectoryPath, Predicates.IS_FILE))
 									.filter(not(predicate)).filter(Predicates.IS_DISPLAYABLE)
 									.toSet()) {
-
-								if (p.toFile().isFile() && p.toFile().length() < 2) {
+//								if (p.toAbsolutePath().toString().contains("55-6-hls-rep-f-4.jpg")) {
+//									System.err.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.getFilesInsideDir() corrupted? size = " + p.toFile().length() + "\t" + p.toAbsolutePath().toString());
+//								}
+								if (p.toFile().isFile() && p.toFile().length() < 21) {
 									System.err.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.getFilesInsideDir() corrupted, size = " + p.toFile().length() + "\t" + p.toAbsolutePath().toString());
 									continue;
 								}
