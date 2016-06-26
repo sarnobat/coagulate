@@ -533,7 +533,10 @@ function loadImagesSequentially(i) {
 		return
 	}
 	var datasrc = $(images[i]).attr('data-src');
-	$(images[i]).attr('src',datasrc);
+	if (datasrc.includes('Napa')) {
+		debugger;
+	}
+	$(images[i]).attr('src', decodeURIComponent(datasrc));
 	var a = function(j) {
 		loadImagesSequentially(++i);
 	};
@@ -797,12 +800,15 @@ function fileObjToHtml(fileObj) {
 				var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
 				if (res !=null) {
 					toBeAppended += '<a href=\'' + httpUrl + '\' target="_blank">';
+					if (httpUrl.endsWith('2BNapa.png')) {
+						debugger;
+					}
 					var degreesToOrient = 0;
 					if (fileObj.exif) {
 						degreesToOrient = 90*(parseInt(fileObj.exif.orientation) - 1);
 					}
 					toBeAppended += '<img src="http://www.htmlgoodies.com/images/1x1.gif" width="' + WIDTH_250 + 'px" height="1px"><br>';
-					toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl +'?width=' + WIDTH_250) + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
+					toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + httpUrl +'?width=' + WIDTH_250 + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
 					toBeAppended += '</a>';
 				}
 			}

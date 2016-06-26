@@ -1069,6 +1069,11 @@ public class Coagulate {
 									.from(getSubPaths(iDirectoryPath, Predicates.IS_FILE))
 									.filter(not(predicate)).filter(Predicates.IS_DISPLAYABLE)
 									.toSet()) {
+
+								if (p.toFile().isFile() && p.toFile().length() < 2) {
+									System.err.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.getFilesInsideDir() corrupted, size = " + p.toFile().length() + "\t" + p.toAbsolutePath().toString());
+									continue;
+								}
 								String absolutePath = p.toAbsolutePath().toString();
 								filesInDir.put(absolutePath,
 										Mappings.FILE_PATH_TO_JSON_ITEM.apply(p));
@@ -2411,7 +2416,9 @@ public class Coagulate {
 					response.setEntity(entity);
 					System.out.println("File " + file.getPath() + " not found");
 
-				} else if (!file.canRead() || file.isDirectory()) {
+				} else if (
+//						!file.canRead() || 
+						file.isDirectory()) {
 
 					response.setStatusCode(HttpStatus.SC_FORBIDDEN);
 					NStringEntity entity = new NStringEntity(
