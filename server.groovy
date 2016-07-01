@@ -1007,7 +1007,7 @@ public class Coagulate {
 							try {
 								JsonObjectBuilder dirsJson = Json.createObjectBuilder();
 								for (Path p : getSubPaths(iDirectoryPath, Predicates.IS_DIRECTORY)) {
-									System.out.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.dipIntoDirRecursive() p = " + p);
+									System.out.println("PathToDirObj.dipIntoDirRecursive()  " + p);
 									JsonObject contentsRecursive = dipIntoDirRecursive(p,
 											filesPerLevel, fileAbsolutePathsToIgnore, --maxDepth,
 											iLimit, ++dipNumber, false, depth - 1);
@@ -1069,11 +1069,8 @@ public class Coagulate {
 									.from(getSubPaths(iDirectoryPath, Predicates.IS_FILE))
 									.filter(not(predicate)).filter(Predicates.IS_DISPLAYABLE)
 									.toSet()) {
-//								if (p.toAbsolutePath().toString().contains("55-6-hls-rep-f-4.jpg")) {
-//									System.err.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.getFilesInsideDir() corrupted? size = " + p.toFile().length() + "\t" + p.toAbsolutePath().toString());
-//								}
 								if (p.toFile().isFile() && p.toFile().length() < 21) {
-									System.err.println("Coagulate.FileLister.DirContentsJson.Mappings.PathToDirObj.getFilesInsideDir() corrupted, size = " + p.toFile().length() + "\t" + p.toAbsolutePath().toString());
+									System.err.println("PathToDirObj.getFilesInsideDir() corrupted, size = " + p.toFile().length() + "\t" + p.toAbsolutePath().toString());
 									continue;
 								}
 								String absolutePath = p.toAbsolutePath().toString();
@@ -3122,12 +3119,6 @@ public class Coagulate {
 
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
 
-//		System.out.println("Coagulate.main() " + new FileLister(100, 2).apply("/sarnobat.garagebandbroken/Desktop/git-repo/"));
-//		System.out.println(URLParamEncoder.encode("B-BANG-estilo-verã.jpg"));
-//		System.out.println(convertToURLEscapingIllegalCharacters("http://netgear.rohidekar.com:44452/media/sarnobat/Unsorted/images/B-BANG-estilo-verã.jpg"));
-		if (true) {
-//			System.exit(-1);
-		}
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
 			FileServerNio.startServer(4452);
