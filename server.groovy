@@ -393,6 +393,25 @@ public class Coagulate {
 		}
 
 		@GET
+		@javax.ws.rs.Path("delete")
+		@Produces("application/json")
+		public Response delete(
+				@QueryParam("filePath") String iFilePath)
+				throws JSONException, IOException {
+			try {
+				Files.delete(Paths.get(iFilePath));
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new RuntimeException(e);
+			}
+			System.out.println("Coagulate.ServletResource.delete() - success: " + iFilePath);
+			return Response.ok()
+					.header("Access-Control-Allow-Origin", "*")
+					.entity(new JSONObject().toString(4)).type("application/json")
+					.build();
+		}
+		
+		@GET
 		@javax.ws.rs.Path("move")
 		@Produces("application/json")
 		public Response move(
