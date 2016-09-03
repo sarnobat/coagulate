@@ -1,3 +1,4 @@
+# TODO : We need to make this recursive in the outer invocation but not the inner invocation
 while read line
 do
   ## Directories
