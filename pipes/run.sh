@@ -1,1 +1,1 @@
-find /Unsorted/images/other/ -type d | head -60 | xargs -n 1 -d '\n' one_file
+find /Unsorted/images/other/ -type d | head -60 | xargs -n 1 -d '\n' one_file | sh file2htmlimg.sh | tee index.html
