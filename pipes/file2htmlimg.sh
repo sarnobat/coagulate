@@ -4,5 +4,6 @@ do
   echo "$line" \
 	| perl -pe 's{(^.*jpg)\n}{  <img src="'$PREFIX'$1" height=100>\n}gi' \
 	| perl -pe 's{(^/.*)\n}{$1\n}g' \
-	| perl -pe 's{/}{</td><td>}g'
+	| perl -pe 's{^(/.*)}{</tr><tr>$1}g'
+#	| perl -pe 's{([^^])/}{$1</td><td>}g'
 done < "${1:-/dev/stdin}"
