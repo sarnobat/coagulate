@@ -1,1 +1,1 @@
-ls -d /sarnobat.garagebandbroken/trash/favorites/ind | sh printsubdir.sh
+ls -d /home/sarnobat/other/favorites/ind  | sh printsubdir.sh
