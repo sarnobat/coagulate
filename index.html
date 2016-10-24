@@ -170,6 +170,10 @@ function toPairs(obj) {
 	var keys = Object.keys(obj).sort();// Sometimes you want to sort, sometimes shuffle. Make this toggleable
 	for (var i = 0; i < keys.length; i++) {
 		var key = keys[i];
+//		console.debug('toPairs(): ' + key);
+		if (key.match(/.*((log)|(js))/gi) != null) {
+			continue;
+		}
 		var val = obj[key];
 		var out = {};
 		out[key] = val;
@@ -506,10 +510,16 @@ function createThumbnailItemHtml(accumulator, fileObj, loadImmediate, size) {
 }
 
 function addSubdirLinks(response) {
-
 	var subdirectories = Object.keys(response.itemsRecursive);
 	for(var dirIndex in subdirectories) { 
-
+		var subdir = subdirectories[dirIndex];
+		var items = response.itemsRecursive[subdir];
+		var dirs = items.dirs;
+		if (dirs == null) {
+			//debugger;
+			// Nothing in the dir (I think)
+			continue;
+		}
 		var filesInDir = Object.keys(response.itemsRecursive[subdirectories[dirIndex]].dirs);
 
 		if (filesInDir.length < 1) {
@@ -527,7 +537,10 @@ function loadImagesSequentially(i) {
 		return
 	}
 	var datasrc = $(images[i]).attr('data-src');
-	$(images[i]).attr('src',datasrc);
+	if (datasrc.includes('Napa')) {
+		debugger;
+	}
+	$(images[i]).attr('src', decodeURIComponent(datasrc));
 	var a = function(j) {
 		loadImagesSequentially(++i);
 	};
@@ -791,12 +804,16 @@ function fileObjToHtml(fileObj) {
 				var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
 				if (res !=null) {
 					toBeAppended += '<a href=\'' + httpUrl + '\' target="_blank">';
+					if (httpUrl.endsWith('2BNapa.png')) {
+					// thumbnail
+//						debugger;
+					}
 					var degreesToOrient = 0;
 					if (fileObj.exif) {
 						degreesToOrient = 90*(parseInt(fileObj.exif.orientation) - 1);
 					}
 					toBeAppended += '<img src="http://www.htmlgoodies.com/images/1x1.gif" width="' + WIDTH_250 + 'px" height="1px"><br>';
-					toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl +'?width=' + WIDTH_250) + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
+					toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURIComponent(httpUrl) +'?width=' + WIDTH_250 + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
 					toBeAppended += '</a>';
 				}
 			}
@@ -831,11 +848,17 @@ function dirObjToHtml2(dirObj) {
 		var thumbnailUrl = dirObj.thumbnailUrl;
 		{
 			{
-				//var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
-				//if (res !=null) {
+				var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
+				var imgUrl;
+				if (res ==null) {
+					imgUrl = dirObj.thumbnailUrl;
+				} else {
+				    imgUrl = httpUrl +'?width=' + WIDTH_250;
+				}
+				{
 					toBeAppended += '<a href=\'' + httpUrl + '\' target="_blank">';
 					toBeAppended += '<img src="http://www.htmlgoodies.com/images/1x1.gif" width="' + WIDTH_250 + 'px" height="1px"><br>';
-					toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(thumbnailUrl) + '" style="transform: rotate(0 deg)"/>';
+					toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(imgUrl) + '" style="transform: rotate(0 deg)"/>';
 					toBeAppended += '</a>';
 				//} else {
 				//	toBeAppended += "couldn't render dir thumbnail";
@@ -1050,13 +1073,14 @@ function openHtmlTextInNewTab() {
 
 <br>
 <span><a href="/coagulate">Reset Locations</a></span>
-<span><a href="/coagulate/?locations=%2Fmedia%2Fsarnobat%2Fe%2FDrive%20J%2Fpictures%2FOther%20(new)%2Fpictures%2Fmisc_sync_master%2F">Other</a></span>
+<span><a href="/coagulate?locations=%2Fmedia%2Fsarnobat%2Fe%2FDrive%20J%2Fpictures%2FOther%20(new)%2Fpictures%2Fmisc_sync_master%2F%0A%2Fmedia%2Fsarnobat%2Fe%2Fnew%2Fother%0A%2FUnsorted%2Fnew%2FPhotos%2FiPhone%2Fother%2F">Other</a></span>
 <span><a href="/coagulate/?locations=%2FUnsorted%2FVideos%2F%0A%2FLarge%2FVideos%0A%2Fe%2Fnew%2Fvideo%0A%2Fe%2FVideos%0A%2Fd%2FVideos%0A%2Fmedia%2Fsarnobat%2Fc%2FDocuments%20and%20Settings%2FSridhar.SRIDHAR-E5FA83A%2FDesktop%2Fvideos%2F%0A%2FLarge%2FVideos_Home%2FAVCHD%2FAVCHD%2FBDMV%2FSTREAM%0A%2Fmedia%2Fsarnobat%2FRecord%2FVideos_Home%2FHome%20Video%2Fhome%20movies%20(high-definition)%0A%2Fmedia%2Fsarnobat%2FRecord%2FVideos_Home%2FHome%20Video%2Fsmall%20videos%20(non%20HD%20camcorder)">Videos</a></span>
 <span><a href="/coagulate/?locations=%2Fmedia%2Fsarnobat%2FUnsorted%2Fnew%2FPhotos%2FiPhone">Photos</a></span>
 <span><a href="/coagulate/?locations=%2Fmedia%2Fsarnobat%2FRecord%2FRecord%20to%20DVD%20(non-videos)%2Fbooks%0A%2Fmedia%2Fsarnobat%2F3TB%2FComputer%20Knowledge%20MegaCollection%20v1.0%0A%2Fmedia%2Fsarnobat%2Fe%2Fnew%2Fbooks%0A%2Fmedia%2Fsarnobat%2Fe%2FSridhar%2FBooks%0A%2Fmedia%2Fsarnobat%2Fd%2FRecord%20these%2FBooks%0A%2Fe%2Fnew%2Fpdf">Books</a></span>
 <span><a href="/coagulate/?locations=%2Fmedia%2Fsarnobat%2FUnsorted%2Fimages">Images</a></span>
 <span><a href="/coagulate/?locations=%23%2Fe%2FSridhar%2FWeb%2FFriends%0A%2FUnsorted%2Fimages%2Ffriends%0A%23%2Fe%2Fnew%2Fweb%2FFriends">Friends</a></span>
 <span><a href="/coagulate/?locations=%2Fmedia%2Fsarnobat%2Fe%2Fnew%2Fphotos_scans%2Fdocuments_scansnap">pdf</a></span>
+<span><a href="/coagulate/?locations=%2Fmedia%2Fsarnobat%2Fe%2Fnew%2Fscreenshots%0A%2Fmedia%2Fsarnobat%2FUnsorted%2Fnew%2Fscreenshots&limit=100&depth=1">Screenshots</a></span>
 <span><a href="/coagulate/?locations=%23%2Fe%2Fnew%2Fweb%2F%0A%2Fe%2FSridhar%2FWeb%2F">Web</a></span>
 <br>
 <div id="status"></div>
@@ -1096,6 +1120,10 @@ function openHtmlTextInNewTab() {
 
 Key bindings<br>
 <textarea id="locations" cols="100" rows="30" onblur="updateURL()">
+/media/sarnobat/Unsorted/images
+</textarea>
+More locations (not loaded)
+<textarea>
 ## Miscellaneous
 /e/new
 #/Users/sarnobat/Desktop
