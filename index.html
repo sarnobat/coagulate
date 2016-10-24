@@ -595,7 +595,7 @@ function createDirItemHtml(response, item, key, unused, dirObj, subDirs)
 		+   "</textarea></td>"
 		+ "<td><a href='" +dirObj.httpUrl+"'>" + dirObj.httpUrl + "</a><br>" +localLink
 		+ "  <br><br>"
-		//+ dirObj.thumbnailUrl
+		+ 
 	 	+ "</td>"
 		+ "  </tr>"
 		+ "  </table></td></tr>";
@@ -702,7 +702,7 @@ function createButtonsPanelForDir(item, subdirs, key, idstring) {
 		var escaped = item.replace(/'/g, "&apos;");
 		var idstringescaped = idstring.replace(/'/g, "&apos;");
 
-		buttons += "<button onclick='alert(\"unimplemented\");moveDirToParent(\"" + escaped + "\",\""+idstringescaped+"\")'>Wrong Category</button><br>";
+		buttons += "<button onclick='moveDirToParent(\"" + escaped + "\",\""+idstringescaped+"\")'>Wrong Category</button><br>";
 		var subdirsArray = Object.keys(subdirs).sort(sortFunction);
 		{
 			var buttonsAdded = 0;
@@ -805,7 +805,10 @@ function fileObjToHtml(fileObj) {
 			var matchesVideo = item.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi)|(mts))/gi);
 			if (matchesVideo != null) {
 				toBeAppended += '<img src=\"' +thumbnailUrl+'\">';
-				toBeAppended += '';
+//				toBeAppended += '<video width="400" controls>';
+//				toBeAppended += '<source src="' +  item .replace(/:44452/,'') 
+//				+ '" type="video/mp4">';
+//				toBeAppended += '</video>';
 			}
 		}
 		{
@@ -828,13 +831,16 @@ function dirObjToHtml2(dirObj) {
 		var thumbnailUrl = dirObj.thumbnailUrl;
 		{
 			{
-				var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
-				if (res !=null) {
+				//var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
+				//if (res !=null) {
 					toBeAppended += '<a href=\'' + httpUrl + '\' target="_blank">';
 					toBeAppended += '<img src="http://www.htmlgoodies.com/images/1x1.gif" width="' + WIDTH_250 + 'px" height="1px"><br>';
-					toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(httpUrl +'?width=' + WIDTH_250) + '" style="transform: rotate(0 deg)"/>';
+					toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(thumbnailUrl) + '" style="transform: rotate(0 deg)"/>';
 					toBeAppended += '</a>';
-				}
+				//} else {
+				//	toBeAppended += "couldn't render dir thumbnail";
+				//	debugger;
+				//}
 			}
 		}
 	}	
@@ -968,6 +974,13 @@ function getColorForDir(dirName) {
 
 function addslashes( str ) {
     return (str + '').replace(/[\\"']/g, '\\$&').replace(/\u0000/g, '\\0');
+}
+
+function moveDirToParent(filePath, id) {
+	$.getJSON(urlBase + "/moveDirToParent?filePath="+encodeURIComponent(filePath), function(response){
+		removeImageElement(filePath);
+		//$("#" + id).remove();
+	});
 }
 
 function moveFileToParent(filePath, id) {
