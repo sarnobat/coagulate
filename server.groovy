@@ -1189,8 +1189,6 @@ public class Coagulate {
 
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
 
-		JsonObject j = RecursiveLimitByTotal2.getDirectoryHierarchies("/e/Sridhar/Photos/2012-09-16 Dad in Bay Area/products and services", 100, 1);
-		System.err.println(new JSONObject(j.toString()).toString(2));
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
 			NioFileServerWithStreamingVideo.startServer(fsPort);
