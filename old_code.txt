@@ -1,4 +1,71 @@
-private final List<String> whitelisted = ImmutableList.of(
+@SuppressWarnings("unused")
+	private static class Exif {
+		static JSONObject getExifData(Path aFilePath)
+				throws IOException {
+			JSONObject exifJson = new JSONObject();
+			exifJson.put("datetime",
+					getTag(aFilePath, TiffTagConstants.TIFF_TAG_DATE_TIME));
+			exifJson.put(
+					"orientation",
+					getTag(aFilePath, TiffTagConstants.TIFF_TAG_ORIENTATION));
+			exifJson.put(
+					"latitude_ref",
+					getTag(aFilePath,
+							GpsTagConstants.GPS_TAG_GPS_LATITUDE_REF));
+			exifJson.put("latitude",
+					getTag(aFilePath, GpsTagConstants.GPS_TAG_GPS_LATITUDE));
+			exifJson.put(
+					"longitude_ref",
+					getTag(aFilePath,
+							GpsTagConstants.GPS_TAG_GPS_LONGITUDE_REF));
+			exifJson.put(
+					"longitude",
+					getTag(aFilePath, GpsTagConstants.GPS_TAG_GPS_LONGITUDE));
+			return exifJson;
+		}
+
+		// TODO: I think this is slow.
+		// See if you can predetermine cases where you will get an Exception
+		// We may have to limit the depth (or breadth) which I'd rather not
+		// do.
+		private static String getTag(Path aFilePath, TagInfo tagInfo) {
+			String ret = "";
+			try {
+				IImageMetadata metadata = Imaging.getMetadata(aFilePath
+						.toFile());
+
+				if (metadata instanceof JpegImageMetadata) {
+					JpegImageMetadata jpegMetadata = (JpegImageMetadata) metadata;
+
+					TiffField field = jpegMetadata
+							.findEXIFValueWithExactMatch(tagInfo);
+					if (field == null) {
+					} else {
+						Map<String, String> m = getPair(jpegMetadata,
+								tagInfo);
+						String firstkey = m.keySet().toArray(new String[0])[0];
+						ret = m.get(firstkey);
+					}
+				}
+			} catch (ImageReadException e) {
+				System.out.print("!");
+			} catch (IOException e) {
+				System.out.println(e);
+			}
+			return ret;
+		}
+
+		private static Map<String, String> getPair(
+				JpegImageMetadata jpegMetadata, TagInfo tagInfo2) {
+			String name = tagInfo2.name;
+			String value = jpegMetadata.findEXIFValueWithExactMatch(
+					tagInfo2).getValueDescription();
+			return ImmutableMap.of(name, value);
+		}
+	}
+	
+	
+	private final List<String> whitelisted = ImmutableList.of(
 				"/e/Videos/",
 				"/d/Videos/",
 				"/e/Sridhar/Photos/2005-12-25 Chatting Screenshots",
