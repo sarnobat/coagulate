@@ -1075,14 +1075,15 @@ public class Coagulate {
 	}
 
 	/** Based on Apache Commons NIO's NHttpFileServer sample */
-	private static class NioFileServer {
+	@Deprecated // This doesn't have random access for video/audio (partial content) 
+	private static class NioFileServerWithStreamingVideo {
 		static void startServer(int port) throws NoSuchAlgorithmException,
 				KeyManagementException, KeyStoreException, UnrecoverableKeyException,
 				CertificateException, IOException, InterruptedException {
 			SSLContext sslcontext = null;
 			if (port == 8443) {
 				// Initialize SSL context
-				URL url = NioFileServer.class.getResource("/my.keystore");
+				URL url = NioFileServerWithStreamingVideo.class.getResource("/my.keystore");
 				if (url == null) {
 					System.out.println("Keystore not found");
 					System.exit(1);
@@ -1241,7 +1242,7 @@ public class Coagulate {
 		System.err.println(new JSONObject(j.toString()).toString(2));
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
-			NioFileServer.startServer(4452);
+			NioFileServerWithStreamingVideo.startServer(4452);
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(-1);
