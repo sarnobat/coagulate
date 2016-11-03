@@ -5,10 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -28,12 +25,14 @@ import java.security.cert.CertificateException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 import javax.annotation.Nullable;
 import javax.json.Json;
@@ -44,6 +43,7 @@ import javax.json.JsonValue;
 import javax.json.stream.JsonParsingException;
 import javax.net.ssl.SSLContext;
 import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
@@ -1040,7 +1040,7 @@ public class Coagulate {
 			SSLContext sslcontext = null;
 			if (port == 8443) {
 				// Initialize SSL context
-				URL url = NioFileServerWithStreamingVideo.class.getResource("/my.keystore");
+				URL url = NioFileServerWithStreamingVideoAndPartialContent.class.getResource("/my.keystore");
 				if (url == null) {
 					System.out.println("Keystore not found");
 					System.exit(1);
@@ -1053,8 +1053,11 @@ public class Coagulate {
 			IOReactorConfig config = IOReactorConfig.custom().setSoTimeout(15000)
 					.setTcpNoDelay(true).build();
 
-			HttpServer server = ServerBootstrap.bootstrap().setListenerPort(port)
-					.setServerInfo("Test/1.1").setIOReactorConfig(config).setSslContext(sslcontext)
+			HttpServer server = ServerBootstrap.bootstrap()
+					.setListenerPort(port)
+					.setServerInfo("Test/1.1")
+					.setIOReactorConfig(config)
+					.setSslContext(sslcontext)
 					.setExceptionLogger(ExceptionLogger.STD_ERR)
 					.registerHandler("*", new HttpFileHandler()).create();
 
@@ -1078,244 +1081,106 @@ public class Coagulate {
 				httpexchange.submitResponse(new BasicAsyncResponseProducer(response));
 			}
 
-			private static void handleInternal(final HttpRequest request,
-					final HttpResponse response, final HttpContext context) throws HttpException,
+			private static void handleInternal(HttpRequest request,
+					HttpResponse response, HttpContext context) throws HttpException,
 					IOException {
 
 				String method = request.getRequestLine().getMethod().toUpperCase(Locale.ENGLISH);
-				if (!method.equals("GET") && !method.equals("HEAD") && !method.equals("POST")) {
+				if (methodNotSupported(method)) {
 					throw new MethodNotSupportedException(method + " method not supported");
 				}
 
-				handle2(request, response, context);
-			}
-
-			private static void handle2(final HttpRequest request, final HttpResponse response,
-					final HttpContext context) throws UnsupportedEncodingException {
-				String target;
-				try {
-					target = request.getRequestLine().getUri().replaceAll(".width.*", "")
-							.replace("%20", " ");
-				} catch (Exception e) {
-
-					response.setStatusCode(HttpStatus.SC_FORBIDDEN);
-					NStringEntity entity = new NStringEntity(e.getStackTrace().toString(),
-							ContentType.create("text/html", "UTF-8"));
-					response.setEntity(entity);
-					return;
-				}
-
-				final File file = Paths.get(
-						URLDecoder.decode(target, "UTF-8").replace("/_ 1", "/_+1")).toFile();
+				String target = request.getRequestLine().getUri().replaceAll(".width.*", "")
+						.replace("%20", " ");
+				File file = Paths.get(URLDecoder.decode(target, "UTF-8").replace("/_ 1", "/_+1"))
+						.toFile();
 				if (!file.canRead()) {
 					throw new RuntimeException("cannot read");
 				}
 				if (!file.exists()) {
-
-					response.setStatusCode(HttpStatus.SC_NOT_FOUND);
-					NStringEntity entity = new NStringEntity("<html><body><h1>File"
-							+ file.getPath() + " not found</h1></body></html>", ContentType.create(
-							"text/html", "UTF-8"));
-					response.setEntity(entity);
-					System.out.println("File " + file.getPath() + " not found");
-
-				} else if (!file.canRead() || file.isDirectory()) {
-
-					response.setStatusCode(HttpStatus.SC_FORBIDDEN);
-					NStringEntity entity = new NStringEntity(
-							"<html><body><h1>Access denied</h1></body></html>", ContentType.create(
-									"text/html", "UTF-8"));
-					response.setEntity(entity);
-					System.out.println("Cannot read file " + file.getPath());
-				} else {
-					response.setStatusCode(HttpStatus.SC_OK);
-					serveFileStreaming(response, file);
-				}
-			}
-
-			private static void serveFileStreaming(final HttpResponse response, File file) {
-				try {
-					final InputStream fis = new FileInputStream(file);
-					HttpEntity body = new InputStreamEntity(fis, ContentType.create("image/jpeg"));
-					response.setEntity(body);
-				} catch (FileNotFoundException e) {
-					e.printStackTrace();
-				}
-			}
-
-			// This actually slows down throughput, but the memory footprint on
-			// the client side is lower.
-			@SuppressWarnings("unused")
-			private static PipedInputStream createThumbnail(final InputStream fis)
-					throws IOException {
-				System.out
-						.println("Coagulate.NioFileServer.HttpFileHandler.serveFileStreaming() - about to copy");
-
-				// Works
-				final PipedOutputStream out = new PipedOutputStream();
-				PipedInputStream pis = new PipedInputStream(out);
-				try {
-					new Thread() {
-						@Override
-						public void run() {
-							try {
-								net.coobird.thumbnailator.Thumbnailator.createThumbnail(fis, out,
-										250, 250);
-								fis.close();
-								out.close();
-							} catch (IOException e) {
-								e.printStackTrace();
-							}
-						}
-					}.start();
-
-				} finally {
-				}
-				return pis;
-			}
-		}
-	}
-
-	/** Based on Apache Commons NIO's NHttpFileServer sample */
-	@Deprecated // This doesn't have random access for video/audio (partial content) 
-	private static class NioFileServerWithStreamingVideo {
-		static void startServer(int port) throws NoSuchAlgorithmException,
-				KeyManagementException, KeyStoreException, UnrecoverableKeyException,
-				CertificateException, IOException, InterruptedException {
-			SSLContext sslcontext = null;
-			if (port == 8443) {
-				// Initialize SSL context
-				URL url = NioFileServerWithStreamingVideo.class.getResource("/my.keystore");
-				if (url == null) {
-					System.out.println("Keystore not found");
-					System.exit(1);
-				}
-				sslcontext = SSLContexts.custom()
-						.loadKeyMaterial(url, "secret".toCharArray(), "secret".toCharArray())
-						.build();
-			}
-
-			IOReactorConfig config = IOReactorConfig.custom().setSoTimeout(15000)
-					.setTcpNoDelay(true).build();
-
-			final HttpServer server = ServerBootstrap.bootstrap().setListenerPort(port)
-					.setServerInfo("Test/1.1").setIOReactorConfig(config).setSslContext(sslcontext)
-					.setExceptionLogger(ExceptionLogger.STD_ERR)
-					.registerHandler("*", new HttpFileHandler()).create();
-
-			server.start();
-		}
-
-		private static class HttpFileHandler implements HttpAsyncRequestHandler<HttpRequest> {
-
-			@Override
-			public HttpAsyncRequestConsumer<HttpRequest> processRequest(final HttpRequest request,
-					final HttpContext context) {
-				// Buffer request content in memory for simplicity
-				return new BasicAsyncRequestConsumer();
-			}
-
-			@Override
-			public void handle(final HttpRequest request, final HttpAsyncExchange httpexchange,
-					final HttpContext context) throws HttpException, IOException {
-				HttpResponse response = httpexchange.getResponse();
-				handleInternal(request, response, context);
-				httpexchange.submitResponse(new BasicAsyncResponseProducer(response));
-			}
-
-			private static void handleInternal(final HttpRequest request,
-					final HttpResponse response, final HttpContext context) throws HttpException,
-					IOException {
-
-				String method = request.getRequestLine().getMethod().toUpperCase(Locale.ENGLISH);
-				if (!method.equals("GET") && !method.equals("HEAD") && !method.equals("POST")) {
-					throw new MethodNotSupportedException(method + " method not supported");
-				}
-
-				handle2(request, response, context);
-			}
-
-			private static void handle2(final HttpRequest request, final HttpResponse response,
-					final HttpContext context) throws UnsupportedEncodingException {
-				String target;
-				try {
-					target = request.getRequestLine().getUri().replaceAll(".width.*", "").replace("%20", " ");
-				} catch (Exception e) {
-					
-					response.setStatusCode(HttpStatus.SC_FORBIDDEN);
-					NStringEntity entity = new NStringEntity(
-							e.getStackTrace().toString(), ContentType.create(
-									"text/html", "UTF-8"));
-					response.setEntity(entity);
-					return;
-				}
 				
-				final File file = Paths.get(URLDecoder.decode(target, "UTF-8").replace("/_ 1", "/_+1")).toFile();
-				if (!file.canRead()) {
-					throw new RuntimeException("cannot read");
-				}
-				if (!file.exists()) {
-
+					String error = "<html><body><h1>File <br>"
+							+ file.getPath() + "<br> not found</h1></body></html>";
+					response.setEntity(createEntity(error));
 					response.setStatusCode(HttpStatus.SC_NOT_FOUND);
-					NStringEntity entity = new NStringEntity("<html><body><h1>File"
-							+ file.getPath() + " not found</h1></body></html>", ContentType.create(
-							"text/html", "UTF-8"));
-					response.setEntity(entity);
-					System.out.println("File " + file.getPath() + " not found");
-
+				
 				} else if (!file.canRead() || file.isDirectory()) {
-
+				
+					String error = "<html><body><h1>Access denied - for privacy</h1></body></html>";
+					response.setEntity(createEntity(error));
 					response.setStatusCode(HttpStatus.SC_FORBIDDEN);
-					NStringEntity entity = new NStringEntity(
-							"<html><body><h1>Access denied</h1></body></html>", ContentType.create(
-									"text/html", "UTF-8"));
-					response.setEntity(entity);
-					System.out.println("Cannot read file " + file.getPath());
 				} else {
 					response.setStatusCode(HttpStatus.SC_OK);
 					serveFileStreaming(response, file);
 				}
 			}
 
+			private static boolean methodNotSupported(String method) {
+				return !method.equals("GET") && !method.equals("HEAD") && !method.equals("POST");
+			}
+
+			private static NStringEntity createEntity(String error) {
+				return new NStringEntity(error, ContentType.create("text/html", "UTF-8"));
+			}
+
 			private static void serveFileStreaming(final HttpResponse response, File file) {
 				try {
 					final InputStream fis = new FileInputStream(file);
-					HttpEntity body = new InputStreamEntity(fis, ContentType.create("image/jpeg"));
+					String mimeType = getMimeType(file);
+					HttpEntity body = new InputStreamEntity(fis, ContentType.create(mimeType));
 					response.setEntity(body);
 				} catch (FileNotFoundException e) {
 					e.printStackTrace();
 				}
 			}
 
-			// This actually slows down throughput, but the memory footprint on the client side is lower.
-			@SuppressWarnings("unused")
-			private static PipedInputStream createThumbnail(final InputStream fis)
-					throws IOException {
-				System.out
-						.println("Coagulate.NioFileServer.HttpFileHandler.serveFileStreaming() - about to copy");
-
-				// Works
-				final PipedOutputStream out = new PipedOutputStream();
-				PipedInputStream pis = new PipedInputStream(out);
-				try {
-					new Thread() {
-						@Override
-						public void run() {
-							try {
-
-								net.coobird.thumbnailator.Thumbnailator.createThumbnail(fis,
-										out, 250, 250);
-								fis.close();
-								out.close();
-							} catch (IOException e) {
-								e.printStackTrace();
-							}
-						}
-					}.start();
-
-				} finally {
+			private static String getMimeType(File file) {
+				String mimeType;
+				Path path = Paths.get(file.getAbsolutePath());
+				if (file.getName().endsWith(".mp4")) {
+					String extension = FilenameUtils.getExtension(path.getFileName().toString());
+					mimeType = theMimeTypes.get(extension);
+				} else {
+					mimeType = "image/jpeg";
 				}
-				return pis;
+				System.out.println("Coagulate.FileServerNio.HttpFileHandler.serveFileStreaming() mimetype = " + mimeType);
+				return mimeType;
+			}
+			
+			/**
+			 * Hashtable mapping (String)FILENAME_EXTENSION -> (String)MIME_TYPE
+			 */
+			private static Hashtable<String, String> theMimeTypes = new Hashtable<String, String>();
+	
+			static {
+				StringTokenizer st = new StringTokenizer(
+						"css		text/css " +
+								"htm		text/html " +
+								"html		text/html " +
+								"xml		text/xml " +
+								"txt		text/plain " +
+								"asc		text/plain " +
+								"gif		image/gif " +
+								"jpg		image/jpeg " +
+								"jpeg		image/jpeg " +
+								"png		image/png " +
+								"mp3		audio/mpeg " +
+								"m3u		audio/mpeg-url " +
+								"mp4		video/mp4 " +
+								"ogv		video/ogg " +
+								"flv		video/x-flv " +
+								"mov		video/quicktime " +
+								"swf		application/x-shockwave-flash " +
+								"js			application/javascript " +
+								"pdf		application/pdf " +
+								"doc		application/msword " +
+								"ogg		application/x-ogg " +
+								"zip		application/octet-stream " +
+								"exe		application/octet-stream " +
+								"class		application/octet-stream ");
+				while (st.hasMoreTokens()) {
+					theMimeTypes.put(st.nextToken(), st.nextToken());
+				}
 			}
 		}
 	}
@@ -1327,7 +1192,7 @@ public class Coagulate {
 
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
-			NioFileServerWithStreamingVideo.startServer(fsPort);
+			NioFileServerWithStreamingVideoAndPartialContent.startServer(fsPort);
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(-1);
