@@ -288,20 +288,13 @@ public class Coagulate {
 				JsonObject json2 = new SubDirObj(RecursiveLimitByTotal2.jsonFromString(RecursiveLimitByTotal2.createSubdirObjs(dirPath).toString())).json();
 				json.put("subDirObjs", new JSONObject(json2.toString()));
 				// correct
-//				System.out
-//						.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() " + json2);
 				String string = json.toString();
 				// incorrect
-//				System.out
-//						.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() " + string);
 				JsonObject jsonFromString = jsonFromString(string);
 				// incorrect
-//				System.out
-//						.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() subdirobjs " + jsonFromString);
 				jsonObject.add(dirPath, jsonFromString);
 			}
 			JsonObject build = jsonObject.build();
-//			System.out.println("Coagulate.RecursiveLimitByTotal2.createFilesJsonRecursiveNew() - " + build);
 			return build;
 		}
 
@@ -509,7 +502,6 @@ public class Coagulate {
 
 			@Override
 			public DirPair apply(String input) {
-//				System.out.println("Coagulate.RecursiveLimitByTotal2.PathToDirPair.apply() " + input);
 				DirObj dirObj = new PathToDirObj(_filesAlreadyObtained, depth, _limit).apply(input);
 				return new DirPair(input, dirObj);
 			}
@@ -553,21 +545,13 @@ public class Coagulate {
 				// Immediate files
 				int filesPerLevel2 = isTopLevel ? filesPerLevel + iLimit/2 // /5 
 						: filesPerLevel; 
-//				System.out
-//						.println("Coagulate.RecursiveLimitByTotal2.PathToDirObj.dipIntoDirRecursive() isTopLevel = " + isTopLevel + ", so adding " + filesPerLevel2 + " files.");
 				ImmutableSet<Entry<String, JsonObject>> entrySet = getFilesInsideDir(iDirectoryPath, filesPerLevel2,
 						fileAbsolutePathsToIgnore, iLimit, filesToIgnoreAtLevel).entrySet();
 				for (Entry<String, JsonObject> e : entrySet) {
-//					System.out
-//							.println("Coagulate.RecursiveLimitByTotal2.PathToDirObj.dipIntoDirRecursive() " + e.getKey());
 					dirHierarchyJson.add(e.getKey(), e.getValue());
 				}
 				
 				// Subdirectories as leaf nodes (for moving directories around)
-//				JsonObject jsonFromString = RecursiveLimitByTotal2.jsonFromString(RecursiveLimitByTotal2.createSubdirObjs(iDirectoryPath).toString());
-//				System.out
-//						.println("Coagulate.RecursiveLimitByTotal2.PathToDirObj.dipIntoDirRecursive() jsonFromString = " + new JSONObject(jsonFromString.toString()).toString(2));
-//				dirHierarchyJson.add("subDirObjs", new SubDirObj(jsonFromString).json());
 
 				// For ALL subdirectories, recurse
 
@@ -641,8 +625,6 @@ public class Coagulate {
 							break;
 						}
 					}
-//					System.out
-//							.println("Coagulate.RecursiveLimitByTotal2.PathToDirObj.getFilesInsideDir() Added " + addedCount + " files from " + iDirectoryPath);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -687,7 +669,6 @@ public class Coagulate {
 						ret.put(path, new DirObj(fileJson, path));
 					}
 				} else {
-//					System.out.println("Coagulate.RecursiveLimitByTotal.DirObj.getDirs() - no subdirs" );
 				}
 				return ret.build();
 			}
@@ -728,7 +709,6 @@ public class Coagulate {
 				this.fileJson = Preconditions.checkNotNull(fileJson);
 				// Check if this throws a null pointer
 				fileJson.getString("fileSystem");
-//				System.out.println("Coagulate.RecursiveLimitByTotal2.FileObj.FileObj() fileJson = " + fileJson);
 			}
 
 			public JsonObject json() {
@@ -745,7 +725,6 @@ public class Coagulate {
 
 			SubDirObj(JsonObject fileJson) {
 				this.fileJson = fileJson;
-//				System.out.println("Coagulate.RecursiveLimitByTotal2.FileObj.FileObj() fileJson = " + fileJson);
 			}
 
 			public JsonObject json() {
@@ -791,7 +770,6 @@ public class Coagulate {
 			public JsonObject apply(Path iPath) {
 
 				if (iPath.toFile().isDirectory()) {
-//					System.out.println("Coagulate.Mappings.PATH_TO_JSON_ITEM() - is a directory");
 					long created;
 					try {
 						created = Files.readAttributes(iPath, BasicFileAttributes.class)
@@ -809,7 +787,6 @@ public class Coagulate {
 							.add("thumbnailUrl",
 									"http://www.pd4pic.com/images/windows-vista-folder-directory-open-explorer.png")
 							.add("created", created).build();
-//					System.out.println("Coagulate.Mappings.PATH_TO_JSON_ITEM() - dirJson = " + json);
 					return json;
 				} else {
 					long created;
@@ -833,18 +810,8 @@ public class Coagulate {
 		};
 
 		private static String httpLinkFor(String iAbsolutePath) {
-//			String prefix = "http://netgear.rohidekar.com:4451/cmsfs/static4/";
 			int fsPort = port + 1;
 			String prefix = "http://netgear.rohidekar.com:4" + fsPort;
-			if (iAbsolutePath.contains("Coru")) {
-//				try {
-//					System.out.println("Coagulate.Mappings.httpLinkFor() " + URLEncoder.encode(iAbsolutePath, "UTF-8"));
-//					System.out.println("Coagulate.Mappings.httpLinkFor() " + iAbsolutePath);
-//					return prefix + URLEncoder.encode(iAbsolutePath, "UTF-8");
-//				} catch (UnsupportedEncodingException e) {
-//					e.printStackTrace();
-//				}
-			}
 			return prefix + iAbsolutePath;
 		}
 
@@ -964,11 +931,6 @@ public class Coagulate {
 			} else if (!Files.isDirectory(targetDir)) {
 				throw new RuntimeException("Target is an existing file");
 			}
-// I'm pretty sure we can delete this
-//			if (fileAlreadyInDesiredSubdir(iSubfolderSimpleName, sourceFilePath)) {
-//				System.out.println("moveFileToSubfolder() - Not moving to self");
-//				return;
-//			}
 			Operations.doMove(sourceFilePath, getUnconflictedDestinationFilePath(iSubfolderSimpleName, sourceFilePath));
 
 		}
@@ -1109,7 +1071,6 @@ public class Coagulate {
 			@Override
 			public HttpAsyncRequestConsumer<HttpRequest> processRequest(final HttpRequest request,
 					final HttpContext context) {
-//				System.out.println("Coagulate.NioFileServer.HttpFileHandler.processRequest() - begin");
 				// Buffer request content in memory for simplicity
 				return new BasicAsyncRequestConsumer();
 			}
@@ -1117,7 +1078,6 @@ public class Coagulate {
 			@Override
 			public void handle(final HttpRequest request, final HttpAsyncExchange httpexchange,
 					final HttpContext context) throws HttpException, IOException {
-//				System.out.println("Coagulate.NioFileServer.HttpFileHandler.handle() - begin");
 				HttpResponse response = httpexchange.getResponse();
 				handleInternal(request, response, context);
 				httpexchange.submitResponse(new BasicAsyncResponseProducer(response));
@@ -1139,9 +1099,7 @@ public class Coagulate {
 					final HttpContext context) throws UnsupportedEncodingException {
 				String target;
 				try {
-//					System.out.println("Coagulate.NioFileServer.HttpFileHandler.handleInternal() - about to decode");
 					target = request.getRequestLine().getUri().replaceAll(".width.*", "").replace("%20", " ");
-//					target = urlDecoder.decode(request.getRequestLine().getUri());
 				} catch (Exception e) {
 					
 					response.setStatusCode(HttpStatus.SC_FORBIDDEN);
@@ -1149,16 +1107,10 @@ public class Coagulate {
 							e.getStackTrace().toString(), ContentType.create(
 									"text/html", "UTF-8"));
 					response.setEntity(entity);
-//					System.out.println("Coagulate.NioFileServer.HttpFileHandler.handleInternal() - failed to decode");
 					return;
-//					throw new RuntimeException(e);
-				}//, "UTF-8");//.replaceAll(".width.*", "").replace("%20", " ");
+				}
 				
-				final File file = Paths.get(URLDecoder.decode(target, "UTF-8").replace("/_ 1", "/_+1")).toFile();// ,
-//																 URLDecoder.decode(target,
-//																 "UTF-8"));
-//				System.out.println("NHttpFileServer.HttpFileHandler.handleInternal() - serving "
-//						+ file.getAbsolutePath());
+				final File file = Paths.get(URLDecoder.decode(target, "UTF-8").replace("/_ 1", "/_+1")).toFile();
 				if (!file.canRead()) {
 					throw new RuntimeException("cannot read");
 				}
@@ -1188,15 +1140,11 @@ public class Coagulate {
 			private static void serveFileStreaming(final HttpResponse response, File file) {
 				try {
 					final InputStream fis = new FileInputStream(file);
-//					PipedInputStream pis = createThumbnail(fis);
 					HttpEntity body = new InputStreamEntity(fis, ContentType.create("image/jpeg"));
 					response.setEntity(body);
 				} catch (FileNotFoundException e) {
 					e.printStackTrace();
 				}
-//				catch (IOException e) {
-//					e.printStackTrace();
-//				}
 			}
 
 			// This actually slows down throughput, but the memory footprint on the client side is lower.
