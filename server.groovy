@@ -884,10 +884,7 @@ public class Coagulate {
 				return true;
 			}
 		};
-		
 	}
-
-	
 	
 	private static class Operations {
 
@@ -1037,7 +1034,146 @@ public class Coagulate {
 	}
 
 	private static class NioFileServerWithStreamingVideoAndPartialContent {
-		
+		static void startServer(int port) throws NoSuchAlgorithmException, KeyManagementException,
+				KeyStoreException, UnrecoverableKeyException, CertificateException, IOException,
+				InterruptedException {
+			SSLContext sslcontext = null;
+			if (port == 8443) {
+				// Initialize SSL context
+				URL url = NioFileServerWithStreamingVideo.class.getResource("/my.keystore");
+				if (url == null) {
+					System.out.println("Keystore not found");
+					System.exit(1);
+				}
+				sslcontext = SSLContexts.custom()
+						.loadKeyMaterial(url, "secret".toCharArray(), "secret".toCharArray())
+						.build();
+			}
+
+			IOReactorConfig config = IOReactorConfig.custom().setSoTimeout(15000)
+					.setTcpNoDelay(true).build();
+
+			HttpServer server = ServerBootstrap.bootstrap().setListenerPort(port)
+					.setServerInfo("Test/1.1").setIOReactorConfig(config).setSslContext(sslcontext)
+					.setExceptionLogger(ExceptionLogger.STD_ERR)
+					.registerHandler("*", new HttpFileHandler()).create();
+
+			server.start();
+		}
+
+		private static class HttpFileHandler implements HttpAsyncRequestHandler<HttpRequest> {
+
+			@Override
+			public HttpAsyncRequestConsumer<HttpRequest> processRequest(final HttpRequest request,
+					final HttpContext context) {
+				// Buffer request content in memory for simplicity
+				return new BasicAsyncRequestConsumer();
+			}
+
+			@Override
+			public void handle(final HttpRequest request, final HttpAsyncExchange httpexchange,
+					final HttpContext context) throws HttpException, IOException {
+				HttpResponse response = httpexchange.getResponse();
+				handleInternal(request, response, context);
+				httpexchange.submitResponse(new BasicAsyncResponseProducer(response));
+			}
+
+			private static void handleInternal(final HttpRequest request,
+					final HttpResponse response, final HttpContext context) throws HttpException,
+					IOException {
+
+				String method = request.getRequestLine().getMethod().toUpperCase(Locale.ENGLISH);
+				if (!method.equals("GET") && !method.equals("HEAD") && !method.equals("POST")) {
+					throw new MethodNotSupportedException(method + " method not supported");
+				}
+
+				handle2(request, response, context);
+			}
+
+			private static void handle2(final HttpRequest request, final HttpResponse response,
+					final HttpContext context) throws UnsupportedEncodingException {
+				String target;
+				try {
+					target = request.getRequestLine().getUri().replaceAll(".width.*", "")
+							.replace("%20", " ");
+				} catch (Exception e) {
+
+					response.setStatusCode(HttpStatus.SC_FORBIDDEN);
+					NStringEntity entity = new NStringEntity(e.getStackTrace().toString(),
+							ContentType.create("text/html", "UTF-8"));
+					response.setEntity(entity);
+					return;
+				}
+
+				final File file = Paths.get(
+						URLDecoder.decode(target, "UTF-8").replace("/_ 1", "/_+1")).toFile();
+				if (!file.canRead()) {
+					throw new RuntimeException("cannot read");
+				}
+				if (!file.exists()) {
+
+					response.setStatusCode(HttpStatus.SC_NOT_FOUND);
+					NStringEntity entity = new NStringEntity("<html><body><h1>File"
+							+ file.getPath() + " not found</h1></body></html>", ContentType.create(
+							"text/html", "UTF-8"));
+					response.setEntity(entity);
+					System.out.println("File " + file.getPath() + " not found");
+
+				} else if (!file.canRead() || file.isDirectory()) {
+
+					response.setStatusCode(HttpStatus.SC_FORBIDDEN);
+					NStringEntity entity = new NStringEntity(
+							"<html><body><h1>Access denied</h1></body></html>", ContentType.create(
+									"text/html", "UTF-8"));
+					response.setEntity(entity);
+					System.out.println("Cannot read file " + file.getPath());
+				} else {
+					response.setStatusCode(HttpStatus.SC_OK);
+					serveFileStreaming(response, file);
+				}
+			}
+
+			private static void serveFileStreaming(final HttpResponse response, File file) {
+				try {
+					final InputStream fis = new FileInputStream(file);
+					HttpEntity body = new InputStreamEntity(fis, ContentType.create("image/jpeg"));
+					response.setEntity(body);
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				}
+			}
+
+			// This actually slows down throughput, but the memory footprint on
+			// the client side is lower.
+			@SuppressWarnings("unused")
+			private static PipedInputStream createThumbnail(final InputStream fis)
+					throws IOException {
+				System.out
+						.println("Coagulate.NioFileServer.HttpFileHandler.serveFileStreaming() - about to copy");
+
+				// Works
+				final PipedOutputStream out = new PipedOutputStream();
+				PipedInputStream pis = new PipedInputStream(out);
+				try {
+					new Thread() {
+						@Override
+						public void run() {
+							try {
+								net.coobird.thumbnailator.Thumbnailator.createThumbnail(fis, out,
+										250, 250);
+								fis.close();
+								out.close();
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+						}
+					}.start();
+
+				} finally {
+				}
+				return pis;
+			}
+		}
 	}
 
 	/** Based on Apache Commons NIO's NHttpFileServer sample */
