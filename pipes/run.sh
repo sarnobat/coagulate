@@ -10,3 +10,5 @@ cat head.html | tee iPhone.html
 ls -d /media/sarnobat/e/new/Photos/iPhone  | sh printsubdir.sh | tee -a iPhone.html
 ls -d /media/sarnobat/Unsorted/new/Photos/iPhone  | sh printsubdir.sh | tee -a iPhone.html
 
+# TODO: /home/sarnobat/sarnobat.git/index/cats.txt
+
