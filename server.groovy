@@ -1036,6 +1036,10 @@ public class Coagulate {
 		}
 	}
 
+	private static class NioFileServerWithStreamingVideoAndPartialContent {
+		
+	}
+
 	/** Based on Apache Commons NIO's NHttpFileServer sample */
 	@Deprecated // This doesn't have random access for video/audio (partial content) 
 	private static class NioFileServerWithStreamingVideo {
@@ -1181,7 +1185,6 @@ public class Coagulate {
 	}
 
 	private static final int port = 4451;
-	@SuppressWarnings("unused")
 	private static final int fsPort = 4452;
 
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
@@ -1190,7 +1193,7 @@ public class Coagulate {
 		System.err.println(new JSONObject(j.toString()).toString(2));
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
-			NioFileServerWithStreamingVideo.startServer(4452);
+			NioFileServerWithStreamingVideo.startServer(fsPort);
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(-1);
