@@ -240,7 +240,7 @@ public class Coagulate {
 		}
 		
 		//@javax.ws.rs.Path("{filePath}")
-		@javax.ws.rs.Path("listen/{filePath: .+}")
+		@javax.ws.rs.Path("static{filePath : .+}")
 	    @GET
 	    public Response streamVideo(
 	    		@PathParam("filePath") String filePath,
