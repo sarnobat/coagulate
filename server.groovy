@@ -5,11 +5,16 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.io.StringReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.WritableByteChannel;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.DirectoryStream.Filter;
@@ -23,6 +28,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -44,9 +50,13 @@ import javax.json.stream.JsonParsingException;
 import javax.net.ssl.SSLContext;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.http.ExceptionLogger;
@@ -73,7 +83,6 @@ import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -229,6 +238,104 @@ public class Coagulate {
 						.type("application/json").build();
 			}
 		}
+		
+		//@javax.ws.rs.Path("{filePath}")
+		@javax.ws.rs.Path("listen/{filePath: .+}")
+	    @GET
+	    public Response streamVideo(
+	    		@PathParam("filePath") String filePath,
+	    		@HeaderParam("Range") String range) throws Exception {
+//	        File audio;
+//	        audio = Paths.get(filePath).toFile();
+			System.out.println("Coagulate.MyResource.streamVideo() " + filePath);
+	        String MEDIA_FILE =
+	        		"/e/Sridhar/Audio/Soy Socio Del Atleti - Aupa Atleti.mp3";
+	        File audio;
+	        audio = Paths.get(MEDIA_FILE).toFile();
+	        return PartialContentServer.buildStream(audio, range, "video/mp4");
+	    }
+	}
+	
+	private static class PartialContentServer {
+		private static Response buildStream(final File asset, final String range, String contentType) throws Exception {
+	        if (range == null) {
+	            StreamingOutput streamer = new StreamingOutput() {
+	                @Override
+	                public void write(OutputStream output) throws IOException, WebApplicationException {
+
+	                    @SuppressWarnings("resource")
+						FileChannel inputChannel = new FileInputStream(asset).getChannel();
+	                    WritableByteChannel outputChannel = Channels.newChannel(output);
+	                    try {
+	                        inputChannel.transferTo(0, inputChannel.size(), outputChannel);
+	                    } finally {
+	                        // closing the channels
+	                        inputChannel.close();
+	                        outputChannel.close();
+	                    }
+	                }
+	            };
+	            return Response.ok(streamer).status(200).header(HttpHeaders.CONTENT_LENGTH, asset.length()).header(HttpHeaders.CONTENT_TYPE, contentType).build();
+	        }
+
+	        String[] ranges = range.split("=")[1].split("-");
+	        int from = Integer.parseInt(ranges[0]);
+	        /**
+	         * Chunk media if the range upper bound is unspecified. Chrome sends "bytes=0-"
+	         */
+	        int chunk_size = 1024 * 1024; // 1MB chunks
+	        int to = chunk_size + from;
+	        if (to >= asset.length()) {
+	            to = (int) (asset.length() - 1);
+	        }
+	        if (ranges.length == 2) {
+	            to = Integer.parseInt(ranges[1]);
+	        }
+
+			String responseRange = String.format("bytes %d-%d/%d", from, to, asset.length());
+			RandomAccessFile raf = new RandomAccessFile(asset, "r");
+			raf.seek(from);
+
+			int len = to - from + 1;
+			MediaStreamer streamer = new MediaStreamer(len, raf);
+	        Response.ResponseBuilder res = Response.ok(streamer).status(206)
+	                .header("Accept-Ranges", "bytes")
+	                .header("Content-Range", responseRange)
+	                .header(HttpHeaders.CONTENT_LENGTH, streamer.getLenth())
+	                .header(HttpHeaders.CONTENT_TYPE, contentType)
+	                .header(HttpHeaders.LAST_MODIFIED, new Date(asset.lastModified()));
+	        return res.build();
+	    }
+		
+		private static class MediaStreamer implements StreamingOutput {
+
+		    private int length;
+		    private RandomAccessFile raf;
+		    final byte[] buf = new byte[4096];
+
+		    public MediaStreamer(int length, RandomAccessFile raf) {
+		        this.length = length;
+		        this.raf = raf;
+		    }
+
+		    @Override
+		    public void write(OutputStream outputStream) throws IOException, WebApplicationException {
+		        try {
+		            while( length != 0) {
+		                int read = raf.read(buf, 0, buf.length > length ? length : buf.length);
+		                outputStream.write(buf, 0, read);
+		                length -= read;
+		            }
+		        } finally {
+		            raf.close();
+		        }
+		    }
+
+		    public int getLenth() {
+		        return length;
+		    }
+		}
+
 	}
 
 	private static class RecursiveLimitByTotal2 {
@@ -1033,6 +1140,7 @@ public class Coagulate {
 		}
 	}
 
+	@Deprecated
 	private static class NioFileServerWithStreamingVideoAndPartialContent {
 		static void startServer(int port) throws NoSuchAlgorithmException, KeyManagementException,
 				KeyStoreException, UnrecoverableKeyException, CertificateException, IOException,
