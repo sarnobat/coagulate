@@ -240,30 +240,87 @@ public class Coagulate {
 		}
 	}
 	
+	// Note - two slashes will fail
 	@javax.ws.rs.Path("{filePath : .+}")
 	public static class StreamingFileServer { // Must be public
 	    @GET
 	    public Response streamFile(
-	    		@PathParam("filePath") String filePath,
+	    		@PathParam("filePath") String filePath1,
 	    		@HeaderParam("Range") String range) throws Exception {
+	    	System.out.println("Coagulate.StreamingFileServer.streamFile() 1");
 	        File audio;
+	        String filePath = filePath1;
+	        if (!filePath1.startsWith("/")) {
+	        	filePath  = "/"+filePath1;
+	        }
 	        audio = Paths.get("/"+filePath).toFile();
 			System.out.println("Coagulate.MediaResource.streamVideo() " + filePath);
-	        return PartialContentServer.buildStream(audio, range, "video/mp4");
+	        return PartialContentServer.buildStream(audio, range, getMimeType(audio));
 	    }	
+	    
+		private static String getMimeType(File file) {
+			String mimeType;
+			Path path = Paths.get(file.getAbsolutePath());
+			String extension = FilenameUtils.getExtension(path.getFileName().toString())
+					.toLowerCase();
+			mimeType = theMimeTypes.get(extension);
+			System.out.println("Coagulate.FileServerNio.HttpFileHandler.serveFileStreaming() mimetype = " + mimeType);
+			return mimeType;
+		}
+		
+		/**
+		 * Hashtable mapping (String)FILENAME_EXTENSION -> (String)MIME_TYPE
+		 */
+		private static Hashtable<String, String> theMimeTypes = new Hashtable<String, String>();
+
+		static {
+			StringTokenizer st = new StringTokenizer(
+					"css		text/css " +
+							"htm		text/html " +
+							"html		text/html " +
+							"xml		text/xml " +
+							"txt		text/plain " +
+							"asc		text/plain " +
+							"gif		image/gif " +
+							"jpg		image/jpeg " +
+							"jpeg		image/jpeg " +
+							"png		image/png " +
+							"mp3		audio/mpeg " +
+							"m3u		audio/mpeg-url " +
+							"mp4		video/mp4 " +
+							"ogv		video/ogg " +
+							"flv		video/x-flv " +
+							"mov		video/quicktime " +
+							"swf		application/x-shockwave-flash " +
+							"js			application/javascript " +
+							"pdf		application/pdf " +
+							"doc		application/msword " +
+							"ogg		application/x-ogg " +
+							"zip		application/octet-stream " +
+							"exe		application/octet-stream " +
+							"class		application/octet-stream ");
+			while (st.hasMoreTokens()) {
+				theMimeTypes.put(st.nextToken(), st.nextToken());
+			}
+		}
 	}
 
 	private static class PartialContentServer {
-		private static Response buildStream(final File asset, final String range, String contentType) throws Exception {
+		static Response buildStream(final File asset, final String range, String contentType) throws Exception {
+			System.out.println("Coagulate.PartialContentServer.buildStream() 0");
 	        if (range == null) {
+	        	System.out.println("Coagulate.PartialContentServer.buildStream() 1");
 	            StreamingOutput streamer = new StreamingOutput() {
 	                @Override
 	                public void write(OutputStream output) throws IOException, WebApplicationException {
-
+System.out
+		.println("Coagulate.PartialContentServer.buildStream(...).new StreamingOutput() {...}.write() 1");
 	                    @SuppressWarnings("resource")
 						FileChannel inputChannel = new FileInputStream(asset).getChannel();
 	                    WritableByteChannel outputChannel = Channels.newChannel(output);
 	                    try {
+	                    	System.out
+									.println("Coagulate.PartialContentServer.buildStream(...).new StreamingOutput() {...}.write() 2");
 	                        inputChannel.transferTo(0, inputChannel.size(), outputChannel);
 	                    } finally {
 	                        // closing the channels
@@ -272,9 +329,11 @@ public class Coagulate {
 	                    }
 	                }
 	            };
+	            System.out.println("Coagulate.PartialContentServer.buildStream() 11");
 	            return Response.ok(streamer).status(200).header(HttpHeaders.CONTENT_LENGTH, asset.length()).header(HttpHeaders.CONTENT_TYPE, contentType).build();
 	        }
 
+	        System.out.println("Coagulate.PartialContentServer.buildStream() 2");
 	        String[] ranges = range.split("=")[1].split("-");
 	        int from = Integer.parseInt(ranges[0]);
 	        /**
