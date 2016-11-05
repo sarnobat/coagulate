@@ -238,24 +238,21 @@ public class Coagulate {
 						.type("application/json").build();
 			}
 		}
-		
-		//@javax.ws.rs.Path("{filePath}")
-		@javax.ws.rs.Path("static{filePath : .+}")
-	    @GET
-	    public Response streamVideo(
-	    		@PathParam("filePath") String filePath,
-	    		@HeaderParam("Range") String range) throws Exception {
-//	        File audio;
-//	        audio = Paths.get(filePath).toFile();
-			System.out.println("Coagulate.MyResource.streamVideo() " + filePath);
-	        String MEDIA_FILE =
-	        		"/e/Sridhar/Audio/Soy Socio Del Atleti - Aupa Atleti.mp3";
-	        File audio;
-	        audio = Paths.get(MEDIA_FILE).toFile();
-	        return PartialContentServer.buildStream(audio, range, "video/mp4");
-	    }
 	}
 	
+	@javax.ws.rs.Path("{filePath : .+}")
+	public static class StreamingFileServer { // Must be public
+	    @GET
+	    public Response streamFile(
+	    		@PathParam("filePath") String filePath,
+	    		@HeaderParam("Range") String range) throws Exception {
+	        File audio;
+	        audio = Paths.get("/"+filePath).toFile();
+			System.out.println("Coagulate.MediaResource.streamVideo() " + filePath);
+	        return PartialContentServer.buildStream(audio, range, "video/mp4");
+	    }	
+	}
+
 	private static class PartialContentServer {
 		private static Response buildStream(final File asset, final String range, String contentType) throws Exception {
 	        if (range == null) {
@@ -1300,7 +1297,10 @@ public class Coagulate {
 
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		try {
-			NioFileServerWithStreamingVideoAndPartialContent.startServer(fsPort);
+			//NioFileServerWithStreamingVideoAndPartialContent.startServer(fsPort);
+			JdkHttpServerFactory.createHttpServer(new URI(
+					"http://localhost:" + fsPort + "/"), new ResourceConfig(
+					StreamingFileServer.class));
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(-1);
