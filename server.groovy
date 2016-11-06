@@ -307,20 +307,20 @@ public class Coagulate {
 
 	private static class PartialContentServer {
 		static Response buildStream(final File asset, final String range, String contentType) throws Exception {
-			System.out.println("Coagulate.PartialContentServer.buildStream() 0");
+//			System.out.println("Coagulate.PartialContentServer.buildStream() 0");
 	        if (range == null) {
-	        	System.out.println("Coagulate.PartialContentServer.buildStream() 1");
+//	        	System.out.println("Coagulate.PartialContentServer.buildStream() 1");
 	            StreamingOutput streamer = new StreamingOutput() {
 	                @Override
 	                public void write(OutputStream output) throws IOException, WebApplicationException {
-System.out
-		.println("Coagulate.PartialContentServer.buildStream(...).new StreamingOutput() {...}.write() 1");
+//System.out
+//		.println("Coagulate.PartialContentServer.buildStream(...).new StreamingOutput() {...}.write() 1");
 	                    @SuppressWarnings("resource")
 						FileChannel inputChannel = new FileInputStream(asset).getChannel();
 	                    WritableByteChannel outputChannel = Channels.newChannel(output);
 	                    try {
-	                    	System.out
-									.println("Coagulate.PartialContentServer.buildStream(...).new StreamingOutput() {...}.write() 2");
+//	                    	System.out
+//									.println("Coagulate.PartialContentServer.buildStream(...).new StreamingOutput() {...}.write() 2");
 	                        inputChannel.transferTo(0, inputChannel.size(), outputChannel);
 	                    } finally {
 	                        // closing the channels
@@ -329,11 +329,11 @@ System.out
 	                    }
 	                }
 	            };
-	            System.out.println("Coagulate.PartialContentServer.buildStream() 11");
+//	            System.out.println("Coagulate.PartialContentServer.buildStream() 11");
 	            return Response.ok(streamer).status(200).header(HttpHeaders.CONTENT_LENGTH, asset.length()).header(HttpHeaders.CONTENT_TYPE, contentType).build();
 	        }
 
-	        System.out.println("Coagulate.PartialContentServer.buildStream() 2");
+//	        System.out.println("Coagulate.PartialContentServer.buildStream() 2");
 	        String[] ranges = range.split("=")[1].split("-");
 	        int from = Integer.parseInt(ranges[0]);
 	        /**
@@ -382,6 +382,8 @@ System.out
 		                outputStream.write(buf, 0, read);
 		                length -= read;
 		            }
+		        } catch(java.io.IOException e) {
+		        	System.out.println("Broken pipe (we don't need to log this)");
 		        } finally {
 		            raf.close();
 		        }
