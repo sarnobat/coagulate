@@ -784,6 +784,7 @@ function createButtonsPanel(item, subdirs, key, idstring) {
 	return buttons;
 }
 
+// cards?
 // image
 function fileObjToHtml(fileObj) {
 	// height ensures buttons don't jump left and right between items for easier mass sorting. But it's not as nice to view
@@ -819,13 +820,13 @@ function fileObjToHtml(fileObj) {
 			}
 		}
 		{
-			var matchesVideo = item.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi)|(mts))/gi);
+			var matchesVideo = item.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi)|(mts)|(mpg))/gi);
 			if (matchesVideo != null) {
 				toBeAppended += '<img src=\"' +thumbnailUrl+'\">';
-//				toBeAppended += '<video width="400" controls>';
-//				toBeAppended += '<source src="' +  item .replace(/:44452/,'') 
-//				+ '" type="video/mp4">';
-//				toBeAppended += '</video>';
+				toBeAppended += '<video width="400" controls>';
+				toBeAppended += '<source src="' +  httpUrl
+				+ '#t=30" type="video/mp4">';
+				toBeAppended += '</video>';
 			}
 		}
 		{

@@ -1329,6 +1329,7 @@ System.out
 								"jpeg		image/jpeg " +
 								"png		image/png " +
 								"mp3		audio/mpeg " +
+								"mov		audio/quicktime " +
 								"m3u		audio/mpeg-url " +
 								"mp4		video/mp4 " +
 								"ogv		video/ogg " +
