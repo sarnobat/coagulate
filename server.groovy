@@ -418,7 +418,8 @@ public class Coagulate {
 			// it can be translated to functional again.
 			while (totalFiles(allDirsAccumulated) < iLimit) {
 				boolean noMoreFilesToRead = false;
-				for (String aDirectoryPath : iDirectoryPaths) {
+				for (String aDirectoryPath1 : iDirectoryPaths) {
+					String aDirectoryPath = aDirectoryPath1.trim();
 					if (dirPathsFullyRead.contains(aDirectoryPath)) {
 						continue;
 					}
