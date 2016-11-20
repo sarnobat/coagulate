@@ -6,5 +6,5 @@ FILE=`echo "$IMG" | perl -pe 's{<img.*?src=".*?44452([^"]*)".*>}{$1}g'`
 echo $FILE
 DIR=`dirname "$FILE"
 #FILE_SIMPLE=`basename "$FILE"`
-find "$DIR" -mindepth 1 -maxdepth 1 -type d | perl -MFile::Basename -pe 's{(.*)\n}{<button onclick="moveFile("'"$FILE"'","$1")">$1</button><br>\n}ges'
+find "$DIR" -mindepth 1 -maxdepth 1 -type d | perl -pe 's{(.*)\n}{<button onclick="moveFile("'"$FILE"'","$1")">$1</button><br>\n}ges'
 echo
