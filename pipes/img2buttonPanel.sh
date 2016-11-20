@@ -7,5 +7,5 @@ echo $FILE
 DIR=`dirname "$FILE"`
 #FILE_SIMPLE=`basename "$FILE"`
 #find "$DIR" -mindepth 1 -maxdepth 1 -type d | perl -pe 's{(.*)\n}{<button onclick=\"moveFile(\"'"$FILE"'",\"$1\")\">".dirname($1)"</button><br>\n}ge'
-find "$DIR" -mindepth 1 -maxdepth 1 -type d | perl -MFile::Basename -pe 's{(.*)\n}{<button onclick=moveFile("'"$FILE"'",@{dirname($1)})></button><br>\n}g'
+find "$DIR" -mindepth 1 -maxdepth 1 -type d | perl -MFile::Basename -pe 's{(.*)\n}{<button onclick=moveFile("'"$FILE"'","$1")>@{basename($1)}</button><br>\n}g'
 echo
