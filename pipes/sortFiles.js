@@ -6,6 +6,6 @@ console.debug(buttonElement);
 			+ encodeURIComponent(destinationDirSimpleName),function(response){
 
 		//alert("Success. Now remove the element");
-		buttonElement.parent.remove()
+		buttonElement.parentElement.remove()
         });
 }
