@@ -1365,7 +1365,8 @@ public class Coagulate {
 					"http://localhost:" + fsPort + "/"), new ResourceConfig(
 					StreamingFileServer.class));
 		} catch (Exception e) {
-			e.printStackTrace();
+			//e.printStackTrace();
+                        System.out.println("Port already listened on 2.");
 			System.exit(-1);
 		}
 		try {

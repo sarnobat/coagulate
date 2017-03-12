@@ -954,6 +954,10 @@ function moveFile(button, filePath, destinationDirSimpleName,id) {
 		removeImageElement(filePath);
 		// TODO: Also remove from pairs global variable so it doesn't keep coming back when we shuffle
 	});
+	$.getJSON("http://netgear.rohidekar.com:44466/?value="+encodeURIComponent(filePath) + "&categoryId=" + encodeURIComponent(destinationDirSimpleName),function(response){
+		console.debug("Click recorded");
+	});
+
 }
 
 function removeImageElement(filePath) {
