@@ -15,6 +15,12 @@ do
 	| head -3 | sh file2img.sh 
 	echo "<td>"
 	echo "</tr>"
+
+  ## Videos
+  find "$line" -maxdepth 1 -type f -iname "*mp4" \
+        | head -3 | sh video2img.sh
+        echo "<td>"
+        echo "</tr>"
 		  
   ## Directories
   echo "<tr><td></td><td>"
