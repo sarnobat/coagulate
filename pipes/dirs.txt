@@ -4,6 +4,7 @@
 /Unsorted/new/images/atletico/12-13
 /Unsorted/new/images/atletico/13-14
 /Unsorted/new/images/atletico/14-15
+/Unsorted/new/images/atletico/15-16
 /Unsorted/new/images/atletico/16-17
 /Unsorted/new/images/atletico/1960s_and_before
 /Unsorted/new/images/atletico/1970s
@@ -47,6 +48,7 @@
 /Unsorted/new/images/atletico/Spanish
 /Unsorted/new/images/atletico/squads
 /Unsorted/new/images/atletico/Stadium
+/Unsorted/new/images/atletico/stadium_non_atletico
 /Unsorted/new/images/atletico/_thumbnails
 /Unsorted/new/images/atletico/Torres
 /Unsorted/new/images/atletico/Torres appearances
@@ -54,3 +56,6 @@
 /Unsorted/new/images/atletico/Vicente_Calderon
 /Unsorted/new/images/atletico/Vicente Calderon president
 /Unsorted/new/images/atletico/web
+/Unsorted/new/images/atletico/z_face_pictures
+/Unsorted/new/images/atletico/z_non_atletico
+/Unsorted/new/images/atletico/z_stadium
