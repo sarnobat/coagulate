@@ -2,7 +2,6 @@ echo "TODO: Nio Thumbnail images would be less memory intensive."
 
 cat head.html | tee videos_home.html > /dev/null
 ls -d -1 /Unsorted/Videos/home |  sh printsubdir_videos.sh | head -200 | tee -a videos_home.html
-exit;
 cat head.html | tee favorites.html > /dev/null
 ls -d /home/sarnobat/other/favorites/  | sh printsubdir.sh | tee -a favorites.html
 
