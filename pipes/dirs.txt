@@ -1,61 +1,33 @@
-/Unsorted/new/images/atletico/09-10
-/Unsorted/new/images/atletico/10-11
-/Unsorted/new/images/atletico/10-11 kit
-/Unsorted/new/images/atletico/12-13
-/Unsorted/new/images/atletico/13-14
-/Unsorted/new/images/atletico/14-15
-/Unsorted/new/images/atletico/15-16
-/Unsorted/new/images/atletico/16-17
-/Unsorted/new/images/atletico/1960s_and_before
-/Unsorted/new/images/atletico/1970s
-/Unsorted/new/images/atletico/1980s
-/Unsorted/new/images/atletico/1990s
-/Unsorted/new/images/atletico/2000s
-/Unsorted/new/images/atletico/2008-2009
-/Unsorted/new/images/atletico/2009-2010 kit
-/Unsorted/new/images/atletico/2010s
-/Unsorted/new/images/atletico/2011-2012
-/Unsorted/new/images/atletico/2014-2015 squad status (Gangreno forum)
-/Unsorted/new/images/atletico/2015-2016
-/Unsorted/new/images/atletico/Aragones
-/Unsorted/new/images/atletico/Atletico Madrid Europa final
-/Unsorted/new/images/atletico/Atletico Madrid financial statements
-/Unsorted/new/images/atletico/audio
-/Unsorted/new/images/atletico/bookmarks
-/Unsorted/new/images/atletico/Chicas
-/Unsorted/new/images/atletico/English
-/Unsorted/new/images/atletico/face_pictures
-/Unsorted/new/images/atletico/fans
-/Unsorted/new/images/atletico/Gil
-/Unsorted/new/images/atletico/html
-/Unsorted/new/images/atletico/Html - with photos
-/Unsorted/new/images/atletico/Husky on Goal.com
-/Unsorted/new/images/atletico/images
-/Unsorted/new/images/atletico/kits
-/Unsorted/new/images/atletico/Madrid derbies
-/Unsorted/new/images/atletico/Metropolitano
-/Unsorted/new/images/atletico/Past Players from Rojiblancos.com
-/Unsorted/new/images/atletico/Peineta
-/Unsorted/new/images/atletico/people
-/Unsorted/new/images/atletico/pictures
-/Unsorted/new/images/atletico/player appearances
-/Unsorted/new/images/atletico/players
-/Unsorted/new/images/atletico/presidents
-/Unsorted/new/images/atletico/Riquelme fake
-/Unsorted/new/images/atletico/signings
-/Unsorted/new/images/atletico/sites
-/Unsorted/new/images/atletico/soccerbot
-/Unsorted/new/images/atletico/Spanish
-/Unsorted/new/images/atletico/squads
-/Unsorted/new/images/atletico/Stadium
-/Unsorted/new/images/atletico/stadium_non_atletico
-/Unsorted/new/images/atletico/_thumbnails
-/Unsorted/new/images/atletico/Torres
-/Unsorted/new/images/atletico/Torres appearances
-/Unsorted/new/images/atletico/Vicente Calderon
-/Unsorted/new/images/atletico/Vicente_Calderon
-/Unsorted/new/images/atletico/Vicente Calderon president
-/Unsorted/new/images/atletico/web
-/Unsorted/new/images/atletico/z_face_pictures
-/Unsorted/new/images/atletico/z_non_atletico
-/Unsorted/new/images/atletico/z_stadium
+/Unsorted/new/images/animals
+/Unsorted/new/images/Anshu
+/Unsorted/new/images/atletico
+/Unsorted/new/images/Atletico
+/Unsorted/new/images/corrupted
+/Unsorted/new/images/duplicates
+/Unsorted/new/images/friends
+/Unsorted/new/images/home
+/Unsorted/new/images/humor
+/Unsorted/new/images/images
+/Unsorted/new/images/iPhone
+/Unsorted/new/images/jpg
+/Unsorted/new/images/Liverpool
+/Unsorted/new/images/matrimonial
+/Unsorted/new/images/more
+/Unsorted/new/images/not_displaying_correctly_in_coagulate
+/Unsorted/new/images/other
+/Unsorted/new/images/other2
+/Unsorted/new/images/pdf
+/Unsorted/new/images/products_and_services
+/Unsorted/new/images/professional
+/Unsorted/new/images/scans
+/Unsorted/new/images/screenshots
+/Unsorted/new/images/screenshots_cats
+/Unsorted/new/images/shaadi, anuroop matrimony - small
+/Unsorted/new/images/soccer
+/Unsorted/new/images/_thumbnails
+/Unsorted/new/images/trash
+/Unsorted/new/images/Videos
+/Unsorted/new/images/web
+/Unsorted/new/images/whatsapp
+/Unsorted/new/images/work
+/Unsorted/new/images/wwe
