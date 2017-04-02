@@ -3,6 +3,7 @@ FILE=$1
 
 DIR=`dirname "$FILE"`
 
+#echo "[DEBUG] about to call file2img.sh"
 echo "<span>"
 echo $FILE | sh file2img.sh
 echo "<br>"
