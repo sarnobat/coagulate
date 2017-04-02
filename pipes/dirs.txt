@@ -1,61 +1,64 @@
-/Unsorted/new/images/atletico/09-10
-/Unsorted/new/images/atletico/10-11
-/Unsorted/new/images/atletico/10-11 kit
-/Unsorted/new/images/atletico/12-13
-/Unsorted/new/images/atletico/13-14
-/Unsorted/new/images/atletico/14-15
-/Unsorted/new/images/atletico/15-16
-/Unsorted/new/images/atletico/16-17
-/Unsorted/new/images/atletico/1960s_and_before
-/Unsorted/new/images/atletico/1970s
-/Unsorted/new/images/atletico/1980s
-/Unsorted/new/images/atletico/1990s
-/Unsorted/new/images/atletico/2000s
-/Unsorted/new/images/atletico/2008-2009
-/Unsorted/new/images/atletico/2009-2010 kit
-/Unsorted/new/images/atletico/2010s
-/Unsorted/new/images/atletico/2011-2012
-/Unsorted/new/images/atletico/2014-2015 squad status (Gangreno forum)
-/Unsorted/new/images/atletico/2015-2016
-/Unsorted/new/images/atletico/Aragones
-/Unsorted/new/images/atletico/Atletico Madrid Europa final
-/Unsorted/new/images/atletico/Atletico Madrid financial statements
-/Unsorted/new/images/atletico/audio
-/Unsorted/new/images/atletico/bookmarks
-/Unsorted/new/images/atletico/Chicas
-/Unsorted/new/images/atletico/English
-/Unsorted/new/images/atletico/face_pictures
-/Unsorted/new/images/atletico/fans
-/Unsorted/new/images/atletico/Gil
-/Unsorted/new/images/atletico/html
-/Unsorted/new/images/atletico/Html - with photos
-/Unsorted/new/images/atletico/Husky on Goal.com
-/Unsorted/new/images/atletico/images
-/Unsorted/new/images/atletico/kits
-/Unsorted/new/images/atletico/Madrid derbies
-/Unsorted/new/images/atletico/Metropolitano
-/Unsorted/new/images/atletico/Past Players from Rojiblancos.com
-/Unsorted/new/images/atletico/Peineta
-/Unsorted/new/images/atletico/people
-/Unsorted/new/images/atletico/pictures
-/Unsorted/new/images/atletico/player appearances
-/Unsorted/new/images/atletico/players
-/Unsorted/new/images/atletico/presidents
-/Unsorted/new/images/atletico/Riquelme fake
-/Unsorted/new/images/atletico/signings
-/Unsorted/new/images/atletico/sites
-/Unsorted/new/images/atletico/soccerbot
-/Unsorted/new/images/atletico/Spanish
-/Unsorted/new/images/atletico/squads
-/Unsorted/new/images/atletico/Stadium
-/Unsorted/new/images/atletico/stadium_non_atletico
-/Unsorted/new/images/atletico/_thumbnails
-/Unsorted/new/images/atletico/Torres
-/Unsorted/new/images/atletico/Torres appearances
-/Unsorted/new/images/atletico/Vicente Calderon
-/Unsorted/new/images/atletico/Vicente_Calderon
-/Unsorted/new/images/atletico/Vicente Calderon president
-/Unsorted/new/images/atletico/web
-/Unsorted/new/images/atletico/z_face_pictures
-/Unsorted/new/images/atletico/z_non_atletico
-/Unsorted/new/images/atletico/z_stadium
+/Unsorted/Videos/2016-01_Barcelona
+/Unsorted/Videos/2016-02_Real_Madrid
+/Unsorted/Videos/2016-04-01_Barcelona_H_CL
+/Unsorted/Videos/2016-04-13_Barcelona_H_CL
+/Unsorted/Videos/animals
+/Unsorted/Videos/Atletico
+/Unsorted/Videos/Atletico Madrid
+/Unsorted/Videos/business
+/Unsorted/Videos/commercials
+/Unsorted/Videos/computer_games
+/Unsorted/Videos/corrupt
+/Unsorted/Videos/courtesy of others
+/Unsorted/Videos/Courtesy of others
+/Unsorted/Videos/Diffrent Strokes
+/Unsorted/Videos/divas
+/Unsorted/Videos/documentaries
+/Unsorted/Videos/Documentaries
+/Unsorted/Videos/documentary
+/Unsorted/Videos/Documentary
+/Unsorted/Videos/entertainment
+/Unsorted/Videos/friends
+/Unsorted/Videos/Friends
+/Unsorted/Videos/gameshows
+/Unsorted/Videos/gender
+/Unsorted/Videos/health
+/Unsorted/Videos/hindi
+/Unsorted/Videos/history
+/Unsorted/Videos/home
+/Unsorted/Videos/Home
+/Unsorted/Videos/humor
+/Unsorted/Videos/hymns
+/Unsorted/Videos/images
+/Unsorted/Videos/incomplete
+/Unsorted/Videos/Liverpool
+/Unsorted/Videos/misc
+/Unsorted/Videos/movies
+/Unsorted/Videos/music
+/Unsorted/Videos/not needed
+/Unsorted/Videos/other
+/Unsorted/Videos/Other
+/Unsorted/Videos/part
+/Unsorted/Videos/Patriotic
+/Unsorted/Videos/Productivity
+/Unsorted/Videos/products_and_services
+/Unsorted/Videos/ripped
+/Unsorted/Videos/science
+/Unsorted/Videos/self
+/Unsorted/Videos/soccer
+/Unsorted/Videos/Soccer_Superstars
+/Unsorted/Videos/songs
+/Unsorted/Videos/Sony HD remnants 2014-08-28
+/Unsorted/Videos/sports
+/Unsorted/Videos/stadiums
+/Unsorted/Videos/stock_music
+/Unsorted/Videos/technology
+/Unsorted/Videos/_thumbnails
+/Unsorted/Videos/trash
+/Unsorted/Videos/travel
+/Unsorted/Videos/Turtles
+/Unsorted/Videos/video_editing
+/Unsorted/Videos/videos
+/Unsorted/Videos/wwe
+/Unsorted/Videos/wwf
+/Unsorted/Videos/youtube_download
