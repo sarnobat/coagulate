@@ -2,7 +2,9 @@
 PREFIX="http://netgear.rohidekar.com:44452"
 while read line
 do
-  #echo "[DEBUG] $line"
-  echo "$line" | tee ~/trash/temp1.txt | groovy thumbnailForFile.groovy | tee  ~/trash/temp2.txt | perl -pe 's{^(.*)\n}{<img src="'$PREFIX'$1" height=53 onmouseenter="zoom(this)">\n}g'
-  basename "$line"
+#2>  echo "[DEBUG] $line"
+  echo "$line"  | groovy ~/github/coagulate/pipes/file2image.groovy | perl -pe 's{^(.*)\n}{<img src="'$PREFIX'$1" height=53 onmouseenter="zoom(this)">\n}g'
+link="$PREFIX\/$line"
+#echo "$line"
+  basename "$line" # | perl -pe 's{^(.*)\n}{<a href="'$link'">$1</a>}g'
 done < "${1:-/dev/stdin}"
