@@ -3,6 +3,12 @@ echo "TODO: Nio Thumbnail images would be less memory intensive."
 ##
 ## Sort
 ##
+cd ~/github/coagulate/pipes; find /Unsorted/new/screenshots -maxdepth 1 -type f -iname "*" \
+	| head  -280 \
+        | xargs --delimiter '\n' --max-args=1 sh file2buttonPanel.sh  \
+        | perl -pe 's{height=33}{height=250}g' \
+        | cat head.html - \
+        | tee screenshots_sort.html > /dev/null 
 
 cd ~/github/coagulate/pipes; find '/Unsorted/Videos/' -maxdepth 1 -type f -iname "**" \
 	| shuf \
