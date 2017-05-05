@@ -58,6 +58,12 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.http.ExceptionLogger;
 import org.apache.http.HttpEntity;
@@ -989,7 +995,6 @@ System.out.println("DirObj::getFiles() - " + path);
 		};
 
 		private static String httpLinkFor(String iAbsolutePath) {
-			int fsPort = port + 1;
 			String prefix = "http://netgear.rohidekar.com:4" + fsPort;
 			return prefix + iAbsolutePath;
 		}
@@ -1366,12 +1371,44 @@ System.out.println("DirObj::getFiles() - " + path);
 		}
 	}
 
-	private static final int port = 4451;
 	private static final int fsPort = 4452;
 
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
 
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
+		
+		String port = null;
+		_parseOptions: {
+
+		  Options options = new Options()
+			  .addOption("h", "help", false, "show help.");
+
+		  Option option = Option.builder("f").longOpt("file").desc("use FILE to write incoming data to").hasArg()
+			  .argName("FILE").build();
+		  options.addOption(option);
+
+		  // This doesn't work with java 7
+		  // "hasarg" is needed when the option takes a value
+		  options.addOption(Option.builder("p").longOpt("port").hasArg().required().build());
+
+		  try {
+			CommandLine cmd = new DefaultParser().parse(options, args);
+			port = cmd.getOptionValue("p", "4451");
+
+			if (cmd.hasOption("h")) {
+		
+			  // This prints out some help
+			  HelpFormatter formater = new HelpFormatter();
+
+			  formater.printHelp("yurl", options);
+			  System.exit(0);
+			}
+		  } catch (ParseException e) {
+			e.printStackTrace();
+			System.exit(-1);
+		  }
+		}
+    
 		try {
 			//NioFileServerWithStreamingVideoAndPartialContent.startServer(fsPort);
 			JdkHttpServerFactory.createHttpServer(new URI(
