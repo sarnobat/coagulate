@@ -1,20 +1,9 @@
 import static com.google.common.base.Predicates.not;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.RandomAccessFile;
 import java.io.StringReader;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.channels.WritableByteChannel;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.DirectoryStream.Filter;
@@ -28,17 +17,13 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.StringTokenizer;
 
 import javax.annotation.Nullable;
 import javax.json.Json;
@@ -47,16 +32,10 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 import javax.json.JsonValue;
 import javax.json.stream.JsonParsingException;
-import javax.net.ssl.SSLContext;
 import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.StreamingOutput;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -64,31 +43,11 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.http.ExceptionLogger;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpException;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.MethodNotSupportedException;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.InputStreamEntity;
-import org.apache.http.impl.nio.bootstrap.HttpServer;
-import org.apache.http.impl.nio.bootstrap.ServerBootstrap;
-import org.apache.http.impl.nio.reactor.IOReactorConfig;
-import org.apache.http.nio.entity.NStringEntity;
-import org.apache.http.nio.protocol.BasicAsyncRequestConsumer;
-import org.apache.http.nio.protocol.BasicAsyncResponseProducer;
-import org.apache.http.nio.protocol.HttpAsyncExchange;
-import org.apache.http.nio.protocol.HttpAsyncRequestConsumer;
-import org.apache.http.nio.protocol.HttpAsyncRequestHandler;
-import org.apache.http.protocol.HttpContext;
-import org.apache.http.ssl.SSLContexts;
 import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -104,7 +63,7 @@ import com.google.common.collect.Sets;
  * SSHD uses slf4j. So add the api + binding jars, and point to a properties file
  */
 //@Grab(group='com.pastdev', module='jsch-nio', version='0.1.5')
-public class Coagulate {
+public class CoagulateList {
 	@javax.ws.rs.Path("cmsfs")
 	public static class MyResource { // Must be public
 	
@@ -116,113 +75,6 @@ public class Coagulate {
 		// mutators
 		//
 
-		@GET
-		@javax.ws.rs.Path("moveToParent")
-		@Produces("application/json")
-		public Response moveToParent(@QueryParam("filePath") String sourceFilePathString)
-				throws JSONException {
-			if (sourceFilePathString.endsWith("htm") || sourceFilePathString.endsWith(".html")) {
-				throw new RuntimeException("Need to move the _files folder too");
-			}
-			Operations.doMoveToParent(sourceFilePathString);
-			return Response.ok()
-					.header("Access-Control-Allow-Origin", "*")
-					.entity(new JSONObject().toString(4)).type("application/json")
-					.build();
-		}
-		
-		@GET
-		@javax.ws.rs.Path("moveDirToParent")
-		@Produces("application/json")
-		public Response moveDirToParent(@QueryParam("filePath") String sourceFilePathString)
-				throws JSONException {
-			if (sourceFilePathString.endsWith("htm") || sourceFilePathString.endsWith(".html")) {
-				throw new RuntimeException("Need to move the _files folder too");
-			}
-			Operations.doMoveToParent(sourceFilePathString);
-			return Response.ok()
-					.header("Access-Control-Allow-Origin", "*")
-					.entity(new JSONObject().toString(4)).type("application/json")
-					.build();
-		}
-
-		@GET
-		@javax.ws.rs.Path("copyToFolder")
-		@Produces("application/json")
-		public Response copy(
-				@QueryParam("filePath") String iFilePath,
-				@QueryParam("destinationDirPath") String iDestinationDirPath)
-				throws JSONException, IOException {
-
-			if (iFilePath.endsWith("htm") || iFilePath.endsWith(".html")) {
-				throw new RuntimeException("Need to move the _files folder too");
-			}
-
-			try {
-				Operations.copyFileToFolder(iFilePath, iDestinationDirPath);
-			} catch (Exception e) {
-				e.printStackTrace();
-				throw new RuntimeException(e);
-			}
-			return Response.ok()
-					.header("Access-Control-Allow-Origin", "*")
-					.entity(new JSONObject().toString(4)).type("application/json")
-					.build();
-		}
-
-		@GET
-		@javax.ws.rs.Path("moveDir")
-		@Produces("application/json")
-		public Response moveDir(
-				@QueryParam("dirPath") String iFilePath,
-				@QueryParam("destinationDirSimpleName") String iDestinationDirSimpleName)
-				throws JSONException, IOException {
-			if (iFilePath.endsWith("htm") || iFilePath.endsWith(".html")) {
-				throw new RuntimeException("Need to move the _files folder too");
-			}
-			if (iDestinationDirSimpleName.equals("_ 1")) {
-				System.out.println("move() - dir name is wrong");
-				throw new RuntimeException("dir name is wrong: " + iDestinationDirSimpleName);
-			}
-			try {
-				Operations.moveFileToSubfolder(iFilePath, iDestinationDirSimpleName);
-			} catch (Exception e) {
-				e.printStackTrace();
-				throw new RuntimeException(e);
-			}
-			return Response.ok()
-					.header("Access-Control-Allow-Origin", "*")
-					.entity(new JSONObject().toString(4)).type("application/json")
-					.build();
-		}
-
-		@GET
-		@javax.ws.rs.Path("move")
-		@Produces("application/json")
-		public Response move(
-				@QueryParam("filePath") String iFilePath,
-				@QueryParam("destinationDirSimpleName") String iDestinationDirSimpleName)
-				throws JSONException, IOException {
-			if (iFilePath.endsWith("htm") || iFilePath.endsWith(".html")) {
-				throw new RuntimeException("Need to move the _files folder too");
-			}
-			if (iDestinationDirSimpleName.equals("_ 1")) {
-				System.out.println("move() - dir name is wrong");
-				throw new RuntimeException("dir name is wrong: " + iDestinationDirSimpleName);
-			}
-			try {
-				Operations.moveFileToSubfolder(iFilePath, iDestinationDirSimpleName);
-			} catch (Exception e) {
-				e.printStackTrace();
-				throw new RuntimeException(e);
-			}
-			return Response.ok()
-					.header("Access-Control-Allow-Origin", "*")
-					.entity(new JSONObject().toString(4)).type("application/json")
-					.build();
-		}
-
-		@Deprecated // Done in separate file
 		@GET
 		@javax.ws.rs.Path("list")
 		@Produces("application/json")
@@ -247,162 +99,6 @@ public class Coagulate {
 		}
 	}
 	
-	// Note - two slashes will fail
-	@javax.ws.rs.Path("{filePath : .+}")
-	public static class StreamingFileServer { // Must be public
-	    @GET
-	    public Response streamFile(
-	    		@PathParam("filePath") String filePath1,
-	    		@HeaderParam("Range") String range) throws Exception {
-	    	System.out.println("Coagulate.StreamingFileServer.streamFile() 1");
-	        File audio;
-	        String filePath = filePath1;
-	        if (!filePath1.startsWith("/")) {
-	        	filePath  = "/"+filePath1;
-	        }
-	        audio = Paths.get("/"+filePath).toFile();
-			System.out.println("Coagulate.MediaResource.streamVideo() " + filePath);
-	        return PartialContentServer.buildStream(audio, range, getMimeType(audio));
-	    }	
-	    
-		private static String getMimeType(File file) {
-			String mimeType;
-			Path path = Paths.get(file.getAbsolutePath());
-			String extension = FilenameUtils.getExtension(path.getFileName().toString())
-					.toLowerCase();
-			mimeType = theMimeTypes.get(extension);
-			System.out.println("Coagulate.FileServerNio.HttpFileHandler.serveFileStreaming() mimetype = " + mimeType);
-			return mimeType;
-		}
-		
-		/**
-		 * Hashtable mapping (String)FILENAME_EXTENSION -> (String)MIME_TYPE
-		 */
-		private static Hashtable<String, String> theMimeTypes = new Hashtable<String, String>();
-
-		static {
-			StringTokenizer st = new StringTokenizer(
-					"css		text/css " +
-							"htm		text/html " +
-							"html		text/html " +
-							"xml		text/xml " +
-							"txt		text/plain " +
-							"asc		text/plain " +
-							"gif		image/gif " +
-							"jpg		image/jpeg " +
-							"jpeg		image/jpeg " +
-							"png		image/png " +
-							"mp3		audio/mpeg " +
-							"m3u		audio/mpeg-url " +
-							"mp4		video/mp4 " +
-							"ogv		video/ogg " +
-							"flv		video/x-flv " +
-							"mov		video/quicktime " +
-							"swf		application/x-shockwave-flash " +
-							"js			application/javascript " +
-							"pdf		application/pdf " +
-							"doc		application/msword " +
-							"ogg		application/x-ogg " +
-							"zip		application/octet-stream " +
-							"exe		application/octet-stream " +
-							"class		application/octet-stream ");
-			while (st.hasMoreTokens()) {
-				theMimeTypes.put(st.nextToken(), st.nextToken());
-			}
-		}
-	}
-
-	private static class PartialContentServer {
-		static Response buildStream(final File asset, final String range, String contentType) throws Exception {
-//			System.out.println("Coagulate.PartialContentServer.buildStream() 0");
-	        if (range == null) {
-//	        	System.out.println("Coagulate.PartialContentServer.buildStream() 1");
-	            StreamingOutput streamer = new StreamingOutput() {
-	                @Override
-	                public void write(OutputStream output) throws IOException, WebApplicationException {
-//System.out
-//		.println("Coagulate.PartialContentServer.buildStream(...).new StreamingOutput() {...}.write() 1");
-	                    @SuppressWarnings("resource")
-						FileChannel inputChannel = new FileInputStream(asset).getChannel();
-	                    WritableByteChannel outputChannel = Channels.newChannel(output);
-	                    try {
-//	                    	System.out
-//									.println("Coagulate.PartialContentServer.buildStream(...).new StreamingOutput() {...}.write() 2");
-	                        inputChannel.transferTo(0, inputChannel.size(), outputChannel);
-	                    } finally {
-	                        // closing the channels
-	                        inputChannel.close();
-	                        outputChannel.close();
-	                    }
-	                }
-	            };
-//	            System.out.println("Coagulate.PartialContentServer.buildStream() 11");
-	            return Response.ok(streamer).status(200).header(HttpHeaders.CONTENT_LENGTH, asset.length()).header(HttpHeaders.CONTENT_TYPE, contentType).build();
-	        }
-
-//	        System.out.println("Coagulate.PartialContentServer.buildStream() 2");
-	        String[] ranges = range.split("=")[1].split("-");
-	        int from = Integer.parseInt(ranges[0]);
-	        /**
-	         * Chunk media if the range upper bound is unspecified. Chrome sends "bytes=0-"
-	         */
-	        int chunk_size = 1024 * 1024; // 1MB chunks
-	        int to = chunk_size + from;
-	        if (to >= asset.length()) {
-	            to = (int) (asset.length() - 1);
-	        }
-	        if (ranges.length == 2) {
-	            to = Integer.parseInt(ranges[1]);
-	        }
-
-			String responseRange = String.format("bytes %d-%d/%d", from, to, asset.length());
-			RandomAccessFile raf = new RandomAccessFile(asset, "r");
-			raf.seek(from);
-
-			int len = to - from + 1;
-			MediaStreamer streamer = new MediaStreamer(len, raf);
-	        Response.ResponseBuilder res = Response.ok(streamer).status(206)
-	                .header("Accept-Ranges", "bytes")
-	                .header("Content-Range", responseRange)
-	                .header(HttpHeaders.CONTENT_LENGTH, streamer.getLenth())
-	                .header(HttpHeaders.CONTENT_TYPE, contentType)
-	                .header(HttpHeaders.LAST_MODIFIED, new Date(asset.lastModified()));
-	        return res.build();
-	    }
-		
-		private static class MediaStreamer implements StreamingOutput {
-
-		    private int length;
-		    private RandomAccessFile raf;
-		    final byte[] buf = new byte[4096];
-
-		    public MediaStreamer(int length, RandomAccessFile raf) {
-		        this.length = length;
-		        this.raf = raf;
-		    }
-
-		    @Override
-		    public void write(OutputStream outputStream) throws IOException, WebApplicationException {
-		        try {
-		            while( length != 0) {
-		                int read = raf.read(buf, 0, buf.length > length ? length : buf.length);
-		                outputStream.write(buf, 0, read);
-		                length -= read;
-		            }
-		        } catch(java.io.IOException e) {
-		        	System.out.println("Broken pipe (we don't need to log this)");
-		        } finally {
-		            raf.close();
-		        }
-		    }
-
-		    public int getLenth() {
-		        return length;
-		    }
-		}
-
-	}
-
 	private static class RecursiveLimitByTotal2 {
 
 		static JsonObject getDirectoryHierarchies(String iDirectoryPathsString, int iLimit, Integer iDepth) {
@@ -1071,307 +767,6 @@ System.out.println("DirObj::getFiles() - " + path);
 		};
 	}
 	
-	private static class Operations {
-
-		private static Path getUnconflictedDestinationFilePath(String folderName, Path path)
-				throws IllegalAccessError, IOException {
-			String parentDirPath = path.getParent().toAbsolutePath().toString();
-			String destinationFolderPath = parentDirPath + "/" + folderName;
-			Path subfolder = getOrCreateDestinationFolder(destinationFolderPath);
-			return Operations.allocateFile(path, subfolder);
-		}
-
-		private static java.nio.file.Path getOrCreateDestinationFolder(
-				String destinationFolderPath) throws IllegalAccessError,
-				IOException {
-			java.nio.file.Path rSubfolder = Paths.get(destinationFolderPath);
-			// if the subfolder does not exist, create it
-			if (!Files.exists(rSubfolder)) {
-				Files.createDirectory(rSubfolder);
-			}
-			if (!Files.isDirectory(rSubfolder)) {
-				throw new IllegalAccessError(
-						"Developer Error: not a directory - "
-								+ rSubfolder.toAbsolutePath());
-			}
-			return rSubfolder;
-		}
-		
-		static void moveFileToSubfolder(String filePath,
-				String iSubfolderSimpleName) throws IllegalAccessError, IOException {
-			System.out.println("moveFileToSubfolder() - begin: " + filePath);
-			Path sourceFilePath = Paths.get(filePath);
-                        System.out.println("moveFileToSubfolder() - sourceFilePath = " + sourceFilePath);
-			if (!Files.exists(sourceFilePath)) {
-				throw new RuntimeException("No such source file: " + sourceFilePath.toAbsolutePath().toString());
-			}
-			Path targetDir = Paths.get(sourceFilePath.getParent().toString()
-					+ "/" + iSubfolderSimpleName);
-			if (!Files.exists(targetDir)) {
-				System.out.println("moveFileToSubfolder() - creating dir " + targetDir.toString());
-				Files.createDirectory(targetDir);
-			} else if (!Files.isDirectory(targetDir)) {
-				throw new RuntimeException("Target is an existing file");
-			}
-			Operations.doMove(sourceFilePath, getUnconflictedDestinationFilePath(iSubfolderSimpleName, sourceFilePath));
-
-		}
-
-		private static void doCopy(Path sourceFilePath, Path destinationFilePath) {
-			try {
-				Files.copy(sourceFilePath, destinationFilePath);// By default, it won't
-													// overwrite existing
-				System.out.println("Success: copied file now at " + destinationFilePath.toAbsolutePath());
-			} catch (IOException e) {
-				e.printStackTrace();
-				throw new IllegalAccessError("Copying did not work");
-			}
-		}
-		
-		static void copyFileToFolder(String filePath,
-				String iDestinationDirPath) throws IllegalAccessError, IOException {
-			Path sourceFilePath = Paths.get(filePath);
-			if (!Files.exists(sourceFilePath)) {
-				throw new RuntimeException("No such source file");
-			}
-			String string = sourceFilePath.getFileName().toString();
-			Path destinationDir = Paths.get(iDestinationDirPath);
-			doCopy(sourceFilePath, getUnconflictedDestinationFilePath(destinationDir, string));
-		}
-
-		private static Path getUnconflictedDestinationFilePath (Path destinationDir, String sourceFileSimpleName) {
-			Path rDestinationFile = allocateFile(destinationDir, sourceFileSimpleName);
-			return rDestinationFile;
-		}
-		
-		private static Path allocateFile(Path folder, String fileSimpleName)
-				throws IllegalAccessError {
-			// if destination file exists, rename the file to be moved(while
-			// loop)
-			return Operations.determineDestinationPathAvoidingExisting(folder
-					.normalize().toAbsolutePath().toString()
-					+ "/" + fileSimpleName);
-		}
-		
-		private static void doMove(Path path, Path destinationFile)
-				throws IllegalAccessError {
-			try {
-				Files.move(path, destinationFile);// By default, it won't
-													// overwrite existing
-				System.out.println("Success: file now at " + destinationFile.toAbsolutePath());
-			} catch (IOException e) {
-				e.printStackTrace();
-				throw new IllegalAccessError("Moving did not work");
-			}
-		}
-		
-		static void doMoveToParent(String sourceFilePathString)
-				throws IllegalAccessError {
-			Path sourceFilePath = Paths.get(sourceFilePathString);
-			Path destinationFile = getDestinationFilePathAvoidingExisting(sourceFilePath);
-			doMove(sourceFilePath, destinationFile);
-		}
-
-		private static Path getDestinationFilePathAvoidingExisting(Path sourceFile)
-				throws IllegalAccessError {
-			String filename = sourceFile.getFileName().toString();
-			Path parent = sourceFile.getParent().getParent().toAbsolutePath();
-			String parentPath = parent.toAbsolutePath().toString();
-			String destinationFilePath = parentPath + "/" + filename;
-			return determineDestinationPathAvoidingExisting(destinationFilePath);
-		}
-
-		private static Path allocateFile(Path imageFile, Path subfolder)
-				throws IllegalAccessError {
-			// if destination file exists, rename the file to be moved(while
-			// loop)
-			return determineDestinationPathAvoidingExisting(new StringBuffer()
-					.append(subfolder.normalize().toAbsolutePath().toString()).append("/")
-					.append(imageFile.getFileName().toString()).toString());
-		}
-
-		// Only works for files
-		private static Path determineDestinationPathAvoidingExisting(
-				String destinationFilePath) throws IllegalAccessError {
-			System.out.println("Coagulate.Operations.determineDestinationPathAvoidingExisting() = ");
-			int lastIndexOf = destinationFilePath.lastIndexOf('.');
-			String destinationFilePathWithoutExtension ;
-			if (lastIndexOf == -1) {
-				destinationFilePathWithoutExtension = destinationFilePath;
-			} else {
-				destinationFilePathWithoutExtension = destinationFilePath
-						.substring(0, lastIndexOf);	
-			}
-			String extension = FilenameUtils
-					.getExtension(destinationFilePath);
-			Path rDestinationFile = Paths.get(destinationFilePath);
-			while (Files.exists(rDestinationFile)) {
-				destinationFilePathWithoutExtension += "1";
-				destinationFilePath = destinationFilePathWithoutExtension + "." + extension;
-				rDestinationFile = Paths.get(destinationFilePath);
-			}
-			if (Files.exists(rDestinationFile)) {
-				throw new IllegalAccessError(
-						"an existing file will get overwritten");
-			}
-			return rDestinationFile;
-		}
-	}
-
-	@Deprecated
-	private static class NioFileServerWithStreamingVideoAndPartialContent {
-		static void startServer(int port) throws NoSuchAlgorithmException, KeyManagementException,
-				KeyStoreException, UnrecoverableKeyException, CertificateException, IOException,
-				InterruptedException {
-			SSLContext sslcontext = null;
-			if (port == 8443) {
-				// Initialize SSL context
-				URL url = NioFileServerWithStreamingVideoAndPartialContent.class.getResource("/my.keystore");
-				if (url == null) {
-					System.out.println("Keystore not found");
-					System.exit(1);
-				}
-				sslcontext = SSLContexts.custom()
-						.loadKeyMaterial(url, "secret".toCharArray(), "secret".toCharArray())
-						.build();
-			}
-
-			IOReactorConfig config = IOReactorConfig.custom().setSoTimeout(15000)
-					.setTcpNoDelay(true).build();
-
-			HttpServer server = ServerBootstrap.bootstrap()
-					.setListenerPort(port)
-					.setServerInfo("Test/1.1")
-					.setIOReactorConfig(config)
-					.setSslContext(sslcontext)
-					.setExceptionLogger(ExceptionLogger.STD_ERR)
-					.registerHandler("*", new HttpFileHandler()).create();
-
-			server.start();
-		}
-
-		private static class HttpFileHandler implements HttpAsyncRequestHandler<HttpRequest> {
-
-			@Override
-			public HttpAsyncRequestConsumer<HttpRequest> processRequest(final HttpRequest request,
-					final HttpContext context) {
-				// Buffer request content in memory for simplicity
-				return new BasicAsyncRequestConsumer();
-			}
-
-			@Override
-			public void handle(final HttpRequest request, final HttpAsyncExchange httpexchange,
-					final HttpContext context) throws HttpException, IOException {
-				HttpResponse response = httpexchange.getResponse();
-				handleInternal(request, response, context);
-				httpexchange.submitResponse(new BasicAsyncResponseProducer(response));
-			}
-
-			private static void handleInternal(HttpRequest request,
-					HttpResponse response, HttpContext context) throws HttpException,
-					IOException {
-
-				String method = request.getRequestLine().getMethod().toUpperCase(Locale.ENGLISH);
-				if (methodNotSupported(method)) {
-					throw new MethodNotSupportedException(method + " method not supported");
-				}
-
-				String target = request.getRequestLine().getUri().replaceAll(".width.*", "")
-						.replace("%20", " ");
-				File file = Paths.get(URLDecoder.decode(target, "UTF-8").replace("/_ 1", "/_+1"))
-						.toFile();
-				if (!file.canRead()) {
-					throw new RuntimeException("cannot read");
-				}
-				if (!file.exists()) {
-				
-					String error = "<html><body><h1>File <br>"
-							+ file.getPath() + "<br> not found</h1></body></html>";
-					response.setEntity(createEntity(error));
-					response.setStatusCode(HttpStatus.SC_NOT_FOUND);
-				
-				} else if (!file.canRead() || file.isDirectory()) {
-				
-					String error = "<html><body><h1>Access denied - for privacy</h1></body></html>";
-					response.setEntity(createEntity(error));
-					response.setStatusCode(HttpStatus.SC_FORBIDDEN);
-				} else {
-					response.setStatusCode(HttpStatus.SC_OK);
-					serveFileStreaming(response, file);
-				}
-			}
-
-			private static boolean methodNotSupported(String method) {
-				return !method.equals("GET") && !method.equals("HEAD") && !method.equals("POST");
-			}
-
-			private static NStringEntity createEntity(String error) {
-				return new NStringEntity(error, ContentType.create("text/html", "UTF-8"));
-			}
-
-			private static void serveFileStreaming(final HttpResponse response, File file) {
-				try {
-					final InputStream fis = new FileInputStream(file);
-					String mimeType = getMimeType(file);
-					HttpEntity body = new InputStreamEntity(fis, ContentType.create(mimeType));
-					response.setEntity(body);
-				} catch (FileNotFoundException e) {
-					e.printStackTrace();
-				}
-			}
-
-			private static String getMimeType(File file) {
-				String mimeType;
-				Path path = Paths.get(file.getAbsolutePath());
-				if (file.getName().endsWith(".mp4")) {
-					String extension = FilenameUtils.getExtension(path.getFileName().toString());
-					mimeType = theMimeTypes.get(extension);
-				} else {
-					mimeType = "image/jpeg";
-				}
-				System.out.println("Coagulate.FileServerNio.HttpFileHandler.serveFileStreaming() mimetype = " + mimeType);
-				return mimeType;
-			}
-			
-			/**
-			 * Hashtable mapping (String)FILENAME_EXTENSION -> (String)MIME_TYPE
-			 */
-			private static Hashtable<String, String> theMimeTypes = new Hashtable<String, String>();
-	
-			static {
-				StringTokenizer st = new StringTokenizer(
-						"css		text/css " +
-								"htm		text/html " +
-								"html		text/html " +
-								"xml		text/xml " +
-								"txt		text/plain " +
-								"asc		text/plain " +
-								"gif		image/gif " +
-								"jpg		image/jpeg " +
-								"jpeg		image/jpeg " +
-								"png		image/png " +
-								"mp3		audio/mpeg " +
-								"mov		audio/quicktime " +
-								"m3u		audio/mpeg-url " +
-								"mp4		video/mp4 " +
-								"ogv		video/ogg " +
-								"flv		video/x-flv " +
-								"mov		video/quicktime " +
-								"swf		application/x-shockwave-flash " +
-								"js			application/javascript " +
-								"pdf		application/pdf " +
-								"doc		application/msword " +
-								"ogg		application/x-ogg " +
-								"zip		application/octet-stream " +
-								"exe		application/octet-stream " +
-								"class		application/octet-stream ");
-				while (st.hasMoreTokens()) {
-					theMimeTypes.put(st.nextToken(), st.nextToken());
-				}
-			}
-		}
-	}
-
 	private static final int fsPort = 4452;
 
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
@@ -1394,7 +789,7 @@ System.out.println("DirObj::getFiles() - " + path);
 
 		  try {
 			CommandLine cmd = new DefaultParser().parse(options, args);
-			port = cmd.getOptionValue("p", "4451");
+			port = cmd.getOptionValue("p", "4420");
 
 			if (cmd.hasOption("h")) {
 		
@@ -1410,16 +805,6 @@ System.out.println("DirObj::getFiles() - " + path);
 		  }
 		}
     
-		try {
-			//NioFileServerWithStreamingVideoAndPartialContent.startServer(fsPort);
-			JdkHttpServerFactory.createHttpServer(new URI(
-					"http://localhost:" + fsPort + "/"), new ResourceConfig(
-					StreamingFileServer.class));
-		} catch (Exception e) {
-			//e.printStackTrace();
-                        System.out.println("Port already listened on 2.");
-			System.exit(-1);
-		}
 		try {
 			JdkHttpServerFactory.createHttpServer(new URI(
 					"http://localhost:" + port + "/"), new ResourceConfig(

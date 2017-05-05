@@ -14,6 +14,7 @@
 <script src="http://netgear.rohidekar.com/yurl/js/imagezoom.ssarnobat.js"></script>
 <script>
 
+var host = "http://netgear.rohidekar.com";
 var urlBase = "http://netgear.rohidekar.com:44451/cmsfs/";
 var limit;
 var limitRoot = 200;
@@ -32,7 +33,7 @@ $(document).ready(function(){
 
 	updateURLIfEmpty();
 
-	$.getJSON(urlBase + "/list?dirs=" + encodeURIComponent($("#locations").val()) + "&limit=" + limit + "&depth=" + depth,function(response) {
+	$.getJSON(host + ":44420/cmsfs/list?dirs=" + encodeURIComponent($("#locations").val()) + "&limit=" + limit + "&depth=" + depth,function(response) {
 		$('#status').append("File list obtained. Creating tags...");
 		$('#items').empty();
 		addSubdirLinks(response);
