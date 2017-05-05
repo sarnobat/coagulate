@@ -247,6 +247,7 @@ public class Coagulate {
 		}
 	}
 	
+	@Deprecated
 	// Note - two slashes will fail
 	@javax.ws.rs.Path("{filePath : .+}")
 	public static class StreamingFileServer { // Must be public
@@ -312,6 +313,7 @@ public class Coagulate {
 		}
 	}
 
+	@Deprecated
 	private static class PartialContentServer {
 		static Response buildStream(final File asset, final String range, String contentType) throws Exception {
 //			System.out.println("Coagulate.PartialContentServer.buildStream() 0");
@@ -403,6 +405,7 @@ public class Coagulate {
 
 	}
 
+	@Deprecated
 	private static class RecursiveLimitByTotal2 {
 
 		static JsonObject getDirectoryHierarchies(String iDirectoryPathsString, int iLimit, Integer iDepth) {
@@ -949,6 +952,7 @@ System.out.println("DirObj::getFiles() - " + path);
 		}
 	}
 
+	@Deprecated
 	private static class Mappings {
 		
 		private static final Function<Path, JsonObject> PATH_TO_JSON_ITEM = new Function<Path, JsonObject>() {
@@ -1372,6 +1376,7 @@ System.out.println("DirObj::getFiles() - " + path);
 		}
 	}
 
+	@Deprecated
 	private static final int fsPort = 4452;
 
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
@@ -1410,16 +1415,16 @@ System.out.println("DirObj::getFiles() - " + path);
 		  }
 		}
     
-		try {
-			//NioFileServerWithStreamingVideoAndPartialContent.startServer(fsPort);
-			JdkHttpServerFactory.createHttpServer(new URI(
-					"http://localhost:" + fsPort + "/"), new ResourceConfig(
-					StreamingFileServer.class));
-		} catch (Exception e) {
-			//e.printStackTrace();
-                        System.out.println("Port already listened on 2.");
-			System.exit(-1);
-		}
+//		try {
+//			//NioFileServerWithStreamingVideoAndPartialContent.startServer(fsPort);
+//			JdkHttpServerFactory.createHttpServer(new URI(
+//					"http://localhost:" + fsPort + "/"), new ResourceConfig(
+//					StreamingFileServer.class));
+//		} catch (Exception e) {
+//			//e.printStackTrace();
+//                        System.out.println("Port already listened on 2.");
+//			System.exit(-1);
+//		}
 		try {
 			JdkHttpServerFactory.createHttpServer(new URI(
 					"http://localhost:" + port + "/"), new ResourceConfig(
