@@ -19,10 +19,17 @@ public class FileToImage {
 				String out;
 				if (line.contains("_thumbnails")) {
 					out = line;
-				} else if (line.contains(".mkv") || line.contains(".mp4") || line.contains(".flv") || line.contains(".mpg") || line.contains(".avi")) {
+				} else if (line.contains(".webm") || line.contains(".mkv") || line.contains(".mp4") || line.contains(".flv") || line.contains(".mpg") || line.contains(".avi")) {
 					Path p = Paths.get(line);
 					Path parent = p.getParent();
-					out = parent.toString() + "/_thumbnails/" + FilenameUtils.getBaseName(line) + ".jpg";
+					out = parent.toString() + "/_thumbnails/" + FilenameUtils.getName(line) + ".jpg";
+					
+//					if (line.endsWith(".mp4 .mkv")) {
+						if (!out.contains(".mp4 .mkv")) {
+							System.out.println("[ERROR] FileToImage.main() - FilenameUtils.getName(line) = " + FilenameUtils.getName(line));
+							System.out.println("[ERROR] FileToImage.main() - p.getFileName().toString() = " + p.getFileName().toString());
+						}
+//					}
 				} else {
 					out = line;
 				}
