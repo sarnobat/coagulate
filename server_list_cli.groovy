@@ -69,7 +69,7 @@ public class CoagulateListCLI {
 	public static class MyResource { // Must be public
 
 		public MyResource() {
-			System.out.println("Coagulate.MyResource.MyResource()");
+			System.err.println("Coagulate.MyResource.MyResource()");
 		}
 
 		//
@@ -83,7 +83,7 @@ public class CoagulateListCLI {
 				@QueryParam("limit") String iLimit,
 				@QueryParam("depth") Integer iDepth) throws JSONException,
 				IOException {
-			System.out.println("list() - begin: " + iDirectoryPathsString
+			System.err.println("list() - begin: " + iDirectoryPathsString
 					+ ", depth = " + iDepth);
 			try {
 				// To create JSONObject, do new
@@ -92,7 +92,7 @@ public class CoagulateListCLI {
 				JsonObject response = RecursiveLimitByTotal2
 						.getDirectoryHierarchies(iDirectoryPathsString,
 								Integer.parseInt(iLimit), iDepth);
-				System.out.println("list() - end");
+				System.err.println("list() - end");
 				return Response.ok().header("Access-Control-Allow-Origin", "*")
 						.entity(response.toString()).type("application/json")
 						.build();
@@ -129,18 +129,18 @@ public class CoagulateListCLI {
 			while (totalFiles(allDirsAccumulated) < iLimit) {
 				boolean noMoreFilesToRead = false;
 				for (String aDirectoryPath1 : iDirectoryPaths) {
-					System.out.println("createFilesJsonRecursiveNew() - "
+					System.err.println("createFilesJsonRecursiveNew() - "
 							+ aDirectoryPath1);
 					String aDirectoryPath = aDirectoryPath1.trim();
 					if (dirPathsFullyRead.contains(aDirectoryPath)) {
 						continue;
 					}
 					Set<FileObj> filesAlreadyAdded = getFiles(allDirsAccumulated);
-					System.out.println("createFilesJsonRecursiveNew() - 3");
+					System.err.println("createFilesJsonRecursiveNew() - 3");
 					DirPair newFiles = new PathToDirPair(
 							getFilePaths(filesAlreadyAdded), iDepth, iLimit)
 							.apply(aDirectoryPath);
-					System.out.println("createFilesJsonRecursiveNew() - 4");
+					System.err.println("createFilesJsonRecursiveNew() - 4");
 					allDirsAccumulated.add(newFiles);
 					if (getFiles(newFiles.getDirObj()).size() == 0) {
 						dirPathsFullyRead.add(aDirectoryPath);
@@ -149,7 +149,7 @@ public class CoagulateListCLI {
 							break;
 						}
 					}
-					System.out.println("createFilesJsonRecursiveNew() - 5");
+					System.err.println("createFilesJsonRecursiveNew() - 5");
 					int totalFiles = totalFiles(allDirsAccumulated);
 					if (totalFiles > iLimit) {
 						break;
@@ -159,13 +159,13 @@ public class CoagulateListCLI {
 					break;
 				}
 			}
-			System.out.println("createFilesJsonRecursiveNew() - 10");
+			System.err.println("createFilesJsonRecursiveNew() - 10");
 			Multimap<String, DirObj> unmerged = toMultiMap(allDirsAccumulated);
 			Map<String, DirObj> merged = mergeHierarhcies(unmerged);
 
 			JsonObjectBuilder jsonObject = Json.createObjectBuilder();
 			for (String dirPath : merged.keySet()) {
-				System.out.println("createFilesJsonRecursiveNew() - 11 "
+				System.err.println("createFilesJsonRecursiveNew() - 11 "
 						+ dirPath);
 				DirObj dirObj = merged.get(dirPath);
 				JSONObject json = new JSONObject(dirObj.json().toString());
@@ -424,7 +424,7 @@ public class CoagulateListCLI {
 
 			@Override
 			public DirPair apply(String input) {
-				System.out.println("PathToDirPair::apply() - " + input);
+				System.err.println("PathToDirPair::apply() - " + input);
 				DirObj dirObj = new PathToDirObj(_filesAlreadyObtained, depth,
 						_limit).apply(input);
 				return new DirPair(input, dirObj);
@@ -465,7 +465,7 @@ public class CoagulateListCLI {
 					int maxDepth, int iLimit, int dipNumber,
 					boolean isTopLevel, int depth)
 					throws CannotDipIntoDirException {
-				System.out.println("dipIntoDirRecursive() - " + iDirectoryPath);
+				System.err.println("dipIntoDirRecursive() - 1 " + iDirectoryPath);
 				JsonObjectBuilder dirHierarchyJson = Json.createObjectBuilder();
 				Set<String> filesToIgnoreAtLevel = new HashSet<String>();
 				// Sanity check
@@ -481,6 +481,7 @@ public class CoagulateListCLI {
 						fileAbsolutePathsToIgnore, iLimit, filesToIgnoreAtLevel)
 						.entrySet();
 				for (Entry<String, JsonObject> e : entrySet) {
+					System.err.println("dipIntoDirRecursive() - 2 " + iDirectoryPath);
 					dirHierarchyJson.add(e.getKey(), e.getValue());
 				}
 
@@ -493,6 +494,8 @@ public class CoagulateListCLI {
 						JsonObjectBuilder dirsJson = Json.createObjectBuilder();
 						for (Path p : getSubPaths(iDirectoryPath,
 								Predicates.IS_DIRECTORY)) {
+								
+							System.err.println("dipIntoDirRecursive() - 3 " + iDirectoryPath);
 							JsonObject contentsRecursive = dipIntoDirRecursive(
 									p, filesPerLevel,
 									fileAbsolutePathsToIgnore, --maxDepth,
@@ -548,7 +551,7 @@ public class CoagulateListCLI {
 					Path iDirectoryPath, int filesPerLevel,
 					Set<String> filesToIgnore, int iLimit,
 					Set<String> filesToIgnoreAtLevel) {
-				System.out
+				System.err
 						.println("getFilesInsideDir()  1 - " + iDirectoryPath);
 				ImmutableMap.Builder<String, JsonObject> filesInDir = ImmutableMap
 						.builder();
@@ -562,7 +565,7 @@ public class CoagulateListCLI {
 									Predicates.IS_FILE)).filter(not(predicate))
 							.filter(Predicates.IS_DISPLAYABLE).toSet()) {
 						String absolutePath = p.toAbsolutePath().toString();
-						System.out.println("getFilesInsideDir()  2 - "
+						System.err.println("getFilesInsideDir()  2 - "
 								+ absolutePath);
 						filesInDir.put(absolutePath,
 								Mappings.PATH_TO_JSON_ITEM.apply(p));
@@ -607,7 +610,7 @@ public class CoagulateListCLI {
 						.builder();
 				for (String path : FluentIterable.from(dirJson.keySet())
 						.filter(not(DIRS)).toSet()) {
-					System.out.println("DirObj::getFiles() - " + path);
+					System.err.println("DirObj::getFiles() - " + path);
 					JsonObject fileJson = dirJson.getJsonObject(path);
 					ret.put(path, new FileObj(fileJson));
 				}
@@ -870,10 +873,32 @@ public class CoagulateListCLI {
 			NoSuchAlgorithmException, KeyStoreException, CertificateException,
 			InterruptedException {
 
-		String line = "/sarnobat.garagebandbroken/trash/favorites/ind/";
-		JsonObject response = RecursiveLimitByTotal2.getDirectoryHierarchies(
-				line, 100, 1);
-		System.out.println(new JSONObject(response.toString()).toString(2));
+
+		BufferedReader br = null;
+		try {
+		  br = new BufferedReader(new InputStreamReader(System.in));
+		  String line;
+		  while ((line = br.readLine()) != null) {
+			// log message
+			System.err.println("[DEBUG] current line is: " + line);
+			// program output
+			JsonObject response = RecursiveLimitByTotal2.getDirectoryHierarchies(
+					line, 100, 1);
+			System.out.println(new JSONObject(response.toString()).toString(2));
+		  }
+		} catch (IOException e) {
+		  e.printStackTrace();
+		} finally {
+		  if (br != null) {
+			try {
+			  br.close();
+			} catch (IOException e) {
+			  e.printStackTrace();
+			}
+		  }
+		}
+
+
 
 	}
 }
