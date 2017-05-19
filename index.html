@@ -825,7 +825,7 @@ function fileObjToHtml(fileObj) {
 			if (matchesVideo != null) {
 				toBeAppended += '<img src=\"' +thumbnailUrl+'\">';
 				toBeAppended += '<video width="400" controls>';
-				toBeAppended += '<source src="' +  httpUrl
+				toBeAppended += '<source src="' +  httpUrl.replace('netgear', 'netgear' + getRandom(1,100))
 				+ '#t=30" type="video/mp4">';
 				toBeAppended += '</video>';
 			}
@@ -838,6 +838,10 @@ function fileObjToHtml(fileObj) {
 		}
 	}	
 	return toBeAppended;
+}
+
+function getRandom(min, max) {
+    return min + Math.floor(Math.random() * (max - min + 1));
 }
 
 function dirObjToHtml2(dirObj) {
