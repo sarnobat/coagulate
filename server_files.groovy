@@ -1,3 +1,4 @@
+import java.nio.charset.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -88,14 +89,37 @@ public class CoagulateFileServer {
 	    public Response streamFile(
 	    		@PathParam("filePath") String filePath1,
 	    		@HeaderParam("Range") String range) throws Exception {
-	    	System.out.println("Coagulate.StreamingFileServer.streamFile() 1");
+
+    Charset utf8Charset = Charset.forName("UTF-8");
+    Charset defaultCharset = Charset.defaultCharset();
+//     System.out.println("defaultCharset = " + defaultCharset);
+// 
+//     String unicodeMessage =
+//             "\u4e16\u754c\u4f60\u597d\uff01";
+// 
+//     byte[] sourceBytes = unicodeMessage.getBytes("UTF-8");
+//     String data = new String(sourceBytes , defaultCharset.name());
+// System.out.println("unicodeMessage = " + unicodeMessage);
+// System.out.println("data = " + data);
+	    	System.out.println("Coagulate.StreamingFileServer.streamFile() 1: " + filePath1);
 	        File audio;
 	        String filePath = filePath1;
+				System.out.println("Coagulate.StreamingFileServer.streamFile() 1.1: " + filePath1);
 	        if (!filePath1.startsWith("/")) {
+				System.out.println("Coagulate.StreamingFileServer.streamFile() 1.2: " + filePath1);
 	        	filePath  = "/"+filePath1;
 	        }
-	        audio = Paths.get("/"+filePath).toFile();
-			System.out.println("Coagulate.MediaResource.streamVideo() " + filePath);
+			System.out.println("Coagulate.StreamingFileServer.streamFile() 1.3: " + filePath);
+			Path p;
+			try {
+				p = Paths.get(filePath);
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw e;
+			}
+			System.out.println("Coagulate.StreamingFileServer.streamFile() 1.4: " + p);
+			audio = p.toFile();
+			System.out.println("Coagulate.StreamingFileServer.streamFile() 1.4: " + audio);
 	        return PartialContentServer.buildStream(audio, range, getMimeType(audio));
 	    }	
 	    
@@ -129,6 +153,7 @@ public class CoagulateFileServer {
 							"mp3		audio/mpeg " +
 							"m3u		audio/mpeg-url " +
 							"mp4		video/mp4 " +
+							"webm       video/webm " +
 							"ogv		video/ogg " +
 							"flv		video/x-flv " +
 							"mov		video/quicktime " +
@@ -148,33 +173,57 @@ public class CoagulateFileServer {
 
 	private static class PartialContentServer {
 		static Response buildStream(final File asset, final String range, String contentType) throws Exception {
-//			System.out.println("Coagulate.PartialContentServer.buildStream() 0");
+			System.out.println("Coagulate.PartialContentServer.buildStream() 0");
+			
+			if (Paths.get("/home/sarnobat/trash/Coreografía.txt").toFile().exists()) {
+				System.out.println("Coagulate.PartialContentServer.buildStream() test file exists");
+			} else {
+				System.out.println("Coagulate.PartialContentServer.buildStream() test file doesn't exist");
+			}
+		if (!asset.exists()) {
+			System.out.println("Coagulate.PartialContentServer.buildStream() file doesn't exist: " + asset);
+	return Response.fail().status(404).build();
+}
+			System.out.println("Coagulate.PartialContentServer.buildStream() file exists: " + asset);
+
 	        if (range == null) {
-//	        	System.out.println("Coagulate.PartialContentServer.buildStream() 1");
+	        	System.out.println("Coagulate.PartialContentServer.buildStream() 1");
 	            StreamingOutput streamer = new StreamingOutput() {
 	                @Override
 	                public void write(OutputStream output) throws IOException, WebApplicationException {
-//System.out
-//		.println("Coagulate.PartialContentServer.buildStream(...).new StreamingOutput() {...}.write() 1");
-	                    @SuppressWarnings("resource")
-						FileChannel inputChannel = new FileInputStream(asset).getChannel();
+System.out
+		.println("Coagulate.PartialContentServer.buildStream(...).new StreamingOutput() {...}.write()  asset = " + asset);
+	       //             @SuppressWarnings("resource")
+				FileChannel inputChannel;
+				try {
+					inputChannel = new FileInputStream(asset).getChannel();
+} catch (Exception e) {
+	System.out.println(e);
+	e.printStackTrace();
+	throw e;
+}
+			    System.out.println("output = " + output);
 	                    WritableByteChannel outputChannel = Channels.newChannel(output);
 	                    try {
-//	                    	System.out
-//									.println("Coagulate.PartialContentServer.buildStream(...).new StreamingOutput() {...}.write() 2");
+	                    	System.out.println("Coagulate.PartialContentServer.buildStream(...).new StreamingOutput() {...}.write() 2");
 	                        inputChannel.transferTo(0, inputChannel.size(), outputChannel);
-	                    } finally {
+	                    } catch (Exception e) {
+				e.printStackTrace();
+				System.out.println(e);
+			    } finally {
 	                        // closing the channels
 	                        inputChannel.close();
 	                        outputChannel.close();
+				System.out.println("Channels closed");
 	                    }
 	                }
 	            };
-//	            System.out.println("Coagulate.PartialContentServer.buildStream() 11");
-	            return Response.ok(streamer).status(200).header(HttpHeaders.CONTENT_LENGTH, asset.length()).header(HttpHeaders.CONTENT_TYPE, contentType).build();
+	            System.out.println("Coagulate.PartialContentServer.buildStream() returning status 200");
+	            Response r =  Response.ok(streamer).status(200).header(HttpHeaders.CONTENT_LENGTH, asset.length()).header(HttpHeaders.CONTENT_TYPE, contentType).build();
+		    return r;
 	        }
 
-//	        System.out.println("Coagulate.PartialContentServer.buildStream() 2");
+	        System.out.println("Coagulate.PartialContentServer.buildStream() 2");
 	        String[] ranges = range.split("=")[1].split("-");
 	        int from = Integer.parseInt(ranges[0]);
 	        /**
@@ -374,6 +423,7 @@ public class CoagulateFileServer {
 								"m3u		audio/mpeg-url " +
 								"mp4		video/mp4 " +
 								"ogv		video/ogg " +
+								"webm		video/webm " +
 								"flv		video/x-flv " +
 								"mov		video/quicktime " +
 								"swf		application/x-shockwave-flash " +
@@ -427,7 +477,7 @@ public class CoagulateFileServer {
 			System.exit(-1);
 		  }
 		}
-    
+
 		try {
 			//NioFileServerWithStreamingVideoAndPartialContent.startServer(fsPort);
 			JdkHttpServerFactory.createHttpServer(new URI(
