@@ -101,15 +101,15 @@ public class CoagulateFileServer {
 //     String data = new String(sourceBytes , defaultCharset.name());
 // System.out.println("unicodeMessage = " + unicodeMessage);
 // System.out.println("data = " + data);
-	    	System.out.println("Coagulate.StreamingFileServer.streamFile() 1: " + filePath1);
+// 	    	System.out.println("Coagulate.StreamingFileServer.streamFile() 1: " + filePath1);
 	        File audio;
 	        String filePath = filePath1;
-				System.out.println("Coagulate.StreamingFileServer.streamFile() 1.1: " + filePath1);
+// 				System.out.println("Coagulate.StreamingFileServer.streamFile() 1.1: " + filePath1);
 	        if (!filePath1.startsWith("/")) {
-				System.out.println("Coagulate.StreamingFileServer.streamFile() 1.2: " + filePath1);
+// 				System.out.println("Coagulate.StreamingFileServer.streamFile() 1.2: " + filePath1);
 	        	filePath  = "/"+filePath1;
 	        }
-			System.out.println("Coagulate.StreamingFileServer.streamFile() 1.3: " + filePath);
+// 			System.out.println("Coagulate.StreamingFileServer.streamFile() 1.3: " + filePath);
 			Path p;
 			try {
 				p = Paths.get(filePath);
@@ -117,9 +117,9 @@ public class CoagulateFileServer {
 				e.printStackTrace();
 				throw e;
 			}
-			System.out.println("Coagulate.StreamingFileServer.streamFile() 1.4: " + p);
+// 			System.out.println("Coagulate.StreamingFileServer.streamFile() 1.4: " + p);
 			audio = p.toFile();
-			System.out.println("Coagulate.StreamingFileServer.streamFile() 1.4: " + audio);
+// 			System.out.println("Coagulate.StreamingFileServer.streamFile() 1.4: " + audio);
 	        return PartialContentServer.buildStream(audio, range, getMimeType(audio));
 	    }	
 	    
@@ -129,7 +129,7 @@ public class CoagulateFileServer {
 			String extension = FilenameUtils.getExtension(path.getFileName().toString())
 					.toLowerCase();
 			mimeType = theMimeTypes.get(extension);
-			System.out.println("Coagulate.FileServerNio.HttpFileHandler.serveFileStreaming() mimetype = " + mimeType);
+// 			System.out.println("Coagulate.FileServerNio.HttpFileHandler.serveFileStreaming() mimetype = " + mimeType);
 			return mimeType;
 		}
 		
@@ -173,10 +173,10 @@ public class CoagulateFileServer {
 
 	private static class PartialContentServer {
 		static Response buildStream(final File asset, final String range, String contentType) throws Exception {
-			System.out.println("Coagulate.PartialContentServer.buildStream() 0");
+// 			System.out.println("Coagulate.PartialContentServer.buildStream() 0");
 			
 			if (Paths.get("/home/sarnobat/trash/Coreografía.txt").toFile().exists()) {
-				System.out.println("Coagulate.PartialContentServer.buildStream() test file exists");
+// 				System.out.println("Coagulate.PartialContentServer.buildStream() test file exists");
 			} else {
 				System.out.println("Coagulate.PartialContentServer.buildStream() test file doesn't exist");
 			}
@@ -184,15 +184,15 @@ public class CoagulateFileServer {
 			System.out.println("Coagulate.PartialContentServer.buildStream() file doesn't exist: " + asset);
 	return Response.fail().status(404).build();
 }
-			System.out.println("Coagulate.PartialContentServer.buildStream() file exists: " + asset);
+// 			System.out.println("Coagulate.PartialContentServer.buildStream() file exists: " + asset);
 
 	        if (range == null) {
-	        	System.out.println("Coagulate.PartialContentServer.buildStream() 1");
+// 	        	System.out.println("Coagulate.PartialContentServer.buildStream() 1");
 	            StreamingOutput streamer = new StreamingOutput() {
 	                @Override
 	                public void write(OutputStream output) throws IOException, WebApplicationException {
-System.out
-		.println("Coagulate.PartialContentServer.buildStream(...).new StreamingOutput() {...}.write()  asset = " + asset);
+// System.out
+// 		.println("Coagulate.PartialContentServer.buildStream(...).new StreamingOutput() {...}.write()  asset = " + asset);
 	       //             @SuppressWarnings("resource")
 				FileChannel inputChannel;
 				try {
@@ -202,10 +202,10 @@ System.out
 	e.printStackTrace();
 	throw e;
 }
-			    System.out.println("output = " + output);
+// 			    System.out.println("output = " + output);
 	                    WritableByteChannel outputChannel = Channels.newChannel(output);
 	                    try {
-	                    	System.out.println("Coagulate.PartialContentServer.buildStream(...).new StreamingOutput() {...}.write() 2");
+// 	                    	System.out.println("Coagulate.PartialContentServer.buildStream(...).new StreamingOutput() {...}.write() 2");
 	                        inputChannel.transferTo(0, inputChannel.size(), outputChannel);
 	                    } catch (Exception e) {
 				e.printStackTrace();
