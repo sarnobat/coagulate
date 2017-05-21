@@ -137,7 +137,9 @@ public class CoagulateFileServer {
 				System.out.println("Coagulate.PartialContentServer.buildStream() test file doesn't exist");
 			}
 			if (!asset.exists()) {
-				System.out.println("Coagulate.PartialContentServer.buildStream() file doesn't exist: " + asset);
+				if (!asset.getAbsolutePath().contains("thumbnail")) {
+					System.out.println("Coagulate.PartialContentServer.buildStream() file doesn't exist: " + asset);
+				}
 				return Response.status(404).build();
 			}
 
@@ -160,7 +162,9 @@ public class CoagulateFileServer {
 					    } finally {
 	                        // closing the channels
 	                        inputChannel.close();
-	                        outputChannel.close();
+	                        if (outputChannel.isOpen()) {
+	                        	outputChannel.close();
+	                        }
 	                    }
 	                }
 	            };
