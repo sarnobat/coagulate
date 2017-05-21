@@ -92,24 +92,11 @@ public class CoagulateFileServer {
 
     Charset utf8Charset = Charset.forName("UTF-8");
     Charset defaultCharset = Charset.defaultCharset();
-//     System.out.println("defaultCharset = " + defaultCharset);
-// 
-//     String unicodeMessage =
-//             "\u4e16\u754c\u4f60\u597d\uff01";
-// 
-//     byte[] sourceBytes = unicodeMessage.getBytes("UTF-8");
-//     String data = new String(sourceBytes , defaultCharset.name());
-// System.out.println("unicodeMessage = " + unicodeMessage);
-// System.out.println("data = " + data);
-// 	    	System.out.println("Coagulate.StreamingFileServer.streamFile() 1: " + filePath1);
 	        File audio;
 	        String filePath = filePath1;
-// 				System.out.println("Coagulate.StreamingFileServer.streamFile() 1.1: " + filePath1);
 	        if (!filePath1.startsWith("/")) {
-// 				System.out.println("Coagulate.StreamingFileServer.streamFile() 1.2: " + filePath1);
 	        	filePath  = "/"+filePath1;
 	        }
-// 			System.out.println("Coagulate.StreamingFileServer.streamFile() 1.3: " + filePath);
 			Path p;
 			try {
 				p = Paths.get(filePath);
@@ -117,9 +104,7 @@ public class CoagulateFileServer {
 				e.printStackTrace();
 				throw e;
 			}
-// 			System.out.println("Coagulate.StreamingFileServer.streamFile() 1.4: " + p);
 			audio = p.toFile();
-// 			System.out.println("Coagulate.StreamingFileServer.streamFile() 1.4: " + audio);
 	        return PartialContentServer.buildStream(audio, range, getMimeType(audio));
 	    }	
 	    
@@ -129,7 +114,6 @@ public class CoagulateFileServer {
 			String extension = FilenameUtils.getExtension(path.getFileName().toString())
 					.toLowerCase();
 			mimeType = theMimeTypes.get(extension);
-// 			System.out.println("Coagulate.FileServerNio.HttpFileHandler.serveFileStreaming() mimetype = " + mimeType);
 			return mimeType;
 		}
 		
