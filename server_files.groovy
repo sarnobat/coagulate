@@ -62,7 +62,7 @@ public class CoagulateFileServer {
 	    public Response streamFile(
 	    		@PathParam("filePath") String filePath1,
 	    		@HeaderParam("Range") String range) throws Exception {
-
+System.out.println("Request: " + filePath1);
 	        File audio;
 	        String filePath = filePath1;
 	        if (!filePath1.startsWith("/")) {
