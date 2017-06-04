@@ -76,6 +76,7 @@ System.out.println("Request: " + filePath1);
 				throw e;
 			}
 			audio = p.toFile();
+System.out.println("audio: " + audio);
 	        return PartialContentServer.buildStream(audio, range, getMimeType(audio));
 	    }	
 	    
@@ -235,6 +236,7 @@ System.out.println("Request: " + filePath1);
 	}
 
 	private static String fsPort ;
+	private static String fsPort2 ;
 
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
 
@@ -251,11 +253,15 @@ System.out.println("Request: " + filePath1);
 
 		  // This doesn't work with java 7
 		  // "hasarg" is needed when the option takes a value
-		  options.addOption(Option.builder("p").longOpt("port").hasArg().required().build());
+		  options
+			  .addOption(Option.builder("p").longOpt("port").hasArg().required().build())
+			  .addOption(Option.builder("p2").longOpt("port2").hasArg().required().build())
+			  ;
 
 		  try {
 			CommandLine cmd = new DefaultParser().parse(options, args);
 			fsPort = cmd.getOptionValue("p", "4452");
+			fsPort2 = cmd.getOptionValue("p2", "4453");
 
 			if (cmd.hasOption("h")) {
 		
@@ -271,13 +277,31 @@ System.out.println("Request: " + filePath1);
 		  }
 		}
 
+		new Thread() {
+
+			@Override
+			public void run() {
+				try {
+					//NioFileServerWithStreamingVideoAndPartialContent.startServer(fsPort);
+					JdkHttpServerFactory.createHttpServer(new URI(
+							"http://localhost:" + fsPort + "/"), new ResourceConfig(
+							StreamingFileServer.class));
+				} catch (Exception e) {
+					e.printStackTrace();
+		                        System.out.println("Port already listened on 1.");
+					System.exit(-1);
+				}
+			}
+			 
+			
+		}.start();
 		try {
 			//NioFileServerWithStreamingVideoAndPartialContent.startServer(fsPort);
 			JdkHttpServerFactory.createHttpServer(new URI(
-					"http://localhost:" + fsPort + "/"), new ResourceConfig(
+					"http://localhost:" + fsPort2 + "/"), new ResourceConfig(
 					StreamingFileServer.class));
 		} catch (Exception e) {
-			//e.printStackTrace();
+			e.printStackTrace();
                         System.out.println("Port already listened on 2.");
 			System.exit(-1);
 		}
