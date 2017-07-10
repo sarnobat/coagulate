@@ -1,0 +1,600 @@
+{"itemsRecursive": {"/home/sarnobat/github/coagulate": {
+  "/home/sarnobat/github/coagulate/log4j.properties": {
+    "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/log4j.properties",
+    "location": "/home/sarnobat/github/coagulate",
+    "created": 1489313233000,
+    "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
+    "fileSystem": "/home/sarnobat/github/coagulate/log4j.properties"
+  },
+  "/home/sarnobat/github/coagulate/slf4j-log4j12-1.7.12.jar": {
+    "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/slf4j-log4j12-1.7.12.jar",
+    "location": "/home/sarnobat/github/coagulate",
+    "created": 1489313233000,
+    "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
+    "fileSystem": "/home/sarnobat/github/coagulate/slf4j-log4j12-1.7.12.jar"
+  },
+  "/home/sarnobat/github/coagulate/server_files.groovy": {
+    "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/server_files.groovy",
+    "location": "/home/sarnobat/github/coagulate",
+    "created": 1496545095000,
+    "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
+    "fileSystem": "/home/sarnobat/github/coagulate/server_files.groovy"
+  },
+  "/home/sarnobat/github/coagulate/slf4j-api-1.7.12.jar": {
+    "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/slf4j-api-1.7.12.jar",
+    "location": "/home/sarnobat/github/coagulate",
+    "created": 1489313233000,
+    "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
+    "fileSystem": "/home/sarnobat/github/coagulate/slf4j-api-1.7.12.jar"
+  },
+  "/home/sarnobat/github/coagulate/cache_create.sh": {
+    "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/cache_create.sh",
+    "location": "/home/sarnobat/github/coagulate",
+    "created": 1494906866000,
+    "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
+    "fileSystem": "/home/sarnobat/github/coagulate/cache_create.sh"
+  },
+  "/home/sarnobat/github/coagulate/run.sh": {
+    "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/run.sh",
+    "location": "/home/sarnobat/github/coagulate",
+    "created": 1402977211000,
+    "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
+    "fileSystem": "/home/sarnobat/github/coagulate/run.sh"
+  },
+  "/home/sarnobat/github/coagulate/files.json": {
+    "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/files.json",
+    "location": "/home/sarnobat/github/coagulate",
+    "created": 1489313232000,
+    "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
+    "fileSystem": "/home/sarnobat/github/coagulate/files.json"
+  },
+  "/home/sarnobat/github/coagulate/server_list_cli.groovy": {
+    "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/server_list_cli.groovy",
+    "location": "/home/sarnobat/github/coagulate",
+    "created": 1494905081000,
+    "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
+    "fileSystem": "/home/sarnobat/github/coagulate/server_list_cli.groovy"
+  },
+  "/home/sarnobat/github/coagulate/response.sample.json": {
+    "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/response.sample.json",
+    "location": "/home/sarnobat/github/coagulate",
+    "created": 1489313233000,
+    "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
+    "fileSystem": "/home/sarnobat/github/coagulate/response.sample.json"
+  },
+  "subDirObjs": {
+    "/home/sarnobat/github/coagulate/.git": {
+      "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git",
+      "location": "/home/sarnobat/github/coagulate",
+      "created": 1499583690000,
+      "thumbnailUrl": "http://www.pd4pic.com/images/windows-vista-folder-directory-open-explorer.png",
+      "fileSystem": "/home/sarnobat/github/coagulate/.git"
+    },
+    "/home/sarnobat/github/coagulate/pipes": {
+      "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes",
+      "location": "/home/sarnobat/github/coagulate",
+      "created": 1493024093000,
+      "thumbnailUrl": "http://www.pd4pic.com/images/windows-vista-folder-directory-open-explorer.png",
+      "fileSystem": "/home/sarnobat/github/coagulate/pipes"
+    },
+    "/home/sarnobat/github/coagulate/jquery": {
+      "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/jquery",
+      "location": "/home/sarnobat/github/coagulate",
+      "created": 1489313232000,
+      "thumbnailUrl": "http://www.pd4pic.com/images/windows-vista-folder-directory-open-explorer.png",
+      "fileSystem": "/home/sarnobat/github/coagulate/jquery"
+    },
+    "/home/sarnobat/github/coagulate/version1": {
+      "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/version1",
+      "location": "/home/sarnobat/github/coagulate",
+      "created": 1489313233000,
+      "thumbnailUrl": "http://www.pd4pic.com/images/windows-vista-folder-directory-open-explorer.png",
+      "fileSystem": "/home/sarnobat/github/coagulate/version1"
+    },
+    "/home/sarnobat/github/coagulate/image_geotags_pipes": {
+      "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+      "location": "/home/sarnobat/github/coagulate",
+      "created": 1491021589000,
+      "thumbnailUrl": "http://www.pd4pic.com/images/windows-vista-folder-directory-open-explorer.png",
+      "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes"
+    },
+    "/home/sarnobat/github/coagulate/trash": {
+      "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/trash",
+      "location": "/home/sarnobat/github/coagulate",
+      "created": 1489313233000,
+      "thumbnailUrl": "http://www.pd4pic.com/images/windows-vista-folder-directory-open-explorer.png",
+      "fileSystem": "/home/sarnobat/github/coagulate/trash"
+    },
+    "/home/sarnobat/github/coagulate/mac": {
+      "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/mac",
+      "location": "/home/sarnobat/github/coagulate",
+      "created": 1489313233000,
+      "thumbnailUrl": "http://www.pd4pic.com/images/windows-vista-folder-directory-open-explorer.png",
+      "fileSystem": "/home/sarnobat/github/coagulate/mac"
+    },
+    "/home/sarnobat/github/coagulate/.groovy": {
+      "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.groovy",
+      "location": "/home/sarnobat/github/coagulate",
+      "created": 1446697364000,
+      "thumbnailUrl": "http://www.pd4pic.com/images/windows-vista-folder-directory-open-explorer.png",
+      "fileSystem": "/home/sarnobat/github/coagulate/.groovy"
+    }
+  },
+  "/home/sarnobat/github/coagulate/README.md": {
+    "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/README.md",
+    "location": "/home/sarnobat/github/coagulate",
+    "created": 1402977211000,
+    "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
+    "fileSystem": "/home/sarnobat/github/coagulate/README.md"
+  },
+  "/home/sarnobat/github/coagulate/server.groovy.beforeRemovingNano": {
+    "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/server.groovy.beforeRemovingNano",
+    "location": "/home/sarnobat/github/coagulate",
+    "created": 1489313233000,
+    "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
+    "fileSystem": "/home/sarnobat/github/coagulate/server.groovy.beforeRemovingNano"
+  },
+  "/home/sarnobat/github/coagulate/index.html.conflict": {
+    "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/index.html.conflict",
+    "location": "/home/sarnobat/github/coagulate",
+    "created": 1458519472000,
+    "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
+    "fileSystem": "/home/sarnobat/github/coagulate/index.html.conflict"
+  },
+  "/home/sarnobat/github/coagulate/server_list.groovy": {
+    "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/server_list.groovy",
+    "location": "/home/sarnobat/github/coagulate",
+    "created": 1494905534000,
+    "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
+    "fileSystem": "/home/sarnobat/github/coagulate/server_list.groovy"
+  },
+  "/home/sarnobat/github/coagulate/server.groovy": {
+    "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/server.groovy",
+    "location": "/home/sarnobat/github/coagulate",
+    "created": 1494298248000,
+    "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
+    "fileSystem": "/home/sarnobat/github/coagulate/server.groovy"
+  },
+  "/home/sarnobat/github/coagulate/server.groovy.20161026": {
+    "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/server.groovy.20161026",
+    "location": "/home/sarnobat/github/coagulate",
+    "created": 1489561326000,
+    "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
+    "fileSystem": "/home/sarnobat/github/coagulate/server.groovy.20161026"
+  },
+  "/home/sarnobat/github/coagulate/server_files_jetty.groovy": {
+    "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/server_files_jetty.groovy",
+    "location": "/home/sarnobat/github/coagulate",
+    "created": 1496544406000,
+    "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
+    "fileSystem": "/home/sarnobat/github/coagulate/server_files_jetty.groovy"
+  },
+  "/home/sarnobat/github/coagulate/thumbnailator-0.4.8.jar": {
+    "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/thumbnailator-0.4.8.jar",
+    "location": "/home/sarnobat/github/coagulate",
+    "created": 1489313233000,
+    "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
+    "fileSystem": "/home/sarnobat/github/coagulate/thumbnailator-0.4.8.jar"
+  },
+  "dirs": {
+    "/home/sarnobat/github/coagulate/.git": {
+      "/home/sarnobat/github/coagulate/.git/FETCH_HEAD": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git/FETCH_HEAD",
+        "location": "/home/sarnobat/github/coagulate/.git",
+        "created": 1499583689000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git",
+        "fileSystem": "/home/sarnobat/github/coagulate/.git/FETCH_HEAD"
+      },
+      "/home/sarnobat/github/coagulate/.git/COMMIT_EDITMSG": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git/COMMIT_EDITMSG",
+        "location": "/home/sarnobat/github/coagulate/.git",
+        "created": 1499583688000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git",
+        "fileSystem": "/home/sarnobat/github/coagulate/.git/COMMIT_EDITMSG"
+      },
+      "/home/sarnobat/github/coagulate/.git/ORIG_HEAD": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git/ORIG_HEAD",
+        "location": "/home/sarnobat/github/coagulate/.git",
+        "created": 1499583690000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git",
+        "fileSystem": "/home/sarnobat/github/coagulate/.git/ORIG_HEAD"
+      },
+      "/home/sarnobat/github/coagulate/.git/index": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git/index",
+        "location": "/home/sarnobat/github/coagulate/.git",
+        "created": 1499583688000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git",
+        "fileSystem": "/home/sarnobat/github/coagulate/.git/index"
+      },
+      "/home/sarnobat/github/coagulate/.git/config": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git/config",
+        "location": "/home/sarnobat/github/coagulate/.git",
+        "created": 1402977211000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git",
+        "fileSystem": "/home/sarnobat/github/coagulate/.git/config"
+      },
+      "/home/sarnobat/github/coagulate/.git/description": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git/description",
+        "location": "/home/sarnobat/github/coagulate/.git",
+        "created": 1402977208000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git",
+        "fileSystem": "/home/sarnobat/github/coagulate/.git/description"
+      },
+      "/home/sarnobat/github/coagulate/.git/HEAD": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git/HEAD",
+        "location": "/home/sarnobat/github/coagulate/.git",
+        "created": 1435380125000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git",
+        "fileSystem": "/home/sarnobat/github/coagulate/.git/HEAD"
+      },
+      "dirs": {
+        "/home/sarnobat/github/coagulate/.git/objects": {"dirs": {}},
+        "/home/sarnobat/github/coagulate/.git/logs": {"dirs": {}},
+        "/home/sarnobat/github/coagulate/.git/refs": {"dirs": {}},
+        "/home/sarnobat/github/coagulate/.git/info": {"dirs": {}},
+        "/home/sarnobat/github/coagulate/.git/hooks": {"dirs": {}}
+      },
+      "/home/sarnobat/github/coagulate/.git/packed-refs": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git/packed-refs",
+        "location": "/home/sarnobat/github/coagulate/.git",
+        "created": 1402977211000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git",
+        "fileSystem": "/home/sarnobat/github/coagulate/.git/packed-refs"
+      }
+    },
+    "/home/sarnobat/github/coagulate/pipes": {
+      "/home/sarnobat/github/coagulate/pipes/thumbnailForFile.groovy": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes/thumbnailForFile.groovy",
+        "location": "/home/sarnobat/github/coagulate/pipes",
+        "created": 1491202900000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/pipes/thumbnailForFile.groovy"
+      },
+      "/home/sarnobat/github/coagulate/pipes/file2buttonPanel.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes/file2buttonPanel.sh",
+        "location": "/home/sarnobat/github/coagulate/pipes",
+        "created": 1491186890000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/pipes/file2buttonPanel.sh"
+      },
+      "/home/sarnobat/github/coagulate/pipes/video2img.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes/video2img.sh",
+        "location": "/home/sarnobat/github/coagulate/pipes",
+        "created": 1489647669000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/pipes/video2img.sh"
+      },
+      "/home/sarnobat/github/coagulate/pipes/printsubdir_videos.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes/printsubdir_videos.sh",
+        "location": "/home/sarnobat/github/coagulate/pipes",
+        "created": 1489313849000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/pipes/printsubdir_videos.sh"
+      },
+      "/home/sarnobat/github/coagulate/pipes/file2buttonPanel.sh.old": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes/file2buttonPanel.sh.old",
+        "location": "/home/sarnobat/github/coagulate/pipes",
+        "created": 1489561326000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/pipes/file2buttonPanel.sh.old"
+      },
+      "/home/sarnobat/github/coagulate/pipes/server.groovy": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes/server.groovy",
+        "location": "/home/sarnobat/github/coagulate/pipes",
+        "created": 1494298248000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/pipes/server.groovy"
+      },
+      "/home/sarnobat/github/coagulate/pipes/file2image.groovy": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes/file2image.groovy",
+        "location": "/home/sarnobat/github/coagulate/pipes",
+        "created": 1491375694000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/pipes/file2image.groovy"
+      },
+      "/home/sarnobat/github/coagulate/pipes/file2img.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes/file2img.sh",
+        "location": "/home/sarnobat/github/coagulate/pipes",
+        "created": 1491183283000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/pipes/file2img.sh"
+      },
+      "/home/sarnobat/github/coagulate/pipes/img2buttonPanel.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes/img2buttonPanel.sh",
+        "location": "/home/sarnobat/github/coagulate/pipes",
+        "created": 1491185308000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/pipes/img2buttonPanel.sh"
+      },
+      "/home/sarnobat/github/coagulate/pipes/printsubdir.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes/printsubdir.sh",
+        "location": "/home/sarnobat/github/coagulate/pipes",
+        "created": 1489313233000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/pipes/printsubdir.sh"
+      },
+      "/home/sarnobat/github/coagulate/pipes/img2file.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes/img2file.sh",
+        "location": "/home/sarnobat/github/coagulate/pipes",
+        "created": 1489561326000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/pipes/img2file.sh"
+      },
+      "/home/sarnobat/github/coagulate/pipes/run.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes/run.sh",
+        "location": "/home/sarnobat/github/coagulate/pipes",
+        "created": 1492968639000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/pipes/run.sh"
+      },
+      "dirs": {
+        "/home/sarnobat/github/coagulate/pipes/image_geotags_pipes": {"dirs": {}},
+        "/home/sarnobat/github/coagulate/pipes/v1": {"dirs": {}}
+      },
+      "/home/sarnobat/github/coagulate/pipes/sortFiles.js": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes/sortFiles.js",
+        "location": "/home/sarnobat/github/coagulate/pipes",
+        "created": 1489561326000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/pipes/sortFiles.js"
+      },
+      "/home/sarnobat/github/coagulate/pipes/file2subfolders.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes/file2subfolders.sh",
+        "location": "/home/sarnobat/github/coagulate/pipes",
+        "created": 1489561326000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/pipes/file2subfolders.sh"
+      },
+      "/home/sarnobat/github/coagulate/pipes/imagezoom.hover.ssarnobat.js": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes/imagezoom.hover.ssarnobat.js",
+        "location": "/home/sarnobat/github/coagulate/pipes",
+        "created": 1481494794000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/pipes/imagezoom.hover.ssarnobat.js"
+      }
+    },
+    "/home/sarnobat/github/coagulate/jquery": {
+      "dirs": {},
+      "/home/sarnobat/github/coagulate/jquery/jquery-1.9.1.js": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/jquery/jquery-1.9.1.js",
+        "location": "/home/sarnobat/github/coagulate/jquery",
+        "created": 1489313232000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/jquery",
+        "fileSystem": "/home/sarnobat/github/coagulate/jquery/jquery-1.9.1.js"
+      }
+    },
+    "/home/sarnobat/github/coagulate/version1": {
+      "/home/sarnobat/github/coagulate/version1/webserver_json.groovy": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/version1/webserver_json.groovy",
+        "location": "/home/sarnobat/github/coagulate/version1",
+        "created": 1489313233000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/version1",
+        "fileSystem": "/home/sarnobat/github/coagulate/version1/webserver_json.groovy"
+      },
+      "/home/sarnobat/github/coagulate/version1/run.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/version1/run.sh",
+        "location": "/home/sarnobat/github/coagulate/version1",
+        "created": 1489313233000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/version1",
+        "fileSystem": "/home/sarnobat/github/coagulate/version1/run.sh"
+      },
+      "dirs": {}
+    },
+    "/home/sarnobat/github/coagulate/image_geotags_pipes": {
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/run.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/run.sh",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1489647689000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/run.sh"
+      },
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/exifsort.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/exifsort.sh",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1486368052000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/exifsort.sh"
+      },
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/exif_date.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/exif_date.sh",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1491179800000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/exif_date.sh"
+      },
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/.fuse_hidden0000a79600000001": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/.fuse_hidden0000a79600000001",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1489647689000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/.fuse_hidden0000a79600000001"
+      },
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/resultb": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/resultb",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1472065572000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/resultb"
+      },
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/htmlify.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/htmlify.sh",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1489647689000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/htmlify.sh"
+      },
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/resulta": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/resulta",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1472071075000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/resulta"
+      },
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/exif_current_dir.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/exif_current_dir.sh",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1477284562000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/exif_current_dir.sh"
+      },
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/geotags.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/geotags.sh",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1489647689000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/geotags.sh"
+      },
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/exif_gps.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/exif_gps.sh",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1491525320000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/exif_gps.sh"
+      },
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/.fuse_hidden0000a7a000000003": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/.fuse_hidden0000a7a000000003",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1489647689000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/.fuse_hidden0000a7a000000003"
+      },
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/.fuse_hidden0000a7a500000004": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/.fuse_hidden0000a7a500000004",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1489647689000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/.fuse_hidden0000a7a500000004"
+      },
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/httpify.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/httpify.sh",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1489647689000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/httpify.sh"
+      },
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/exif_json.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/exif_json.sh",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1491008840000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/exif_json.sh"
+      },
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/exif_job.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/exif_job.sh",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1491277161000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/exif_job.sh"
+      },
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/gps2description.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/gps2description.sh",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1491179800000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/gps2description.sh"
+      },
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/.fuse_hidden0000a79b00000002": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/.fuse_hidden0000a79b00000002",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1489647689000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/.fuse_hidden0000a79b00000002"
+      },
+      "dirs": {"/home/sarnobat/github/coagulate/image_geotags_pipes/.git": {"dirs": {}}},
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/exif_md5.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/exif_md5.sh",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1489647689000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/exif_md5.sh"
+      },
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/gps_job.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/gps_job.sh",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1491277161000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/gps_job.sh"
+      },
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/geotag.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/geotag.sh",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1489647689000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/geotag.sh"
+      },
+      "/home/sarnobat/github/coagulate/image_geotags_pipes/README.md": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes/README.md",
+        "location": "/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "created": 1489647689000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/image_geotags_pipes",
+        "fileSystem": "/home/sarnobat/github/coagulate/image_geotags_pipes/README.md"
+      }
+    },
+    "/home/sarnobat/github/coagulate/trash": {
+      "/home/sarnobat/github/coagulate/trash/server.groovy.new": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/trash/server.groovy.new",
+        "location": "/home/sarnobat/github/coagulate/trash",
+        "created": 1403551967000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/trash",
+        "fileSystem": "/home/sarnobat/github/coagulate/trash/server.groovy.new"
+      },
+      "/home/sarnobat/github/coagulate/trash/server.groovy5": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/trash/server.groovy5",
+        "location": "/home/sarnobat/github/coagulate/trash",
+        "created": 1489313233000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/trash",
+        "fileSystem": "/home/sarnobat/github/coagulate/trash/server.groovy5"
+      },
+      "/home/sarnobat/github/coagulate/trash/server.groovy.old": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/trash/server.groovy.old",
+        "location": "/home/sarnobat/github/coagulate/trash",
+        "created": 1489313233000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/trash",
+        "fileSystem": "/home/sarnobat/github/coagulate/trash/server.groovy.old"
+      },
+      "/home/sarnobat/github/coagulate/trash/index.html.new": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/trash/index.html.new",
+        "location": "/home/sarnobat/github/coagulate/trash",
+        "created": 1403551962000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/trash",
+        "fileSystem": "/home/sarnobat/github/coagulate/trash/index.html.new"
+      },
+      "/home/sarnobat/github/coagulate/trash/server.groovy.new2": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/trash/server.groovy.new2",
+        "location": "/home/sarnobat/github/coagulate/trash",
+        "created": 1489313233000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/trash",
+        "fileSystem": "/home/sarnobat/github/coagulate/trash/server.groovy.new2"
+      },
+      "dirs": {},
+      "/home/sarnobat/github/coagulate/trash/server.groovy.new4": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/trash/server.groovy.new4",
+        "location": "/home/sarnobat/github/coagulate/trash",
+        "created": 1489313233000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/trash",
+        "fileSystem": "/home/sarnobat/github/coagulate/trash/server.groovy.new4"
+      }
+    },
+    "/home/sarnobat/github/coagulate/mac": {
+      "/home/sarnobat/github/coagulate/mac/run.sh": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/mac/run.sh",
+        "location": "/home/sarnobat/github/coagulate/mac",
+        "created": 1489313233000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/mac",
+        "fileSystem": "/home/sarnobat/github/coagulate/mac/run.sh"
+      },
+      "/home/sarnobat/github/coagulate/mac/server.groovy": {
+        "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/mac/server.groovy",
+        "location": "/home/sarnobat/github/coagulate/mac",
+        "created": 1489313233000,
+        "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/mac",
+        "fileSystem": "/home/sarnobat/github/coagulate/mac/server.groovy"
+      },
+      "dirs": {}
+    },
+    "/home/sarnobat/github/coagulate/.groovy": {"dirs": {
+      "/home/sarnobat/github/coagulate/.groovy/lib": {"dirs": {}},
+      "/home/sarnobat/github/coagulate/.groovy/lib.old": {"dirs": {}}
+    }}
+  }
+}}}
