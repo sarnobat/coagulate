@@ -1087,7 +1087,7 @@ System.out.println("DirObj::getFiles() - " + path);
 			Path targetDir = Paths.get(sourceFilePath.getParent().toString()
 					+ "/" + iSubfolderSimpleName);
 			if (!Files.exists(targetDir)) {
-				System.out.println("moveFileToSubfolder() - creating dir " + targetDir.toString());
+				System.out.println("moveFileToSubfolder() - Target directory doesn't exist. Creating dir " + targetDir.toString());
 				Files.createDirectory(targetDir);
 			} else if (!Files.isDirectory(targetDir)) {
 				throw new RuntimeException("Target is an existing file");
