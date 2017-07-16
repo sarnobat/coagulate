@@ -802,22 +802,43 @@ function fileObjToHtml(fileObj) {
 		var httpUrl = fileObj.httpUrl;
 		var thumbnailUrl = fileObj.thumbnailUrl;
 		{
-			{
-				var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
-				if (res !=null) {
-					toBeAppended += '<a href=\'' + httpUrl + '\' target="_blank">';
-					if (httpUrl.endsWith('2BNapa.png')) {
-					// thumbnail
+			var res = item.match(/.*\.((txt)|(mwk))/gi);
+			var id = Math.random() ;
+			if (res !=null) {
+				var url = httpUrl;
+				// I can't get CORS working on this
+				toBeAppended += "<iframe src='" + url+ "'></iframe>";
+				
+				$.get(url, function( data ) {
+					  console.debug("setting textarea value: " + fileObj);
+					  $("#" + id).val(data);
+				});
+
+				fetch(url)
+				  .then(function(response) {
+					response.text().then(function(text) {
+					  storedText = text;
+					  console.debug("setting textarea value: " + fileObj);
+					  $("#" + id).val(storedText);
+					});
+				  });
+			}
+		}
+		{
+			var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
+			if (res !=null) {
+				toBeAppended += '<a href=\'' + httpUrl + '\' target="_blank">';
+				if (httpUrl.endsWith('2BNapa.png')) {
+				// thumbnail
 //						debugger;
-					}
-					var degreesToOrient = 0;
-					if (fileObj.exif) {
-						degreesToOrient = 90*(parseInt(fileObj.exif.orientation) - 1);
-					}
-					toBeAppended += '<img src="http://www.htmlgoodies.com/images/1x1.gif" width="' + WIDTH_250 + 'px" height="1px"><br>';
-					toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURIComponent(httpUrl) +'?width=' + WIDTH_250 + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
-					toBeAppended += '</a>';
 				}
+				var degreesToOrient = 0;
+				if (fileObj.exif) {
+					degreesToOrient = 90*(parseInt(fileObj.exif.orientation) - 1);
+				}
+				toBeAppended += '<img src="http://www.htmlgoodies.com/images/1x1.gif" width="' + WIDTH_250 + 'px" height="1px"><br>';
+				toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURIComponent(httpUrl) +'?width=' + WIDTH_250 + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
+				toBeAppended += '</a>';
 			}
 		}
 		{
