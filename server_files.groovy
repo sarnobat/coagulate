@@ -101,6 +101,7 @@ System.out.println("audio: " + audio);
 							"html		text/html " +
 							"xml		text/xml " +
 							"txt		text/plain " +
+							"mwk		text/plain " +
 							"asc		text/plain " +
 							"gif		image/gif " +
 							"jpg		image/jpeg " +

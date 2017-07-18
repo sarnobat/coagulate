@@ -246,6 +246,7 @@ public class Coagulate {
 			Path path = Paths.get(file.getAbsolutePath());
 			String extension = FilenameUtils.getExtension(path.getFileName().toString())
 					.toLowerCase();
+                        System.out.println("Coagulate.FileServerNio.HttpFileHandler.serveFileStreaming() extension = " + extension);
 			mimeType = theMimeTypes.get(extension);
 			System.out.println("Coagulate.FileServerNio.HttpFileHandler.serveFileStreaming() mimetype = " + mimeType);
 			return mimeType;
@@ -263,6 +264,7 @@ public class Coagulate {
 							"html		text/html " +
 							"xml		text/xml " +
 							"txt		text/plain " +
+                                                        "mwk            text/plain " +
 							"asc		text/plain " +
 							"gif		image/gif " +
 							"jpg		image/jpeg " +
