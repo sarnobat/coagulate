@@ -845,6 +845,7 @@ function fileObjToHtml(fileObj) {
 			var matchesVideo = item.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi)|(mts)|(mpg))/gi);
 			if (matchesVideo != null) {
 				toBeAppended += '<img src=\"' +thumbnailUrl+'\">';
+				toBeAppended += '<br>';
 				toBeAppended += '<video width="400" controls>';
 				toBeAppended += '<source src="' +  httpUrl.replace('netgear', 'netgear' + getRandom(1,100))
 				+ '#t=30" type="video/mp4">';
