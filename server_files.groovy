@@ -60,8 +60,9 @@ public class CoagulateFileServer {
 	public static class StreamingFileServer { // Must be public
 	    @GET
 	    public Response streamFile(
-	    		@PathParam("filePath") String filePath1,
+	    		@PathParam("filePath") String filePath2,
 	    		@HeaderParam("Range") String range) throws Exception {
+String filePath1 = new org.apache.commons.codec.net.URLCodec("UTF8").decode(filePath2);
 System.out.println("Request: " + filePath1);
 	        File audio;
 	        String filePath = filePath1;
