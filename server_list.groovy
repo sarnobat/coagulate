@@ -718,13 +718,17 @@ System.err.println("createFilesJsonRecursiveNew() - " + aDirectoryPath1);
 
 		private static String httpLinkFor(String iAbsolutePath) {
 			String prefix = "http://netgear.rohidekar.com:4" + fsPort;
-			
-			Path iPath = Paths.get(iAbsolutePath);
-			// Looks like URLCodec has solved all the problems I was having
-			String encode = new org.apache.commons.codec.net.URLCodec("UTF8").encode(iPath.getFileName().toString());
-			String s = iPath.getParent().toAbsolutePath().toString() + "/" + encode;
+			try {
+				Path iPath = Paths.get(iAbsolutePath);
+				// Looks like URLCodec has solved all the problems I was having
+				String encode = new org.apache.commons.codec.net.URLCodec("UTF8").encode(iPath.getFileName().toString());
+				String s = iPath.getParent().toAbsolutePath().toString() + "/" + encode;
 
-			return prefix + s;
+				return prefix + s;
+			} catch (java.nio.file.InvalidPathException e) {
+				e.printStackTrace();
+				return prefix + "/InvalidPathException";
+			}
 		}
 
 		private static String thumbnailFor(Path iPath) {
