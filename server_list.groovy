@@ -703,6 +703,7 @@ System.err.println("createFilesJsonRecursiveNew() - " + aDirectoryPath1);
 						System.err.println("PATH_TO_JSON_ITEM.apply() - " + e.getMessage());
 						created = 0;
 					}
+		
 					return Json
 							.createObjectBuilder()
 							.add("location",
@@ -717,7 +718,13 @@ System.err.println("createFilesJsonRecursiveNew() - " + aDirectoryPath1);
 
 		private static String httpLinkFor(String iAbsolutePath) {
 			String prefix = "http://netgear.rohidekar.com:4" + fsPort;
-			return prefix + iAbsolutePath;
+			
+			Path iPath = Paths.get(iAbsolutePath);
+			// Looks like URLCodec has solved all the problems I was having
+			String encode = new org.apache.commons.codec.net.URLCodec("UTF8").encode(iPath.getFileName().toString());
+			String s = iPath.getParent().toAbsolutePath().toString() + "/" + encode;
+
+			return prefix + s;
 		}
 
 		private static String thumbnailFor(Path iPath) {
