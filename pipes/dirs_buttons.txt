@@ -1,37 +1,23 @@
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "Anshu", this)' value="Anshu">Anshu</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "Atletico", this)' value="Atletico">Atletico</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "Liverpool", this)' value="Liverpool">Liverpool</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "Videos", this)' value="Videos">Videos</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "_thumbnails", this)' value="_thumbnails">_thumbnails</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "animals", this)' value="animals">animals</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "atletico", this)' value="atletico">atletico</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "corrupted", this)' value="corrupted">corrupted</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "documentary", this)' value="documentary">documentary</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "duplicates", this)' value="duplicates">duplicates</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "friends", this)' value="friends">friends</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "home", this)' value="home">home</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "humor", this)' value="humor">humor</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "iPhone", this)' value="iPhone">iPhone</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "images", this)' value="images">images</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "jpg", this)' value="jpg">jpg</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "matrimonial", this)' value="matrimonial">matrimonial</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "more", this)' value="more">more</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "not_displaying_correctly_in_coagulate", this)' value="not_displaying_correctly_in_coagulate">not_displaying_correctly_in_coagulate</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "other", this)' value="other">other</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "other2", this)' value="other2">other2</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "part", this)' value="part">part</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "products_and_services", this)' value="products_and_services">products_and_services</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "professional", this)' value="professional">professional</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "scans", this)' value="scans">scans</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "screenshots", this)' value="screenshots">screenshots</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "screenshots.e", this)' value="screenshots.e">screenshots.e</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "screenshots_cats", this)' value="screenshots_cats">screenshots_cats</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "screenshots_other", this)' value="screenshots_other">screenshots_other</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "shaadi, anuroop matrimony - small", this)' value="shaadi, anuroop matrimony - small">shaadi, anuroop matrimony - small</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "soccer", this)' value="soccer">soccer</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "trash", this)' value="trash">trash</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "web", this)' value="web">web</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "whatsapp", this)' value="whatsapp">whatsapp</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "work", this)' value="work">work</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "wwe", this)' value="wwe">wwe</button>
-<button onclick='moveFile("/Unsorted/new/images/Maria_Menounos_AssJeans_4.jpg", "wwf", this)' value="wwf">wwf</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "Anshu", this)' value="Anshu">Anshu</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "Atletico", this)' value="Atletico">Atletico</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "Godaddy.com", this)' value="Godaddy.com">Godaddy.com</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "SCU_MBA", this)' value="SCU_MBA">SCU_MBA</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "Wrestlemania_Sridhar_on_TV", this)' value="Wrestlemania_Sridhar_on_TV">Wrestlemania_Sridhar_on_TV</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "_thumbnails", this)' value="_thumbnails">_thumbnails</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "book_clippings", this)' value="book_clippings">book_clippings</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "cats", this)' value="cats">cats</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "chatting", this)' value="chatting">chatting</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "documents", this)' value="documents">documents</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "friends", this)' value="friends">friends</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "genealogy", this)' value="genealogy">genealogy</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "home", this)' value="home">home</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "humor", this)' value="humor">humor</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "lookalikes", this)' value="lookalikes">lookalikes</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "matrimonial", this)' value="matrimonial">matrimonial</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "other", this)' value="other">other</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "photos", this)' value="photos">photos</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "trash", this)' value="trash">trash</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "tutorials", this)' value="tutorials">tutorials</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "web", this)' value="web">web</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "work", this)' value="work">work</button>
+<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-04-05 at 10.58.45 PM.png", "z_some_duplicates", this)' value="z_some_duplicates">z_some_duplicates</button>
