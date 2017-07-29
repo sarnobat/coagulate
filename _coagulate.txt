@@ -16,7 +16,7 @@
   "/home/sarnobat/github/coagulate/server_files.groovy": {
     "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/server_files.groovy",
     "location": "/home/sarnobat/github/coagulate",
-    "created": 1496545095000,
+    "created": 1501052461000,
     "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
     "fileSystem": "/home/sarnobat/github/coagulate/server_files.groovy"
   },
@@ -66,7 +66,7 @@
     "/home/sarnobat/github/coagulate/.git": {
       "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git",
       "location": "/home/sarnobat/github/coagulate",
-      "created": 1500188642000,
+      "created": 1501225263000,
       "thumbnailUrl": "http://www.pd4pic.com/images/windows-vista-folder-directory-open-explorer.png",
       "fileSystem": "/home/sarnobat/github/coagulate/.git"
     },
@@ -144,14 +144,14 @@
   "/home/sarnobat/github/coagulate/server_list.groovy": {
     "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/server_list.groovy",
     "location": "/home/sarnobat/github/coagulate",
-    "created": 1494905534000,
+    "created": 1500960600000,
     "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
     "fileSystem": "/home/sarnobat/github/coagulate/server_list.groovy"
   },
   "/home/sarnobat/github/coagulate/server.groovy": {
     "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/server.groovy",
     "location": "/home/sarnobat/github/coagulate",
-    "created": 1500060471000,
+    "created": 1500338304000,
     "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
     "fileSystem": "/home/sarnobat/github/coagulate/server.groovy"
   },
@@ -181,28 +181,28 @@
       "/home/sarnobat/github/coagulate/.git/FETCH_HEAD": {
         "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git/FETCH_HEAD",
         "location": "/home/sarnobat/github/coagulate/.git",
-        "created": 1500188642000,
+        "created": 1501225263000,
         "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git",
         "fileSystem": "/home/sarnobat/github/coagulate/.git/FETCH_HEAD"
       },
       "/home/sarnobat/github/coagulate/.git/COMMIT_EDITMSG": {
         "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git/COMMIT_EDITMSG",
         "location": "/home/sarnobat/github/coagulate/.git",
-        "created": 1500188640000,
+        "created": 1501225263000,
         "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git",
         "fileSystem": "/home/sarnobat/github/coagulate/.git/COMMIT_EDITMSG"
       },
       "/home/sarnobat/github/coagulate/.git/ORIG_HEAD": {
         "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git/ORIG_HEAD",
         "location": "/home/sarnobat/github/coagulate/.git",
-        "created": 1500188642000,
+        "created": 1501225263000,
         "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git",
         "fileSystem": "/home/sarnobat/github/coagulate/.git/ORIG_HEAD"
       },
       "/home/sarnobat/github/coagulate/.git/index": {
         "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git/index",
         "location": "/home/sarnobat/github/coagulate/.git",
-        "created": 1500188640000,
+        "created": 1501225263000,
         "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/.git",
         "fileSystem": "/home/sarnobat/github/coagulate/.git/index"
       },
@@ -281,7 +281,7 @@
       "/home/sarnobat/github/coagulate/pipes/server.groovy": {
         "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes/server.groovy",
         "location": "/home/sarnobat/github/coagulate/pipes",
-        "created": 1500060471000,
+        "created": 1500338304000,
         "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/pipes",
         "fileSystem": "/home/sarnobat/github/coagulate/pipes/server.groovy"
       },
@@ -596,5 +596,12 @@
       "/home/sarnobat/github/coagulate/.groovy/lib": {"dirs": {}},
       "/home/sarnobat/github/coagulate/.groovy/lib.old": {"dirs": {}}
     }}
+  },
+  "/home/sarnobat/github/coagulate/server_fileserver.groovy": {
+    "httpUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate/server_fileserver.groovy",
+    "location": "/home/sarnobat/github/coagulate",
+    "created": 1500338333000,
+    "thumbnailUrl": "http://netgear.rohidekar.com:44452/home/sarnobat/github/coagulate",
+    "fileSystem": "/home/sarnobat/github/coagulate/server_fileserver.groovy"
   }
 }}}
