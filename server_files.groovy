@@ -19,7 +19,7 @@ import java.util.Date;
 import java.util.Hashtable;
 import java.util.StringTokenizer;
 
-import javax.ws.rs.GET;
+import javax.ws.rs.*;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.WebApplicationException;
@@ -60,10 +60,11 @@ public class CoagulateFileServer {
 	public static class StreamingFileServer { // Must be public
 	    @GET
 	    public Response streamFile(
-	    		@PathParam("filePath") String filePath2,
+	    		@PathParam("filePath") @Encoded String filePath2,
 	    		@HeaderParam("Range") String range) throws Exception {
+System.out.println("Request raw:\t" + filePath2);
 String filePath1 = new org.apache.commons.codec.net.URLCodec("UTF8").decode(filePath2);
-System.out.println("Request: " + filePath1);
+System.out.println("Request:\t\t" + filePath1);
 	        File audio;
 	        String filePath = filePath1;
 	        if (!filePath1.startsWith("/")) {
@@ -303,7 +304,7 @@ System.out.println("audio: " + audio);
 					"http://localhost:" + fsPort2 + "/"), new ResourceConfig(
 					StreamingFileServer.class));
 		} catch (Exception e) {
-			e.printStackTrace();
+//			e.printStackTrace();
                         System.out.println("Port already listened on 2.");
 			System.exit(-1);
 		}
