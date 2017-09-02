@@ -1,4 +1,0 @@
-<button onclick='moveFile("", "image_geotags_pipes", this)' value="image_geotags_pipes">image_geotags_pipes</button>
-<button onclick='moveFile("", "imagezoom.hover.ssarnobat.js", this)' value="imagezoom.hover.ssarnobat.js">imagezoom.hover.ssarnobat.js</button>
-<button onclick='moveFile("", "server.groovy", this)' value="server.groovy">server.groovy</button>
-<button onclick='moveFile("", "v1", this)' value="v1">v1</button>
