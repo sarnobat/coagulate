@@ -842,7 +842,7 @@ function fileObjToHtml(fileObj) {
 			}
 		}
 		{
-			var matchesVideo = item.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi)|(mts)|(mpg))/gi);
+			var matchesVideo = item.match(/.*\.((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi)|(mts)|(mpg))/gi);
 			if (matchesVideo != null) {
 				toBeAppended += '<img src=\"' +thumbnailUrl+'\">';
 				toBeAppended += '<br>';
