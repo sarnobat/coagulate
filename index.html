@@ -73,8 +73,9 @@ $(document).ready(function(){
 		loadImagesSequentially(0);
 		$('#status').append("Completed.");
 	})
-	.fail(function() {
-		console.debug( "error" );
+	.fail(function(e) {
+		console.debug( "error: " + e);
+		console.debug(e);
 		$('#status').append("Error");
 	});
 	$('#status').append("This might take a while...");
@@ -448,11 +449,11 @@ function createThumbnailItemHtml(accumulator, fileObj, loadImmediate, size) {
 	
 	var fileSystem = fileObj.fileSystem;
 
-	if (fileSystem == null) {
-		debugger;
-	}
-
 	// File types to ignore	
+	if (fileSystem == null) {
+		console.debug("[ERROR] I think we're passing in a pair when we should be passing in just the value of the key-value pair. ");
+		return;
+	}
 	var res = fileSystem.match(/.*\.((txt)|(lnk))/gi);
 	if (res != null) {
 		return;
@@ -909,11 +910,20 @@ function dirToHtmlCards(dirObj) {
 	var files = toPairs(dirObj[dir]).slice(0, limitRoot).filter(filesOnly).sort(BY_CREATED).reverse();
 	var subdirs = dirObj[dir].dirs;
 	var html = "";
+	
+	//
+	// Files in dir
+	//
 	html += files.map(fileToHtmlParameterized(subdirs)).join('');
+	
+	
+	//
+	// Subdirs in dir
+	//
 	if (dirObj[dir].subDirObjs == null) {
-		console.debug('subDirObjs is null');
+		console.debug('[ERROR] subDirObjs is null. I think I didnt port this from the slow server_list_cli.groovy when rewriting');
 		console.debug(dirObj[dir]);
-		debugger;
+//		debugger;
 	} else {
 		console.debug('subDirObjs is non-null');
 		var subdirObjs = toPairs(dirObj[dir].subDirObjs).slice(0, limitRoot).filter(dirsOnly).sort(BY_CREATED).reverse();
