@@ -16,7 +16,7 @@
 var host = "http://netgear.rohidekar.com";
 var urlBase = "http://netgear.rohidekar.com:44451/cmsfs/";
 var limit;
-var limitRoot;
+var limitRoot = 20;
 var preDirLimit;
 var pairs;
 var depth;
@@ -422,7 +422,7 @@ function printDirsRecursive(dirItems, response, idIn, iLimit, loadImmediate) {
 			} else {
 				++id;
 				if (id > iLimit) {
-//					continue;
+					continue;
 				}
 				var height = 80;
 				if (categoryName1 == '_-1' || categoryName1 == 'back' || categoryName1 == 'duplicates' || categoryName1 == 'not good' || categoryName1 == 'small') {
@@ -430,6 +430,7 @@ function printDirsRecursive(dirItems, response, idIn, iLimit, loadImmediate) {
 				} else if (categoryName1 == '_+1') {
 					height = 140;
 				}
+				console.debug("printed " + id);
 				html += createThumbnailItemHtml("", filesInDir[filepath], loadImmediate, height);
 				html += "\n\n";
 			}
@@ -901,7 +902,9 @@ function DIR_TO_HTML_CARDS(dirObj) {
 function dirToHtmlCards(dirObj) {
 //	console.debug('dirToHtmlCards() - begin');
 	var dir = Object.keys(dirObj);
-	var files = toPairs(dirObj[dir]).slice(0, limitRoot).filter(filesOnly).sort(BY_CREATED).reverse();
+	var files = toPairs(shuffle(dirObj[dir])).slice(0, limitRoot).filter(filesOnly)
+		//.sort(BY_CREATED)
+		.reverse();
 	var subdirs = dirObj[dir].dirs;
 	var html = "";
 	
