@@ -217,8 +217,9 @@ var level = 1000; // This is just a unique number, not semantically significant
 function dirObjToHtmlWithButtons(val, dir) {
 	var html = "";
 	// recurse pre-order
+	var dirnames = null;
 	if (val.dirs) {
-		var dirnames = Object.keys(val.dirs);
+		dirnames = Object.keys(val.dirs);
 		for (var i = 0; i < dirnames.length; i++) {
 			var dirname =  dirnames[i];
 			if (lastPartOf(dirname).lastIndexOf('_+',0) == 0) {
@@ -306,8 +307,9 @@ function down(field,id, currentLevelId, button) {
 function dirObjToHtml(val, dir) {
 	var html = "";
 	// recurse pre-order
+	var dirnames = null;
 	if (val.dirs) {
-		var dirnames = Object.keys(val.dirs);
+		dirnames = Object.keys(val.dirs);
 		for (var i = 0; i < dirnames.length; i++) {
 			var dirname =  dirnames[i];
 			if (lastPartOf(dirname).lastIndexOf('_+',0) == 0) {
@@ -318,7 +320,7 @@ function dirObjToHtml(val, dir) {
 	}
 	var dirName = lastPartOf(dir);
 	html += "<h3>" + dirName + "</h3><textarea>" + dir + "</textarea><br>";
-	var pairs1 = toPairs(val).filter(function(aPair){aPair[0] != 'dirs'});
+	var pairs1 = toPairs(val).filter(function(aPair){aPair[0] != 'dirs';});
 	var pairs;
 	if (startsWith(dirName, '_+')) {
 		pairs = pairs1;
@@ -585,7 +587,6 @@ function createDirItemHtml(response, item, key, unused, dirObj, subDirs)
 	id += 1;
 
 	var buttonPanel = createButtonsPanelForDir(item, subDirs, key, idstring);
-	var dt = new Date(dirObj.created);
 	
 	var prettyDate = "----";
 	
@@ -645,10 +646,6 @@ function createItemHtml(response, item, key, unused, fileObj, subDirs)
 	id += 1;
 
 	var buttonPanel = createButtonsPanel(item, subDirs, key, idstring);
-	//console.debug('createItemHtml() - date = ' + fileObj.created);
-	//console.debug('createItemHtml() - 2');
-	var dt = new Date(fileObj.created)
-	//console.debug('createItemHtml() - 3 ' + dt );
 	var prettyDate = "----";
 	//console.debug('createItemHtml() - 4  ' + item);
 	
@@ -874,7 +871,6 @@ function dirObjToHtml2(dirObj) {
 	{
 		var toBeAppended = "";
 		var httpUrl = dirObj.httpUrl;
-		var thumbnailUrl = dirObj.thumbnailUrl;
 		{
 			{
 				var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
@@ -890,10 +886,6 @@ function dirObjToHtml2(dirObj) {
 					toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURI(imgUrl) + '" style="transform: rotate(0 deg)"/>';
 					toBeAppended += '</a>';
 				}
-				//} else {
-				//	toBeAppended += "couldn't render dir thumbnail";
-				//	debugger;
-				//}
 			}
 		}
 	}	
@@ -1089,6 +1081,8 @@ function openHtmlTextInNewTab() {
 	newWin.document.write($("#thumbnailItems").html());
 	newWin.document.title = document.title;
 }
+
+
 
 
 

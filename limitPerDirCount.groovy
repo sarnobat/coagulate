@@ -28,7 +28,7 @@ public class LimitFindOutput {
 						if (dirFileCounts.containsKey(p2parent)) {
 							int filesEmittedFromDirCount = dirFileCounts.get(p2parent);
 							if (filesEmittedFromDirCount >= LIMIT) {
-								//System.err.println("[DEBUG] limit exceeded for " + p2parent.toString() + "\t" + p2.toString());
+								System.err.println("[DEBUG] limit exceeded for " + p2parent.toString() + "\t" + p2.toString());
 								continue;
 							} else {
 								dirFileCounts.put(p2parent, filesEmittedFromDirCount + 1);

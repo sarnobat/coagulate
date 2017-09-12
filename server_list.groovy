@@ -725,7 +725,7 @@ System.err.println("createFilesJsonRecursiveNew() - " + aDirectoryPath1);
 				String s = iPath.getParent().toAbsolutePath().toString() + "/" + encode;
 
 				return prefix + s;
-			} catch (java.nio.file.InvalidPathException e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 				return prefix + "/InvalidPathException";
 			}
