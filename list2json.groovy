@@ -12,6 +12,7 @@ import javax.json.Json;
 import javax.json.JsonObject;
 
 import org.apache.commons.codec.EncoderException;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.google.common.base.Function;
@@ -52,7 +53,7 @@ public class List2Json {
 	}
 
 	private static JSONObject toDirJson(Path topLevel,
-			Multimap<Path, Path> children, Map<Path, Path> childDir2ParentDir) {
+			Multimap<Path, Path> children, Map<Path, Path> childDir2ParentDir) throws JSONException, IOException {
 
 		if (!topLevel.toFile().isDirectory()) {
 			throw new RuntimeException("Not a directory: "
@@ -72,7 +73,15 @@ public class List2Json {
 
 		JSONObject dirs = new JSONObject();
 		for (Path child : children.get(topLevel)) {
-			if (child.toFile().isDirectory()) {
+			if (child.toFile().getCanonicalFile().isDirectory()) {
+				if (child.toFile() != child.toFile().getCanonicalFile()) {
+				//	System.err.println("[DEBUG] List2Json.toDirJson(): " + child + " -> " + child.toFile().getCanonicalPath());
+				}
+			}
+			if (child.toFile().getCanonicalFile().isDirectory()) {
+				if (child.toFile() != child.toFile().getCanonicalFile()) {
+					System.err.println("[DEBUG] List2Json.toDirJson(): " + child + " -> " + child.toFile().getCanonicalPath());
+				}
 				dirs.put(child.toAbsolutePath().toString(),
 						toDirJson(child, children, childDir2ParentDir));
 			}

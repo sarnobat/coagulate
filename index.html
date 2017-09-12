@@ -16,7 +16,7 @@
 var host = "http://netgear.rohidekar.com";
 var urlBase = "http://netgear.rohidekar.com:44451/cmsfs/";
 var limit;
-var limitRoot = 200;
+var limitRoot;
 var preDirLimit;
 var pairs;
 var depth;
@@ -31,6 +31,8 @@ $(function() {
 $(document).ready(function(){
 
 	updateURLIfEmpty();
+	
+	limitRoot = limit;
 
 	$.getJSON(host + ":44420/cmsfs/list?dirs=" + encodeURIComponent($("#locations").val()) + "&limit=" + limit + "&depth=" + depth,function(response) {
 		$('#status').append("File list obtained. Creating tags...");
