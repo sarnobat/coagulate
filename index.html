@@ -430,7 +430,7 @@ function printDirsRecursive(dirItems, response, idIn, iLimit, loadImmediate) {
 				} else if (categoryName1 == '_+1') {
 					height = 140;
 				}
-				console.debug("printed " + id);
+				//console.debug("printed " + id);
 				html += createThumbnailItemHtml("", filesInDir[filepath], loadImmediate, height);
 				html += "\n\n";
 			}
@@ -902,9 +902,11 @@ function DIR_TO_HTML_CARDS(dirObj) {
 function dirToHtmlCards(dirObj) {
 	var dir = Object.keys(dirObj);
 	// TODO: if I shuffle the pairs, I get an infinite loop
-	var files = toPairs(dirObj[dir]).slice(0, limitRoot).filter(filesOnly)
+	var files = shuffle(toPairs(dirObj[dir])).slice(0, limitRoot).filter(filesOnly)
 		//.sort(BY_CREATED)
 		.reverse();
+	console.debug("dirToHtmlCards() - " + files.length);
+	console.debug(files);
 	var subdirs = dirObj[dir].dirs;
 	var html = "";
 	
@@ -1131,22 +1133,22 @@ function openHtmlTextInNewTab() {
 
 <div id="tabs">
   <ul>
-    <li><a href="#thumbnailtab">Thumbnails</a></li>
     <li><a href="#sorttab">Sort</a></li>
+    <li><a href="#thumbnailtab">Thumbnails</a></li>
     <li><a href="#hoist_with_buttons_tab">Hoist</a></li>
     <li><a href="#hoisttab">Hoist (read only)</a></li>
     <li><a href="#markuptab">HTML</a></li>
   </ul>
+  <div id="sorttab">
+  	<button onclick="reRender()">Shuffle</button>
+	<table id="itemsNew"></table>
+    <table id="items"></table>
+  </div>
   <div id="thumbnailtab">
 	<center>
 		<a href="" onclick="openHtmlTextInNewTab()">Open in new tab (after images have loaded)</a><br>
 	</center>
 	<table id="thumbnailItems"></table><br>
-  </div>
-  <div id="sorttab">
-  	<button onclick="reRender()">Shuffle</button>
-	<table id="itemsNew"></table>
-    <table id="items"></table>
   </div>
   <div id="hoist_with_buttons_tab">  
 		<table id="hoist_with_buttons"></table>
