@@ -900,9 +900,9 @@ function DIR_TO_HTML_CARDS(dirObj) {
 }
 
 function dirToHtmlCards(dirObj) {
-//	console.debug('dirToHtmlCards() - begin');
 	var dir = Object.keys(dirObj);
-	var files = toPairs(shuffle(dirObj[dir])).slice(0, limitRoot).filter(filesOnly)
+	// TODO: if I shuffle the pairs, I get an infinite loop
+	var files = toPairs(dirObj[dir]).slice(0, limitRoot).filter(filesOnly)
 		//.sort(BY_CREATED)
 		.reverse();
 	var subdirs = dirObj[dir].dirs;
