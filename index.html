@@ -16,7 +16,7 @@
 var host = "http://netgear.rohidekar.com";
 var urlBase = "http://netgear.rohidekar.com:44451/cmsfs/";
 var limit;
-var limitRoot = 20;
+var limitRoot;
 var preDirLimit;
 var pairs;
 var depth;
@@ -32,8 +32,6 @@ $(document).ready(function(){
 
 	updateURLIfEmpty();
 	
-	limitRoot = limit;
-
 	$.getJSON(host + ":44420/cmsfs/list?dirs=" + encodeURIComponent($("#locations").val()) + "&limit=" + limit + "&depth=" + depth,function(response) {
 		$('#status').append("File list obtained. Creating tags...");
 		$('#items').empty();
@@ -902,7 +900,7 @@ function DIR_TO_HTML_CARDS(dirObj) {
 function dirToHtmlCards(dirObj) {
 	var dir = Object.keys(dirObj);
 	// TODO: if I shuffle the pairs, I get an infinite loop
-	var files = shuffle(toPairs(dirObj[dir])).slice(0, limitRoot).filter(filesOnly)
+	var files = shuffle(toPairs(dirObj[dir])).slice(0, limit).filter(filesOnly)
 		//.sort(BY_CREATED)
 		.reverse();
 	console.debug("dirToHtmlCards() - " + files.length);

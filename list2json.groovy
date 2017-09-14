@@ -5,8 +5,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -17,6 +19,7 @@ import org.json.JSONObject;
 
 import com.google.common.base.Function;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 
 public class List2Json {
@@ -30,7 +33,8 @@ public class List2Json {
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		String line;
 		while ((line = br.readLine()) != null) {
-
+//System.err.print(".");
+//System.err.println("[DEBUG] List2Json.main() " + line);
 			Path p = Paths.get(line);
 			Path parent = p.getParent();
 			if (parent != null) {
@@ -54,52 +58,96 @@ public class List2Json {
 
 	private static JSONObject toDirJson(Path topLevel,
 			Multimap<Path, Path> children, Map<Path, Path> childDir2ParentDir) throws JSONException, IOException {
-
+System.err.println("[DEBUG] List2Json.toDirJson() " + topLevel.toString());
 		if (!topLevel.toFile().isDirectory()) {
 			throw new RuntimeException("Not a directory: "
 					+ topLevel.toAbsolutePath().toString());
 		}
 
-		JSONObject value = new JSONObject();
-		for (Path child : children.get(topLevel)) {
+		JSONObject filesOnlyMap = new JSONObject();
+		Map<String, JSONObject> filesOnly = new HashMap<String, JSONObject>();
+		Collection<Path> filesAndDirs = ImmutableSet.copyOf(children.get(topLevel));
+		for (Path child : filesAndDirs) {
+			System.err.print(".");
 			try {
 				if (!child.toFile().getCanonicalFile().isDirectory()) {
-					value.put(child.toAbsolutePath().toString(), toFileJson(child));
+					filesOnly.put(child.toAbsolutePath().toString(), toFileJson(child));
+					
 				}
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
 		}
+		try {
+			Thread.sleep(5000L);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 
+		for (String key : filesOnly.keySet()) {
+			filesOnlyMap.put(key, filesOnly.get(key));
+		}
+
+		Map<String, JSONObject> dirsOnlyMap = new HashMap<String, JSONObject>();
 		JSONObject dirs = new JSONObject();
-		for (Path child : children.get(topLevel)) {
-			if (child.toFile().getCanonicalFile().isDirectory()) {
+		for (final Path child : ImmutableSet.copyOf(filesAndDirs)) {
+			System.err.print(",");
+			try {
+				// symlink
 				if (child.toFile() != child.toFile().getCanonicalFile()) {
-				//	System.err.println("[DEBUG] List2Json.toDirJson(): " + child + " -> " + child.toFile().getCanonicalPath());
+					System.err.println("[DEBUG] List2Json.toDirJson() 2.5 symlink: " + child + " -> " + child.toFile().getCanonicalPath());
 				}
-			}
-			if (child.toFile().getCanonicalFile().isDirectory()) {
-				if (child.toFile() != child.toFile().getCanonicalFile()) {
-					System.err.println("[DEBUG] List2Json.toDirJson(): " + child + " -> " + child.toFile().getCanonicalPath());
+				
+				// symlink to dir
+				if (child.toFile().getCanonicalFile().isDirectory()) {
+					if (child.toFile() != child.toFile().getCanonicalFile()) {
+						System.err.println("[DEBUG] List2Json.toDirJson() 2.5 symlink DIRECTORY: " + child + " -> " + child.toFile().getCanonicalPath());
+					}
+					dirsOnlyMap.put(child.toAbsolutePath().toString(),
+							// TODO: This takes too long, so don't recurse
+							//toDirJson(child, children, childDir2ParentDir)
+							new JSONObject()
+							);
 				}
-				dirs.put(child.toAbsolutePath().toString(),
-						toDirJson(child, children, childDir2ParentDir));
+				if (child.toString().endsWith("other")) {
+					System.err.println("List2Json.toDirJson() " + child + " canonical : " + child.toFile().getCanonicalFile());
+					System.err.println("List2Json.toDirJson() " + child + " canonical is directory: " + child.toFile().getCanonicalFile().isDirectory());
+				}
+			} catch (Exception e) {
+				throw new RuntimeException(e);
 			}
 		}
+		try {
+			Thread.sleep(5000L);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		System.err.println("List2Json.toDirJson() 3.5: dir = " + topLevel);
+		System.err.println("List2Json.toDirJson() 3.5: m3 size = " + dirsOnlyMap.size());
+		// TODO: We need to wait for all threads to finish
+		for (String key : dirsOnlyMap.keySet()) {
+			System.err.println("List2Json.toDirJson() 4");
+			dirs.put(key, dirsOnlyMap.get(key));
+		}
 		if (dirs.keySet().size() > 0) {
-			value.put("dirs", dirs);
+			filesOnlyMap.put("dirs", dirs);
 		}
 
 		JSONObject o = new JSONObject();
-		if (value.keySet().size() > 0) {
-			o.put(topLevel.toAbsolutePath().toString(), value);
+		if (filesOnlyMap.keySet().size() > 0) {
+			System.err.println("List2Json.toDirJson() 5");
+			o.put(topLevel.toAbsolutePath().toString(), filesOnlyMap);
 		}
+		// Too big
+		//System.err.println("List2Json.toDirJson() 6" + o.toString());
 		return o;
 	}
 
 	private static JSONObject toFileJson(Path child) {
-		return new JSONObject(Mappings.PATH_TO_JSON_ITEM.apply(child)
+		JSONObject jsonObject = new JSONObject(Mappings.PATH_TO_JSON_ITEM.apply(child)
 				.toString());
+		//System.out.println("List2Json.toFileJson() " + jsonObject);
+		return jsonObject;
 	}
 
 	private static class Mappings {
