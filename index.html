@@ -80,21 +80,6 @@ $(document).ready(function(){
 	$('#status').append("This might take a while...");
 });
 
-function reRender() {
-	//pairs = shuffle(pairs);
-	//pairs = shuffle(pairs);
-	reRenderCards();
-	loadImagesSequentially(0);
-}
-
-// TODO: pass "pairs" as a parameter
-function reRenderCards() {
-	$('#itemsNew').empty();
-	var html = "";
-	html += pairs.map(DIR_TO_HTML_CARDS).join('');
-	$('#itemsNew').append(html);
-}
-
 // descending
 function BY_CREATED(a, b) {
 
@@ -258,7 +243,8 @@ function dirObjToHtmlWithButtons(val, dir) {
 		html += "<br>";
 		html += "<button onclick='up(\""+filenameEscaped +"\",\""+id+"\", "+level+", this)'>+</button>";
 		html += "<button onclick='down(\""+ filenameEscaped +"\",\""+id+"\", "+level+", this)'>-</button><br>";
-		html += "<button onmousedown='this.style.cssText = \"background-color : peachpuff\";' onclick='moveFile(this, \"" + filename + "\",\"duplicates\",\""+id+"\")' style='background-color:"+getColorForDir(dirName)+"'>dup</button><br>";
+//		debugger;
+		html += "<button onmousedown='this.style.cssText = \"background-color : peachpuff\";' onclick='moveFile(this, \"" + filenameEscaped + "\",\"duplicates\",\""+id+"\",\""+fileObj.fileSystemBase64+"\")' style='background-color:"+getColorForDir(dirName)+"'>dup</button><br>";
 		html += "</span>";
 		--files2;
 		if (files2 < 1 && !startsWith(dirName, '_+')) {
@@ -646,7 +632,7 @@ function createItemHtml(response, item, key, unused, fileObj, subDirs)
 	var idstring = idstringUnescaped.replace(/'/g, "&apos;");
 	id += 1;
 
-	var buttonPanel = createButtonsPanel(item, subDirs, key, idstring);
+	var buttonPanel = createButtonsPanel(item, subDirs, key, idstring, fileObj.fileSystemBase64);
 	var prettyDate = "----";
 	//console.debug('createItemHtml() - 4  ' + item);
 	
@@ -746,7 +732,7 @@ function createButtonsPanelForDir(item, subdirs, key, idstring) {
 
 // item = filepath
 // key = dirpath
-function createButtonsPanel(item, subdirs, key, idstring) {
+function createButtonsPanel(item, subdirs, key, idstring, fileSystemBase64) {
 //	console.debug('createButtonsPanel() - begin');
 	var buttons = "<table><tr><td>";							
 	{
@@ -771,7 +757,7 @@ function createButtonsPanel(item, subdirs, key, idstring) {
 				if (res1 != null) {
 					continue;
 				}
-				buttons += "<button onmousedown='this.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstringescaped+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
+				buttons += "<button onmousedown='this.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstringescaped+"\",\""+fileSystemBase64+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
 			}
 		}
 	}
@@ -893,6 +879,21 @@ function dirObjToHtml2(dirObj) {
 	return toBeAppended;
 }
 
+function reRender() {
+	//pairs = shuffle(pairs);
+	//pairs = shuffle(pairs);
+	reRenderCards();
+	loadImagesSequentially(0);
+}
+
+// TODO: pass "pairs" as a parameter
+function reRenderCards() {
+	$('#itemsNew').empty();
+	var html = "";
+	html += pairs.map(DIR_TO_HTML_CARDS).join('');
+	$('#itemsNew').append(html);
+}
+
 function DIR_TO_HTML_CARDS(dirObj) {
 	return dirToHtmlCards(dirObj);
 }
@@ -935,7 +936,7 @@ function dirToHtmlCards(dirObj) {
 var id = 0;
 
 function dirToHtmlParameterized(subdirs) {
-//	console.debug('fileToHtmlParameterized() - begin');
+
 	return function dirToHtml(dirPair) {
 		var ret = "";
 		var dirPath = Object.keys(dirPair)[0];
@@ -983,11 +984,20 @@ function moveDir(button, dirPath, destinationDirSimpleName,id) {
 	});
 }
 
-function moveFile(button, filePath, destinationDirSimpleName,id) {
+function moveFile(button, filePath, destinationDirSimpleName,id, filePathBase64) {
+
+	$.getJSON(urlBase + "/moveBase64?filePath="+encodeURIComponent(filePathBase64) + "&destinationDirSimpleName=" + encodeURIComponent(destinationDirSimpleName),function(response){
+		removeImageElement(filePath);
+		// TODO: Also remove from pairs global variable so it doesn't keep coming back when we shuffle
+	})
+
+/*
+This still isn't working with accented characters after I fixed all the escaping
 	$.getJSON(urlBase + "/move?filePath="+encodeURIComponent(filePath) + "&destinationDirSimpleName=" + encodeURIComponent(destinationDirSimpleName),function(response){
 		removeImageElement(filePath);
 		// TODO: Also remove from pairs global variable so it doesn't keep coming back when we shuffle
 	});
+	*/
 	$.getJSON("http://netgear.rohidekar.com:44466/?value="+encodeURIComponent(filePath) + "&categoryId=" + encodeURIComponent(destinationDirSimpleName),function(response){
 		console.debug("Click recorded");
 	});

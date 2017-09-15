@@ -1,3 +1,7 @@
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.StringUtils;
+
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -35,6 +39,7 @@ public class List2Json {
 		while ((line = br.readLine()) != null) {
 //System.err.print(".");
 //System.err.println("[DEBUG] List2Json.main() " + line);
+			try {
 			Path p = Paths.get(line);
 			Path parent = p.getParent();
 			if (parent != null) {
@@ -44,6 +49,9 @@ public class List2Json {
 
 				children.put(parent, p);
 				childDir2ParentDir.put(parent, parent.getParent());
+			}
+			}catch(Exception e) {
+				System.err.println("List2Json.main() - " + e.getStackTrace());
 			}
 		}
 		if (root == null) {
@@ -201,6 +209,8 @@ System.err.println("[DEBUG] List2Json.toDirJson() " + topLevel.toString());
 											.getAbsolutePath().toString())
 							.add("fileSystem",
 									iPath.toAbsolutePath().toString())
+							.add("fileSystemBase64",
+									Base64.encodeBase64String(StringUtils.getBytesUtf8((iPath.toAbsolutePath().toString()))).trim() )
 							.add("httpUrl",
 									httpLinkFor(iPath.toAbsolutePath()
 											.toString()))

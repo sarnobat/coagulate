@@ -1,5 +1,8 @@
 import static com.google.common.base.Predicates.not;
 
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.StringUtils;
+import java.util.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -172,6 +175,44 @@ public class Coagulate {
 		}
 
 		@GET
+		@javax.ws.rs.Path("moveBase64")
+		@Produces("application/json")
+		public Response moveBase64(
+				@QueryParam("filePath") String iFilePath1,
+				@QueryParam("destinationDirSimpleName") String iDestinationDirSimpleName)
+				throws JSONException, IOException {
+			System.err.println("moveBase64() " + iFilePath1);
+
+			String iFilePath = "";
+			try {
+			iFilePath = StringUtils.newStringUtf8(Base64.decodeBase64(iFilePath1));//Base64.getDecoder().decode(iFilePath1);
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.err.println("moveBase64() " + e.toString());
+				throw e;
+			}
+			System.err.println("moveBase64() " + iFilePath);
+			if (iFilePath.endsWith("htm") || iFilePath.endsWith(".html")) {
+				throw new RuntimeException("Need to move the _files folder too");
+			}
+			if (iDestinationDirSimpleName.equals("_ 1")) {
+				System.out.println("move() - dir name is wrong");
+				throw new RuntimeException("dir name is wrong: " + iDestinationDirSimpleName);
+			}
+			
+			try {
+				Operations.moveFileToSubfolder(iFilePath, iDestinationDirSimpleName);
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new RuntimeException(e);
+			}
+			return Response.ok()
+					.header("Access-Control-Allow-Origin", "*")
+					.entity(new JSONObject().toString(4)).type("application/json")
+					.build();
+		}
+
+		@GET
 		@javax.ws.rs.Path("move")
 		@Produces("application/json")
 		public Response move(
@@ -185,6 +226,7 @@ public class Coagulate {
 				System.out.println("move() - dir name is wrong");
 				throw new RuntimeException("dir name is wrong: " + iDestinationDirSimpleName);
 			}
+			System.err.println("move() " + iFilePath);
 			try {
 				Operations.moveFileToSubfolder(iFilePath, iDestinationDirSimpleName);
 			} catch (Exception e) {
