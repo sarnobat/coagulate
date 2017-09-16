@@ -757,7 +757,8 @@ function createButtonsPanel(item, subdirs, key, idstring, fileSystemBase64) {
 				if (res1 != null) {
 					continue;
 				}
-				buttons += "<button onmousedown='this.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstringescaped+"\",\""+fileSystemBase64+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
+				debugger;
+				buttons += "<button onmousedown='this.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstringescaped+"\",\""+fileSystemBase64.replace(/\r\n/,"\\r\\n")+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
 			}
 		}
 	}

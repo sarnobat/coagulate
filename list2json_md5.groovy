@@ -26,7 +26,11 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 
-public class List2Json {
+/*
+ * Creates JSON objects for each file, including an MD5 hash
+ */
+ // Hmmmmmm, this will require major rewriting
+public class List2JsonMd5 {
 
 	public static void main(String[] args) throws IOException {
 		Multimap<Path, Path> children = HashMultimap.create();
@@ -36,7 +40,9 @@ public class List2Json {
 		int rootDepth = Integer.MAX_VALUE;
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		String line;
-		while ((line = br.readLine()) != null) {
+		while ((lineFull = br.readLine()) != null) {
+			String elems = lineFull.split("::");
+			String line = elems[1];
 //System.err.print(".");
 //System.err.println("[DEBUG] List2Json.main() " + line);
 			try {
