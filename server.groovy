@@ -1122,22 +1122,32 @@ System.out.println("DirObj::getFiles() - " + path);
 		
 		static void moveFileToSubfolder(String filePath,
 				String iSubfolderSimpleName) throws IllegalAccessError, IOException {
-			System.out.println("moveFileToSubfolder() - begin: " + filePath);
+			System.out.println("moveFileToSubfolder() - beginn: " + filePath);
 			Path sourceFilePath = Paths.get(filePath);
-                        System.out.println("moveFileToSubfolder() - sourceFilePath = " + sourceFilePath);
-			if (!Files.exists(sourceFilePath)) {
-				throw new RuntimeException("No such source file: " + sourceFilePath.toAbsolutePath().toString());
+			System.out.println("moveFileToSubfolder() - sourceFilePathh = " + sourceFilePath);
+			File f = sourceFilePath.toFile();
+			System.out.println("moveFileToSubfolder() - f = " + f);
+			boolean sourceExists = f.exists();
+			System.out.println("moveFileToSubfolder() - sourceExists = " + sourceExists);
+			try {
+				if (!sourceExists) {
+					System.out.println("moveFileToSubfolder() - file doesn't exist: " + filePath);
+					throw new RuntimeException("No such source file: " + sourceFilePath.toAbsolutePath().toString());
+				}
+				System.out.println("moveFileToSubfolder() - getting targetDir path " + sourceFilePath);
+				Path targetDir = Paths.get(sourceFilePath.getParent().toString() + "/" + iSubfolderSimpleName);
+				if (!Files.exists(targetDir)) {
+					System.out.println("moveFileToSubfolder() - Target directory doesn't exist. Creating dir " + targetDir.toString());
+					Files.createDirectory(targetDir);
+				} else if (!Files.isDirectory(targetDir)) {
+					System.out.println("moveFileToSubfolder() - Target is an existing file: " + filePath);
+					throw new RuntimeException("Target is an existing file");
+				}
+				Operations.doMove(sourceFilePath, getUnconflictedDestinationFilePath(iSubfolderSimpleName, sourceFilePath));
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw e;
 			}
-			Path targetDir = Paths.get(sourceFilePath.getParent().toString()
-					+ "/" + iSubfolderSimpleName);
-			if (!Files.exists(targetDir)) {
-				System.out.println("moveFileToSubfolder() - Target directory doesn't exist. Creating dir " + targetDir.toString());
-				Files.createDirectory(targetDir);
-			} else if (!Files.isDirectory(targetDir)) {
-				throw new RuntimeException("Target is an existing file");
-			}
-			Operations.doMove(sourceFilePath, getUnconflictedDestinationFilePath(iSubfolderSimpleName, sourceFilePath));
-
 		}
 
 		private static void doCopy(Path sourceFilePath, Path destinationFilePath) {
@@ -1178,6 +1188,7 @@ System.out.println("DirObj::getFiles() - " + path);
 		
 		private static void doMove(Path path, Path destinationFile)
 				throws IllegalAccessError {
+				System.out.println("doMove() - begin");
 			try {
 				Files.move(path, destinationFile);// By default, it won't
 													// overwrite existing
@@ -1245,7 +1256,10 @@ System.out.println("DirObj::getFiles() - " + path);
 	private static final int fsPort = 4452;
 
 	public static void main(String[] args) throws URISyntaxException, IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, CertificateException, InterruptedException {
+		System.out.println("start");
+boolean b = Files.exists(Paths.get("/Unsorted/new/images/tumblr_m62cxfJDjg1qgytsho1_1280.jpg"));
 
+		System.out.println("b = " + b);
 		System.out.println("Note this doesn't work with JVM 1.8 build 45 due to some issue with TLS");
 		
 		String port = null;
