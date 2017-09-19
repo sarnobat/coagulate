@@ -39,7 +39,7 @@ public class List2JsonMd5 {
 		Path root = null;
 		int rootDepth = Integer.MAX_VALUE;
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-		String line;
+		String lineFull;
 		while ((lineFull = br.readLine()) != null) {
 			String elems = lineFull.split("::");
 			String line = elems[1];
