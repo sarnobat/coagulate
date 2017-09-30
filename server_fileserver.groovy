@@ -197,6 +197,7 @@ System.out.println("audio: " + audio);
 	        Response.ResponseBuilder res = Response.ok(streamer).status(206)
 	                .header("Accept-Ranges", "bytes")
 	                .header("Content-Range", responseRange)
+			.header("Access-Control-Allow-Origin","*")
 	                .header(HttpHeaders.CONTENT_LENGTH, streamer.getLenth())
 	                .header(HttpHeaders.CONTENT_TYPE, contentType)
 	                .header(HttpHeaders.LAST_MODIFIED, new Date(asset.lastModified()));
