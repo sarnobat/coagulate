@@ -64,10 +64,10 @@ public class CoagulateFileServer {
 	    public Response streamFile(
 	    		@PathParam("filePath") @Encoded String filePath3,
 	    		@HeaderParam("Range") String range) throws Exception {
-String filePath2 = StringUtils.newStringUtf8(Base64.decodeBase64(filePath3));
-System.out.println("Request raw:\t" + filePath2);
-String filePath1 = new org.apache.commons.codec.net.URLCodec("UTF8").decode(filePath2);
-System.out.println("Request:\t\t" + filePath1);
+String filePath1 = StringUtils.newStringUtf8(Base64.decodeBase64(filePath3));
+//System.out.println("Request raw:\t" + filePath2);
+//String filePath1 = new org.apache.commons.codec.net.URLCodec("UTF8").decode(filePath2);
+//System.out.println("Request:\t\t" + filePath1);
 	        File audio;
 	        String filePath = filePath1;
 	        if (!filePath1.startsWith("/")) {
@@ -81,7 +81,7 @@ System.out.println("Request:\t\t" + filePath1);
 				throw e;
 			}
 			audio = p.toFile();
-System.out.println("audio: " + audio);
+//System.out.println("audio: " + audio);
 	        return PartialContentServer.buildStream(audio, range, getMimeType(audio));
 	    }	
 	    
@@ -141,7 +141,7 @@ System.out.println("audio: " + audio);
 				// I don't know why this doesn't work, but actual files with
 				// european chars coming from Chrome do work so we'll avoid printing
 				// this.
-				System.out.println("Coagulate.PartialContentServer.buildStream() test file doesn't exist");
+//				System.out.println("Coagulate.PartialContentServer.buildStream() test file doesn't exist");
 			}
 			if (!asset.exists()) {
 				if (!asset.getAbsolutePath().contains("thumbnail")) {
