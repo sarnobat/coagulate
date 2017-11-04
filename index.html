@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html>
 <head>
 <title>Coagulate (Content Management System)</title>
@@ -244,7 +243,7 @@ function dirObjToHtmlWithButtons(val, dir) {
 		html += "<button onclick='up(\""+filenameEscaped +"\",\""+id+"\", "+level+", this)'>+</button>";
 		html += "<button onclick='down(\""+ filenameEscaped +"\",\""+id+"\", "+level+", this)'>-</button><br>";
 //		debugger;
-		html += "<button onmousedown='this.style.cssText = \"background-color : peachpuff\";' onclick='moveFile(this, \"" + filenameEscaped + "\",\"duplicates\",\""+id+"\",\""+fileObj.fileSystemBase64+"\")' style='background-color:"+getColorForDir(dirName)+"'>dup</button><br>";
+		html += "<!-- SRIDHAR2 --><button onmousedown='this.style.cssText = \"background-color : peachpuff\";' onclick='moveFile(this, \"" + filenameEscaped + "\",\"duplicates\",\""+id+"\",\""+fileObj.fileSystemBase64.replace(/\n/g,"").replace(/\r/g,"")+"\")' style='background-color:"+getColorForDir(dirName)+"'>dup</button><br>";
 		html += "</span>";
 		--files2;
 		if (files2 < 1 && !startsWith(dirName, '_+')) {
@@ -528,9 +527,6 @@ function loadImagesSequentially(i) {
 		return
 	}
 	var datasrc = $(images[i]).attr('data-src');
-	if (datasrc.includes('Napa')) {
-		debugger;
-	}
 	$(images[i]).attr('src', decodeURIComponent(datasrc));
 	var a = function(j) {
 		loadImagesSequentially(++i);
@@ -631,7 +627,9 @@ function createItemHtml(response, item, key, unused, fileObj, subDirs)
 	var idstringUnescaped = "card-" + fileObj.fileSystem;	
 	var idstring = idstringUnescaped.replace(/'/g, "&apos;");
 	id += 1;
-
+if (fileObj.fileSystemBase64 == null) {
+	debugger;
+}
 	var buttonPanel = createButtonsPanel(item, subDirs, key, idstring, fileObj.fileSystemBase64);
 	var prettyDate = "----";
 	//console.debug('createItemHtml() - 4  ' + item);
@@ -741,7 +739,7 @@ function createButtonsPanel(item, subdirs, key, idstring, fileSystemBase64) {
 //		if (idstring.indexOf("'") > -1) {
 //			console.debug(idstringescaped);
 //		}
-		buttons += "<button onclick='moveFileToParent(\"" + escaped + "\",\""+idstringescaped+"\")'>Wrong Category</button><br>";
+		buttons += "<!-- SRIDHAR3 --><button onclick='moveFileToParent(\"" + escaped + "\",\""+idstringescaped+"\")'>Wrong Category</button><br>";
 		var subdirsArray = Object.keys(subdirs).sort(sortFunction);
 		{
 			var buttonsAdded = 0;
@@ -757,8 +755,11 @@ function createButtonsPanel(item, subdirs, key, idstring, fileSystemBase64) {
 				if (res1 != null) {
 					continue;
 				}
-				debugger;
-				buttons += "<button onmousedown='this.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstringescaped+"\",\""+fileSystemBase64.replace(/\r\n/,"\\r\\n")+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
+				if (fileSystemBase64 == null) {
+					debugger;
+				}
+				var fsbase64newlinesreplaced = fileSystemBase64.replace(/\n/g,"").replace(/\r/g,"");
+				buttons += "<button onmousedown='this.style.cssText = \"background-color : orange\";' onclick='moveFile(this, \"" + escaped + "\",\"" + dirName + "\",\""+idstringescaped+"\",\""+fsbase64newlinesreplaced+"\")' style='background-color:"+getColorForDir(dirName)+"'>"+dirName+"</button><br>";
 			}
 		}
 	}
@@ -814,16 +815,12 @@ function fileObjToHtml(fileObj) {
 			var res = item.match(/.*\.((jpe?g)|(png)|(gif)|(bmp))/gi);
 			if (res !=null) {
 				toBeAppended += '<a href=\'' + httpUrl + '\' target="_blank">';
-				if (httpUrl.endsWith('2BNapa.png')) {
-				// thumbnail
-//						debugger;
-				}
 				var degreesToOrient = 0;
 				if (fileObj.exif) {
 					degreesToOrient = 90*(parseInt(fileObj.exif.orientation) - 1);
 				}
 				toBeAppended += '<img src="http://www.htmlgoodies.com/images/1x1.gif" width="' + WIDTH_250 + 'px" height="1px"><br>';
-				toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURIComponent(httpUrl) +'?width=' + WIDTH_250 + '" style="transform: rotate(' + degreesToOrient + 'deg)"/>';
+				toBeAppended += '<img class="loadImageSequentially" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-src="' + encodeURIComponent(httpUrl) +'?width=' + WIDTH_250 + '" style="transform: rotate(' + degreesToOrient + 'deg); width : 250px"/>';
 				toBeAppended += '</a>';
 			}
 		}
@@ -1039,6 +1036,8 @@ function getColorForDir(dirName) {
 	}  else if (dirName == 'teen') {
 		color = 'lavender';
 	} else if (dirName.match(/productivity/i)) {
+                color = 'yellow';
+	 } else if (dirName.match(/web/i)) {
                 color = 'yellow';
 	} else if (dirName.match(/soccer/i)) {
 		color = 'green';

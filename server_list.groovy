@@ -1,5 +1,10 @@
 import static com.google.common.base.Predicates.not;
 
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.StringUtils;
+
+import java.nio.charset.Charset;
+import org.apache.commons.io.*;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.URI;
@@ -87,25 +92,48 @@ public class CoagulateList {
 				boolean doDynamicList = true;
 				if (iDirectoryPathsString.trim().contains("\n")) {
 					doDynamicList = true;
-					System.err.println("CoagulateList.MyResource.list() - no cache file found");
 				} else {
 					String cacheFile = iDirectoryPathsString.trim() + "/_coagulate.txt";
 					if (Files.exists(Paths.get(cacheFile))) {
-						System.err.println("CoagulateList.MyResource.list() - cache file found");
+						System.err.println("CoagulateList.MyResource.list() - cache file found for " + iDirectoryPathsString);
 						doDynamicList = false;
+					} else {
+						System.err.println("CoagulateList.MyResource.list() - no cache file found");
 					}
 				}
 					
 				String output;
+				String cacheFile = iDirectoryPathsString.trim() + "/_coagulate.txt";
 				if (doDynamicList) {
 					JsonObject response = RecursiveLimitByTotal2.getDirectoryHierarchies(
 									iDirectoryPathsString, Integer.parseInt(iLimit), iDepth);
 					System.err.println("list() - end");
 					output = response.toString();
+					FileUtils.write(Paths.get(cacheFile).toFile(), output, Charset.defaultCharset());
+                                        System.err.println("list() - wrote to cache file");
 				} else {
 					System.err.println("list() - reading cache");
-					String cacheFile = iDirectoryPathsString.trim() + "/_coagulate.txt";
 					output = IOUtils.readFile(Paths.get(cacheFile).toFile());
+					new Thread() {
+						@Override
+						public void run() {
+							try {
+								Files.delete(Paths.get(cacheFile));
+								System.err.println("[DEBUG] removed cache cache file.");
+
+			                                        JsonObject response = RecursiveLimitByTotal2.getDirectoryHierarchies(
+                                                                        iDirectoryPathsString, Integer.parseInt(iLimit), iDepth);
+                     				                output = response.toString();
+                        			                FileUtils.write(Paths.get(cacheFile).toFile(), output, Charset.defaultCharset());
+			                                        System.err.println("list() - wrote to cache file async");
+							} catch (Exception e) {
+								System.err.println("[ERROR] " + e);
+								e.printStackTrace();
+							}
+						}
+					}
+					.start()
+					;
 					System.err.println("list() - read cache successfully");
 				}
 				return Response.ok().header("Access-Control-Allow-Origin", "*")
@@ -273,8 +301,11 @@ System.err.println("createFilesJsonRecursiveNew() - " + aDirectoryPath1);
 		
 		private static Set<Path> getSubPaths(Path iDirectoryPath, Filter<Path> isfile2)
 				throws IOException {
+System.err.println("[DEBUG] getSubPaths() 1");
 			DirectoryStream<Path> filesInDir2 = Files.newDirectoryStream(iDirectoryPath, isfile2);
+System.err.println("[DEBUG] getSubPaths() 2");
 			Set<Path> filesInDir = FluentIterable.from(filesInDir2).filter(SHOULD_DIP_INTO).toSet();
+System.err.println("[DEBUG] getSubPaths() 3");
 			filesInDir2.close();
 			return filesInDir;
 		}
@@ -478,6 +509,7 @@ System.err.println("createFilesJsonRecursiveNew() - " + aDirectoryPath1);
 				}
 				
 				JsonObject build = dirHierarchyJson.build();
+                                System.err.println("dipIntoDirRecursive() - 4 " + iDirectoryPath);
 				return build;
 			}
 
@@ -488,7 +520,9 @@ System.err.println("createFilesJsonRecursiveNew() - " + aDirectoryPath1);
 				try {
 					filesInDir2 = Files.newDirectoryStream(iDirectoryPath, isfile2);
 					filesInDir = FluentIterable.from(filesInDir2).filter(SHOULD_DIP_INTO).toSet();
-				} catch (AccessDeniedException e) {
+				} catch (Exception e) {
+					e.printStackTrace();
+					System.err.println("[ERROR] " + e);
 					filesInDir = ImmutableSet.of();
 				} finally {
 					if (filesInDir2 != null) {
@@ -515,6 +549,7 @@ System.err.println("createFilesJsonRecursiveNew() - " + aDirectoryPath1);
 				try {
 					int addedCount = 0;
 					Predicates.Contains predicate = new Predicates.Contains(filesToIgnore);
+                                System.err.println("getFilesInsideDir()  1.5 - " + iDirectoryPath);
 					for (Path p : FluentIterable.from(getSubPaths(iDirectoryPath, Predicates.IS_FILE))
 							.filter(not(predicate)).filter(Predicates.IS_DISPLAYABLE).toSet()) {
 						String absolutePath = p.toAbsolutePath().toString();
@@ -534,6 +569,7 @@ System.err.println("createFilesJsonRecursiveNew() - " + aDirectoryPath1);
 					e.printStackTrace();
 				}
 				ImmutableMap<String, JsonObject> build1 = filesInDir.build();
+                                System.err.println("getFilesInsideDir()  3 - " + iDirectoryPath);
 				return build1;
 			}
 			private static class CannotDipIntoDirException extends Exception {
@@ -674,7 +710,7 @@ System.err.println("createFilesJsonRecursiveNew() - " + aDirectoryPath1);
 		private static final Function<Path, JsonObject> PATH_TO_JSON_ITEM = new Function<Path, JsonObject>() {
 			@Override
 			public JsonObject apply(Path iPath) {
-
+System.err.print(".");
 				if (iPath.toFile().isDirectory()) {
 					long created;
 					try {
@@ -689,6 +725,7 @@ System.err.println("createFilesJsonRecursiveNew() - " + aDirectoryPath1);
 							.add("location",
 									iPath.getParent().toFile().getAbsolutePath().toString())
 							.add("fileSystem", iPath.toAbsolutePath().toString())
+							.add("fileSystemBase64",Base64.encodeBase64String(StringUtils.getBytesUtf8((iPath.toAbsolutePath().toString()))).trim())
 							.add("httpUrl", httpLinkFor(iPath.toAbsolutePath().toString()))
 							.add("thumbnailUrl",
 									"http://www.pd4pic.com/images/windows-vista-folder-directory-open-explorer.png")
@@ -709,6 +746,7 @@ System.err.println("createFilesJsonRecursiveNew() - " + aDirectoryPath1);
 							.add("location",
 									iPath.getParent().toFile().getAbsolutePath().toString())
 							.add("fileSystem", iPath.toAbsolutePath().toString())
+							.add("fileSystemBase64",Base64.encodeBase64String(StringUtils.getBytesUtf8((iPath.toAbsolutePath().toString()))).trim())
 							.add("httpUrl", httpLinkFor(iPath.toAbsolutePath().toString()))
 							.add("thumbnailUrl", httpLinkFor(thumbnailFor(iPath)))
 							.add("created", created).build();
