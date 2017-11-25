@@ -31,12 +31,12 @@ $(document).ready(function(){
 
 function refresh() {
 
-	var dirs1 = $("#urls").text().split(/\n/)
+	var dirs1 = $("#urls").val().split(/\n/)
 		.filter(function(item) { return !item.match(/.*fuse.*/);})
 		.filter(function(item) { return item.match(/.*\/([^.]+)$/);})
 		.map(function(item) { return item.replace(/.*\/(.+)/g,'$1') ;})
 		.sort(CASE_INESENSITIVE)
-		.map(function(item) { return "<button onclick='moveFile(this)' dir='"+btoa(item)+"'>" + item.substring(0,20) + "</button>";})
+		.map(function(item) { return "<button onclick='moveFile(this)' dir='"+btoa(item)+"' style='background-color:"+getColorForDir(item)+"'>" + item.substring(0,20) + "</button>";})
 		//.join("<br>")
 		;
 		
@@ -52,8 +52,9 @@ function refresh() {
 	});
 	dirs += "</td></tr></table>";
 
-	var html = $("#urls").text().split(/\n/)
+	var html = $("#urls").val().split(/\n/)
 		.filter(function(item) { return !item.match(/.*fuse.*/);})
+		.filter(function(item) { return item.match(/.*\..*/);})
 		.map(function(item) { return item.replace('/media/sarnobat','') ;})
 		.map(function(item) { 
 			
@@ -74,9 +75,13 @@ function moveFile(button) {
 	var itemElement = button.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement;
 	var filePathBase64 = itemElement.getAttribute('file');
 
+	itemElement.remove();
+
 	$.getJSON(urlBase + "/moveBase64?filePath="+encodeURIComponent(filePathBase64) + "&destinationDirSimpleName=" + encodeURIComponent(destinationDirSimpleName),function() {
-			itemElement.remove();
-	});
+			
+	}).fail(function(e) {
+    alert( "error: " + e);
+  });
 
 }
 
@@ -84,301 +89,49 @@ function CASE_INESENSITIVE(a, b) {
     return a.toLowerCase().localeCompare(b.toLowerCase());
 }
 
+function getColorForDir(dirName) {                                                              
+        var color = "";
+        if (dirName == 'other' || dirName == 'divas') {
+                color = 'pink';
+        } else if (dirName.match(/Atletico/i) || dirName == 'brst') {
+                color = 'red';
+        }
+        else if (dirName.match(/Liverpool/i)) {
+                color = 'red';
+        }
+         else if (dirName == 'legs') {
+                color = 'yellow';
+        }  else if (dirName == 'navel') {
+                color = 'lightpurple';
+        }  else if (dirName == 'teen') {
+                color = 'lavender';
+        } else if (dirName.match(/productivity/i)) {
+                color = 'yellow';
+         } else if (dirName.match(/web/i)) {
+                color = 'yellow';
+        } else if (dirName.match(/soccer/i)) {
+                color = 'green';
+        } else if (dirName == 'ind') {
+                color = 'orange';
+        }
+        return color;
+}
+
 </script>
 </head>
-<body onload="refresh()">
 
+<body>
 
-<textarea id="urls" cols=100>
+<h3>Command</h3>
+<textarea cols=30>
+find $PWD/ -maxdepth 1
+</textarea>
 
-/media/sarnobat/Unsorted/Videos/Carol Vorderman - All About That Bass _ Lip Sync Battle UK.mp4 .mp4
-/media/sarnobat/Unsorted/Videos/Cat_drinking_from_tap.mp4
-/media/sarnobat/Unsorted/Videos/Cheerleader Wardrobe Malfunction _ The Show Goes On.mp4 Winter Olympics ULTIMATE SPANDEX FAIL - wardrobe malfunction gilly cooke.webm .mp4
-/media/sarnobat/Unsorted/Videos/commercials
-/media/sarnobat/Unsorted/Videos/Courtesy of others
-/media/sarnobat/Unsorted/Videos/Dave's #EpicStrut TV Ad MoneySuperMarket January 2015 [HD] [OFFICIAL].mp4
-/media/sarnobat/Unsorted/Videos/Denisse_Gomez_Venezolana_en_el_gimnasio
-/media/sarnobat/Unsorted/Videos/We Are Smithsonian-4N5C6ktMHuQ.mp4
-/media/sarnobat/Unsorted/Videos/Wet T-Shirt Contest [gif].mp4
-/media/sarnobat/Unsorted/Videos/EPIC BEARD MAN VS WANNA-BE (I AM A MOTHERF_CKER).mp4
-/media/sarnobat/Unsorted/Videos/Epic_Boob_Shimmy.mp4
-/media/sarnobat/Unsorted/Videos/Estadio RMCF Santiago Bernabéu Construction Process.webm .webm
-/media/sarnobat/Unsorted/Videos/Eu versus free willy.webm
-/media/sarnobat/Unsorted/Videos/Eu versus free willy.webm .webm
-/media/sarnobat/Unsorted/Videos/Liverpool_release_the_official_animation....mp4
-/media/sarnobat/Unsorted/Videos/Liverpool_s_cat_is_back.mp4
-/media/sarnobat/Unsorted/Videos/London_s_Olympic_Stadium_Built_In_2_Minutes.mp4
-/media/sarnobat/Unsorted/Videos/Longest_headed_goal_in_the_world_-_Jone_Samuelsen_Hd.mp4
-/media/sarnobat/Unsorted/Videos/Los Picones de Kerly Ruiz.mp4 .mkv
-/media/sarnobat/Unsorted/Videos/maddies_butt.webm
-/media/sarnobat/Unsorted/Videos/Made Up Theatre Improv Comedy Classes.mp4
-/media/sarnobat/Unsorted/Videos/.dsc01731_0.jpg .VtAeYB
-/media/sarnobat/Unsorted/Videos/.fuse_hidden0000001600000009
-/media/sarnobat/Unsorted/Videos/Welcome to Silicon Valley.mp4.f251
-/media/sarnobat/Unsorted/Videos/Staniji Dobrojevic ispala sisa u sred programa SVE se otkrilo.mp4 .mkv
-/media/sarnobat/Unsorted/Videos/Steady_Cam_Roxant_Pro_Video_Camera_Stabilizer_Test.mp4 .mkv
-/media/sarnobat/Unsorted/Videos/Stick your bum out.webm .webm
-/media/sarnobat/Unsorted/Videos/Stock Photography, Royalty-Free Photos & The Latest News Pictures _ Getty Images.mp4
-/media/sarnobat/Unsorted/Videos/stock_music
-/media/sarnobat/Unsorted/Videos/Stuck_On_You_-_The_Football_Sticker_Story_Tuesday_14th_November_Itv4.mp4
-/media/sarnobat/Unsorted/Videos/Sweden_England_1998_Qec_2000.mkv
-/media/sarnobat/Unsorted/Videos/Take Pride in Your Pregame by Leveling Up Your Morning Routine.mp4
-/media/sarnobat/Unsorted/Videos/Tao_tao_con_las_Lindas_-.mkv
-/media/sarnobat/Unsorted/Videos/Te Be number One_U235.mp4 .mp4
-/media/sarnobat/Unsorted/Videos/images
-/media/sarnobat/Unsorted/Videos/John Oliver - Singles Day.mp4 .mkv
-/media/sarnobat/Unsorted/Videos/Kitty McInerney Book Trailer.mp4
-/media/sarnobat/Unsorted/Videos/Soccer_Superstars
-/media/sarnobat/Unsorted/Videos/Sold Out - The Underground Economy of Supreme Resellers - Full-Length.mp4 .f171
-/media/sarnobat/Unsorted/Videos/Soldier_Welcomed_Home_by_Excited_Cat.mkv
-/media/sarnobat/Unsorted/Videos/Somos_socios_del_atleti.mkv
-/media/sarnobat/Unsorted/Videos/video_900_640Seg1-Frag3.mp4
-/media/sarnobat/Unsorted/Videos/video_editing
-/media/sarnobat/Unsorted/Videos/Vinheta Globeleza (2003).mp4 .mp4
-/media/sarnobat/Unsorted/Videos/Vinheta Globeleza (2005).mp4 .mp4
-/media/sarnobat/Unsorted/Videos/VINTAGE EARLY 90S LISA FRANK COMMERCIAL W A YOUNG MILA KUNIS.mp4 .mp4
-/media/sarnobat/Unsorted/Videos/VioletSnappyBedbug
-/media/sarnobat/Unsorted/Videos/w6Dm_360
-/media/sarnobat/Unsorted/Videos/w6DM_360.webm
-/media/sarnobat/Unsorted/Videos/Wakko_s_50_State_Capitols.mkv
-/media/sarnobat/Unsorted/Videos/Wales_v_Italy_Euro_Qualifier_September_1998.mp4
-/media/sarnobat/Unsorted/Videos/watch?v=MBvFjnMRiEw
-/media/sarnobat/Unsorted/Videos/.fuse_hidden000224ac00000003
-/media/sarnobat/Unsorted/Videos/.fuse_hidden000adf5700000001
-/media/sarnobat/Unsorted/Videos/C0Iz4UdXgAEd-HA.mp4
-/media/sarnobat/Unsorted/Videos/C0ny_wTWQAAnhJ8.mp4
-/media/sarnobat/Unsorted/Videos/C11VKTcXgAAzL8b.mp4
-/media/sarnobat/Unsorted/Videos/C1Vi0_MXEAEfCvF.mp4
-/media/sarnobat/Unsorted/Videos/Caballito_de_de_Palo_-_Olinda_Castaneda.mkv
-/media/sarnobat/Unsorted/Videos/Cable_Car_Ridership_Down_Significantly_In_Recent_Years.mp4
-/media/sarnobat/Unsorted/Videos/California Dreamin - Mamas & The Papas.mp4
-/media/sarnobat/Unsorted/Videos/Calypso_Carol_promo_www.simonsmusic.nl.mkv
-/media/sarnobat/Unsorted/Videos/Cameron Diaz - The Mask.mp4
-/media/sarnobat/Unsorted/Videos/Can Can from Orpheus in the Underworld Gimnazija Kranj Symphony Orchestra.mp4
-/media/sarnobat/Unsorted/Videos/Can Michael Fass-Bend It .flv
-/media/sarnobat/Unsorted/Videos/Career Coaching Versus Career Counseling.webm
-/media/sarnobat/Unsorted/Videos/.fuse_hidden0000000f00000002
-/media/sarnobat/Unsorted/Videos/.fuse_hidden0000001100000004
-/media/sarnobat/Unsorted/Videos/.fuse_hidden0000001200000005
-/media/sarnobat/Unsorted/Videos/.fuse_hidden0000001300000006
-/media/sarnobat/Unsorted/Videos/.fuse_hidden0000001400000002
-/media/sarnobat/Unsorted/Videos/.fuse_hidden0000001400000003
-/media/sarnobat/Unsorted/Videos/Partido en el Vicente Calderón.mp4 .mp4
-/media/sarnobat/Unsorted/Videos/Party in the USA Music Video.mp4 .mkv
-/media/sarnobat/Unsorted/Videos/Patriotic
-/media/sarnobat/Unsorted/Videos/Pechos (casate y veras).mp4 .mp4
-/media/sarnobat/Unsorted/Videos/gender
-/media/sarnobat/Unsorted/Videos/Get up, stand up - Stand up for your rights! [gif].mp4
-/media/sarnobat/Unsorted/Videos/Glutamato Ye Ye Todos los negritos La Bola de Cristal TVE 1984.mp4 .mkv
-/media/sarnobat/Unsorted/Videos/Gmail
-/media/sarnobat/Unsorted/Videos/Gol_Adrian_Desde_La_Grada_Rojiblanca_De_Mestall.mkv
-/media/sarnobat/Unsorted/Videos/Gorilla_Monsoon_Bobby_Heenan_visit_Tony_Packo_s_Cafe_Prime_Time_Nov_1st_1988.mkv
-/media/sarnobat/Unsorted/Videos/Sony HD remnants 2014-08-28
-/media/sarnobat/Unsorted/Videos/Son_los_socios_del_atleti....mp4
-/media/sarnobat/Unsorted/Videos/soy_socio_del_atleti_cantando_todo_el_calderon_.Avi.mp4
-/media/sarnobat/Unsorted/Videos/Spoilt_ginger_cat_gets_pampered.mkv
-/media/sarnobat/Unsorted/Videos/sports
-/media/sarnobat/Unsorted/Videos/Spring Breakers - Official Red Band Trailer (2013) [HD].mp4 .mp4
-/media/sarnobat/Unsorted/Videos/gameshows
-/media/sarnobat/Unsorted/Videos/health
-/media/sarnobat/Unsorted/Videos/humor
-/media/sarnobat/Unsorted/Videos/Liverpool
-/media/sarnobat/Unsorted/Videos/misc
-/media/sarnobat/Unsorted/Videos/music
-/media/sarnobat/Unsorted/Videos/Other
-/media/sarnobat/Unsorted/Videos/Productivity
-/media/sarnobat/Unsorted/Videos/True Stories - Maradona 6_7.mp4
-/media/sarnobat/Unsorted/Videos/Tu Minuto de Gloria (sabado show).webm .mkv
-/media/sarnobat/Unsorted/Videos/TU PENE, la cosa más dulce.webm .mkv
-/media/sarnobat/Unsorted/Videos/tumblr_m20k7l07tZ1qg3jn6_r1.mov
-/media/sarnobat/Unsorted/Videos/tumblr_m5z93f335A1qhel9po1_500_large_large
-/media/sarnobat/Unsorted/Videos/tumblr_nx9v9nY9qs1u3rh4bo1_500.jpg 
-/media/sarnobat/Unsorted/Videos/tumblr_ovojw7uiy51rth3slo1_500
-/media/sarnobat/Unsorted/Videos/Turtles
-/media/sarnobat/Unsorted/Videos/Tutorial_-_Tracing_linux_kernel_on_Qemu_with_Gdb-stub.mkv
-/media/sarnobat/Unsorted/Videos/Ted_DiBiase_on_Virgil_-_It_s_Kind_of_Sad.webm
-/media/sarnobat/Unsorted/Videos/Temple Grandin Favorite Wisdom Quotes World Autism Awareness.mp4
-Temple Grandin On Her Search Engine _ Blank on Blank _ PBS Digital Studios.mp4
-/media/sarnobat/Unsorted/Videos/The Art of Creation With Michael Joo-tEN1TgfQl3M.mp4
-/media/sarnobat/Unsorted/Videos/The Biology Of Love 1.mp4 .mkv
-/media/sarnobat/Unsorted/Videos/The Black Tartan Clan - Scotland the Brave.mkv
-/media/sarnobat/Unsorted/Videos/songs
-/media/sarnobat/Unsorted/Videos/Most_stupid_goalkeeper_ever_Crazy_penalty_-_Khalid_Askri_lets_ball_roll_in_and_uses_moodpanda.mkv
-/media/sarnobat/Unsorted/Videos/Home
-/media/sarnobat/Unsorted/Videos/du_files_50M.txt
-/media/sarnobat/Unsorted/Videos/Robbie_Fowler_apologizes_for_his_goal_celebration_4th_April_1999.mp4
-/media/sarnobat/Unsorted/Videos/Roddy_Piper_-_In_His_Own_Words_Trailer.mkv
-/media/sarnobat/Unsorted/Videos/Ron_Vlaar_s_penalty_spinning_back_into_the_net.mp4
-/media/sarnobat/Unsorted/Videos/Rowan Atkinson talks about Mr Bean 4_4.mkv
-/media/sarnobat/Unsorted/Videos/Rowan_Atkinson_Live_-_Dirty_Names.mkv
-/media/sarnobat/Unsorted/Videos/Rowan_Atkinson_Mr._Bean_European_Anthem_-_Beethoven_s_9th_Symphony.mp4
-/media/sarnobat/Unsorted/Videos/Así Somos - Andrea Dellacasa sacándose la ropa.webm .mkv
-/media/sarnobat/Unsorted/Videos/autism
-/media/sarnobat/Unsorted/Videos/Behind The Scenes with Mary Jean _ Jukeboxx LIVE.webm .webm
-/media/sarnobat/Unsorted/Videos/Boston The Way It Was part 9 - Boston Garden.mp4 .mkv
-/media/sarnobat/Unsorted/Videos/My_Black_Cat_Blackie.mkv
-/media/sarnobat/Unsorted/Videos/My_cat_Bruno_getting_spoilt.mp4
-/media/sarnobat/Unsorted/Videos/Míchel - Si no tuviésemos cero puntos me hubiera encantado el partido.mp4
-/media/sarnobat/Unsorted/Videos/Nancy Sinatra - These Boots Are Made for Walkin'.webm
-/media/sarnobat/Unsorted/Videos/Natalie Portman - Black Swan (2010) - Masturbation.avi.mp4
-/media/sarnobat/Unsorted/Videos/Natalie Portman and Mila Kunis sex scene.mkv
-/media/sarnobat/Unsorted/Videos/Imgur - The most awesome images on the Internet.mp4
-/media/sarnobat/Unsorted/Videos/Impossible Champion Promo.mp4
-/media/sarnobat/Unsorted/Videos/incomplete
-/media/sarnobat/Unsorted/Videos/Itv_The_Match_-_opening_titles_1988-89.mkv
-/media/sarnobat/Unsorted/Videos/Itv_World_Cup_Theme_1990.mkv
-/media/sarnobat/Unsorted/Videos/Jackies Interview on ITV 7th June 2011.mp4 .mp4
-/media/sarnobat/Unsorted/Videos/Jebakan Sushi Payudara Besar.mp4
-/media/sarnobat/Unsorted/Videos/Jeff_Jarrett_Performs_With_My_Baby_Tonight.mp4
-/media/sarnobat/Unsorted/Videos/Jennifer Lopez &quot;The Boy Next Door&quot; Sex Scene.mp4
-/media/sarnobat/Unsorted/Videos/Jennifer Lopez - take your clothes off-scene from Parker (2013).mp4
-/media/sarnobat/Unsorted/Videos/Jimmy_Hart_sells_the_Hart_Foundation_s_contract.mp4
-/media/sarnobat/Unsorted/Videos/Jk_Unlimited_Joya_Kazi_Choreography_-_Raqs-e-Bahara.mkv
-/media/sarnobat/Unsorted/Videos/Manchester United Greatest Ever Side Reebok Advert.mp4
-/media/sarnobat/Unsorted/Videos/Got talent - naughty presenter.webm .webm
-/media/sarnobat/Unsorted/Videos/entertainment
-/media/sarnobat/Unsorted/Videos/.fuse_hidden00000fce00000006
-/media/sarnobat/Unsorted/Videos/18 de Junio 2012. Vista de Instalación Olimpica de Natación (al norte del nuevo estadio).mp4 .mp4
-/media/sarnobat/Unsorted/Videos/2540076170001_5416962184001_s-1.ts
-/media/sarnobat/Unsorted/Videos/Documentary
-/media/sarnobat/Unsorted/Videos/Friends
-/media/sarnobat/Unsorted/Videos/ripped
-/media/sarnobat/Unsorted/Videos/youtube_download
-/media/sarnobat/Unsorted/Videos/science
-/media/sarnobat/Unsorted/Videos/Shehnaz treasuryvala top slip - videorbit.com.mp4
-/media/sarnobat/Unsorted/Videos/Shriya Saran Entry at SIIMA 2016 Day 2 - NOIX TV.mp4 .mp4
-/media/sarnobat/Unsorted/Videos/part
-/media/sarnobat/Unsorted/Videos/PERÚ TIENE TALENTO - Grupo de Niñas Bailarinas impresionan al Jurado.mp4 .mkv
-/media/sarnobat/Unsorted/Videos/preview (12).mp4
-/media/sarnobat/Unsorted/Videos/Wwe_Raw_4_11_16_Dean_Ambrose_transformed_The_Highlight_Reel_into_The_Ambrose_Asylum.webm
-/media/sarnobat/Unsorted/Videos/Wwe_Sheamus_-_Singing_You_ll_Never_Walk_Alone_@_Manchester_19_04_16.mkv
-/media/sarnobat/Unsorted/Videos/Wwe_Smackdown_2004_-_Bradshaw_becomes_Jbl_Promo.mkv
-/media/sarnobat/Unsorted/Videos/Wwe_Top_10_-_Unexpected_kisses
-/media/sarnobat/Unsorted/Videos/wwf
-/media/sarnobat/Unsorted/Videos/Wwf_Raw_Heartbreak_Hotel_Guest_Bob_Backlund.mp4
-/media/sarnobat/Unsorted/Videos/Wwf_Superstars_1995_Battle_Royal_Best_Spot_Ever.mp4
-/media/sarnobat/Unsorted/Videos/Yoghurt pot cupcakes _ Mumsnet hacks.mp4
-/media/sarnobat/Unsorted/Videos/Young_Ryan_Giggs_Wilson_1988_Granada_Schools_Cup..mp4
-/media/sarnobat/Unsorted/Videos/youtube-dl.log
-/media/sarnobat/Unsorted/Videos/Tv Hostess becomes HOT by Accident !!!!!!!!!.webm .mkv
-/media/sarnobat/Unsorted/Videos/European_Football_Championship_1992_Itv_opening_titles.mp4
-/media/sarnobat/Unsorted/Videos/files.csv
-/media/sarnobat/Unsorted/Videos/animals
-/media/sarnobat/Unsorted/Videos/business
-/media/sarnobat/Unsorted/Videos/Diffrent Strokes
-/media/sarnobat/Unsorted/Videos/technology
-/media/sarnobat/Unsorted/Videos/The Greatest American Inventions.webm
-/media/sarnobat/Unsorted/Videos/Three Quarters of a Car - Liberty Mutual.mp4 .mkv
-/media/sarnobat/Unsorted/Videos/640x360_MP4_2343199008372312566.mp4
-/media/sarnobat/Unsorted/Videos/soccer
-/media/sarnobat/Unsorted/Videos/stadiums
-/media/sarnobat/Unsorted/Videos/travel
-/media/sarnobat/Unsorted/Videos/videos
-/media/sarnobat/Unsorted/Videos/wwe
-/media/sarnobat/Unsorted/Videos/courtesy of others
-/media/sarnobat/Unsorted/Videos/Cow Palace is History.webm .webm
-/media/sarnobat/Unsorted/Videos/Criminal_woman_strips_Levi_s_ad..mkv
-/media/sarnobat/Unsorted/Videos/Cute_and_very_friendly_Kitty_cat_-.mp4
-/media/sarnobat/Unsorted/Videos/Cute_cat_needs_attention_and_tries_to_conversate_..mkv
-/media/sarnobat/Unsorted/Videos/Cuuummmbbiiiaaa_-Denise_Gomez.mp4
-/media/sarnobat/Unsorted/Videos/CzknpSmXAAAHdpZ.mp4
-/media/sarnobat/Unsorted/Videos/D3E13D8.mp4?fs=opencloud
-/media/sarnobat/Unsorted/Videos/Dabria Aguilar _ Shower - Becky G _ Back2School2014.mkv
-/media/sarnobat/Unsorted/Videos/Dani_Sol_Solo
-/media/sarnobat/Unsorted/Videos/Awesome_Aerosol_Explosion.mp4
-/media/sarnobat/Unsorted/Videos/Axe funny commercial.webm .webm
-/media/sarnobat/Unsorted/Videos/A_Very_Talkative_Friendly_Black_Cat.mp4
-/media/sarnobat/Unsorted/Videos/Bacardi Breezer Commercial with Cat.mp4
-/media/sarnobat/Unsorted/Videos/Bad Boys Blue - All About You.webm
-/media/sarnobat/Unsorted/Videos/BBC.mp4 .f133
-/media/sarnobat/Unsorted/Videos/Bbc2 1991-2001 Idents (How Do They Do That).webm
-/media/sarnobat/Unsorted/Videos/Tiger_Jackson_on_his_Dink_Wwe_Character.mkv
-/media/sarnobat/Unsorted/Videos/Tim Souster - Counter Attack - Music From Late 90's History Channel Military Shows.mp4
-/media/sarnobat/Unsorted/Videos/Time Travel With Smithsonian Paleontologist - Nick Pyenson--JbCaWoAs2w.mp4
-/media/sarnobat/Unsorted/Videos/Time-lapse_of_growing_up_over_14_years.mkv
-/media/sarnobat/Unsorted/Videos/Title_Neede_Gif_-_Find_Share_on_Giphy
-/media/sarnobat/Unsorted/Videos/Tone Loc+Peaches - Wild Thing RMX - RMXXOLOGY.webm
-/media/sarnobat/Unsorted/Videos/Torres_missed_penalty.mp4
-/media/sarnobat/Unsorted/Videos/Total_Divas_First_Look_E.mkv
-/media/sarnobat/Unsorted/Videos/trash
-/media/sarnobat/Unsorted/Videos/Scotland the brave 2014 metal version.mkv
-/media/sarnobat/Unsorted/Videos/Scotland the Brave.mkv
-/media/sarnobat/Unsorted/Videos/Seaside Serendipity.mp4 .mkv
-/media/sarnobat/Unsorted/Videos/Seekers vs Hiss Tanks Transformers - G1 Cartoon Score (1984-1987).mkv
-/media/sarnobat/Unsorted/Videos/See_Him_lying_on_a_bed_of_straw_with_lyrics.mkv
-/media/sarnobat/Unsorted/Videos/Selena Gomez Sex Tape Found On Justin Biebers Cell Phone.mp4
-/media/sarnobat/Unsorted/Videos/self
-/media/sarnobat/Unsorted/Videos/Selfish_cat_belly_rub.mp4
-/media/sarnobat/Unsorted/Videos/Sheamus_Cesaro_Wearing_Liverpool_kits_in_Manchester.mkv
-/media/sarnobat/Unsorted/Videos/Philipe_Coutinho_Futsal_2005.mkv
-/media/sarnobat/Unsorted/Videos/Picking_cats_up_from_the_Cattery.mp4
-/media/sarnobat/Unsorted/Videos/Pjevačici ispale sise! Obavezno pogledati!!.mp4 .mkv
-/media/sarnobat/Unsorted/Videos/Pop_lock_and_drop_it.mkv
-/media/sarnobat/Unsorted/Videos/Porn - When the Camera Stops _ Nightline _ ABC News.mp4
-/media/sarnobat/Unsorted/Videos/Presentadora_de_0_Es_3_Dj_La_Chama_Tv_en_topless_y_dice_que_esta_seca_Con_Jesus_Gil_Masa_8.mp4
-/media/sarnobat/Unsorted/Videos/Presentadora_de_0_Es_3_Dj_La_Chama_Tv_en_topless_y_dice_que_esta_seca_Con_Jesus_Gil_Masa_809.mkv
-/media/sarnobat/Unsorted/Videos/preview (1).mp4
-/media/sarnobat/Unsorted/Videos/preview (10).mp4
-/media/sarnobat/Unsorted/Videos/preview (11).mp4
-/media/sarnobat/Unsorted/Videos/Griezmann - Poco a poco vamos cogiendo ritmo.mp4
-/media/sarnobat/Unsorted/Videos/Hanes_Her_Way_Stretch.mp4 .mkv
-/media/sarnobat/Unsorted/Videos/Harry_Keough_Frank_Borghi_on_Itv_Discuss_1950_World_Cup_Usa_1_England_0.flv.mp4
-/media/sarnobat/Unsorted/Videos/Hd_Marea_rojiblanca_en_Barcelona.mp4
-/media/sarnobat/Unsorted/Videos/.fuse_hidden0000001400000004
-/media/sarnobat/Unsorted/Videos/Maradona The Story Part 8 End.mp4
-/media/sarnobat/Unsorted/Videos/Maradona_The_Story_Part_8_End.mp4
-/media/sarnobat/Unsorted/Videos/Matilda the Musical Broadway - New York City.mp4
-/media/sarnobat/Unsorted/Videos/media_w1493760175_0.ts
-/media/sarnobat/Unsorted/Videos/Megan_Fox_From_13_To_30_Years_Old.mp4
-/media/sarnobat/Unsorted/Videos/MindCare Solutions - About Us.mp4
-/media/sarnobat/Unsorted/Videos/David Gandy & Bianca Balti - Dolce&Gabbana Light Blue 2013 Tv Commercial.mkv
-/media/sarnobat/Unsorted/Videos/David_Gandy_Bianca_Balti_-_Dolce_Gabbana_Light_Blue_2013_Tv_Commercial.mkv
-/media/sarnobat/Unsorted/Videos/Dean_Ambrose_Custom_The_Mountie_Titantron.mp4
-/media/sarnobat/Unsorted/Videos/Dean_Ambrose_dresses_up_into_a_Canadian_mountain_police_-_Smackdown_Live_November_22_2016.mkv
-/media/sarnobat/Unsorted/Videos/Degrassi - Tng _ Emma Nelson Strips Purple Dragon Protest.mp4
-/media/sarnobat/Unsorted/Videos/Del_atleti_soy.mp4
-/media/sarnobat/Unsorted/Videos/Denisse_Gomez
-/media/sarnobat/Unsorted/Videos/Computer_Boot_Process_animation.mkv
-/media/sarnobat/Unsorted/Videos/computer_games
-/media/sarnobat/Unsorted/Videos/Coreografia_tic_tac.mp4
-/media/sarnobat/Unsorted/Videos/corrupt
-/media/sarnobat/Unsorted/Videos/Nations_Of_The_World_Song_-_Yakko_Warner_-_Animaniacs.mkv
-/media/sarnobat/Unsorted/Videos/Neo - Shower.mp4 .mkv
-/media/sarnobat/Unsorted/Videos/Nikki_Bella_Booty.mp4 .mp4
-/media/sarnobat/Unsorted/Videos/No No No Cat.webm
-/media/sarnobat/Unsorted/Videos/Nosotros.mkv
-/media/sarnobat/Unsorted/Videos/not needed
-/media/sarnobat/Unsorted/Videos/Novak Djokovic battles young tennis fan during practice (1st Round) - Australian Open 2012.mp4 .mp4
-/media/sarnobat/Unsorted/Videos/Olinda_Castaneda_-_desfilando_en_mini.mkv
-/media/sarnobat/Unsorted/Videos/Olinda_Castaneda_hizo_el_playback_de_una_cancion_de_Tilsa_Lozano.mkv
-/media/sarnobat/Unsorted/Videos/Olinda_Castaneda_little_Mini_dress_2015.mkv
-/media/sarnobat/Unsorted/Videos/Olinda_Castaneda_y_Luis_Miguel_se_tomaron_muy_en_serio_el_reto_de_actuacion.mkv
-/media/sarnobat/Unsorted/Videos/OMG [gif].mp4
-/media/sarnobat/Unsorted/Videos/files_exceeding_size_limit.txt
-/media/sarnobat/Unsorted/Videos/files_existing.txt
-/media/sarnobat/Unsorted/Videos/files_non_recursive.txt
-/media/sarnobat/Unsorted/Videos/Fimi Oca Loca.mp4
-/media/sarnobat/Unsorted/Videos/Flash Before Dinner.mp4
-/media/sarnobat/Unsorted/Videos/Floorwork.MOV
-/media/sarnobat/Unsorted/Videos/food
-/media/sarnobat/Unsorted/Videos/fresh_prince_of_bel_air-carlton_puts_Down.mp4
-/media/sarnobat/Unsorted/Videos/We_Plough_The_Fields_And_Scatter.mkv
-/media/sarnobat/Unsorted/Videos/We_Plough_the_Fields_and_Scatter.mkv
-/media/sarnobat/Unsorted/Videos/We_Plough_the_Fields_and_Scatter_All_Good_Gifts.mp4
-/media/sarnobat/Unsorted/Videos/What is Bitcoin (v1).mp4 .mkv
-/media/sarnobat/Unsorted/Videos/What_is_Uptalk.mkv
-/media/sarnobat/Unsorted/Videos/Why_Do_Cats_Lay_On_The_Paper_While_Your_Reading.mp4
-/media/sarnobat/Unsorted/Videos/Why_Every_New_Macbook_Needs_A_Different_Goddamn_Charger.webm .webm
-/media/sarnobat/Unsorted/Videos/Wild Thing - The Troggs - Lyrics on screen - Remastered HQ.mp4
-/media/sarnobat/Unsorted/Videos/Will Trump’s business skills translate to the Oval Office.mp4
-/media/sarnobat/Unsorted/Videos/Wings_Paul McCartney - Maybe I'm Amazed (HQ).webm
-/media/sarnobat/Unsorted/Videos/Worlds_Largest_Plane_-_Airbus_A380.f136.ytdl
-/media/sarnobat/Unsorted/Videos/World_Cup_-_Italy_-1990_-_Preview_Of_Italy_S_First_Match_Against_Austria_-_Itv_-_Part_One.mp4
-/media/sarnobat/Unsorted/Videos/World_Cup_-_Italy_1990_-_England_V_Holland_-_Group_F_-_16Th_June_1990.mp4
-/media/sarnobat/Unsorted/Videos/World_Cup_1990_-_United_States_Of_America_-_Itv_Feature-_Pre_First_Match_V_Czechoslovakia-Italy.mkv
+<h3>input : files</h3>
+<textarea id="urls" cols=100 oninput="refresh()">
 </textarea>
 <br>
-<button>Stash this</button>
+
 <table>
 <tr>
 <td><hr width=200px></td>
