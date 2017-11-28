@@ -61,8 +61,24 @@ function refresh() {
 			var img2 = item.replace(/(.*\/)(.*)/g,'http://netgear.rohidekar.com:44452$1_thumbnails/$2.jpg');
 			var img = "<img src='" + img2 + "' width=160>";
 			var file = item.replace(/.*\/(.*)/g,'$1');
-			return "<li class='buttonize' style='background-color:#FDFD96' file='"+btoa(unescape(encodeURIComponent(item)))+"'><div style='margin-left : 25px;margin-top : 25px;margin-right : 25px;margin-bottom : 25px;'><h3>"+ file +"</h3><br>" + img +"<br><br><textarea cols=100 rows=1>" + item + "</textarea><br>" +dirs+"</div></li>";
-		});
+			var h =
+				"<li class='buttonize' style='background-color:#FDFD96' file='"+btoa(unescape(encodeURIComponent(item)))+"'>"
+					+ "<div style='margin-left : 25px;margin-top : 25px;margin-right : 25px;margin-bottom : 25px;'>"
+						+ "<h3>"+ file +"</h3>"
+						+ "<table>"
+							+ "<tr>"
+							+ "<td>" + img +"</td>"
+							+ "<td>" +dirs+"</td>"
+							+ "</tr>"
+						+ "</table>"
+						+ "<textarea cols=100 rows=1>" + item + "</textarea>"
+					+ "</div>"
+				+"</li>";
+			return h;
+		})
+		.reduce(function(acc, item){
+			return acc + "\n" + item;
+		}, "");
 	$("#items").append(html);
 }
 
@@ -72,7 +88,7 @@ function moveFile(button) {
 	var urlBase = "http://netgear.rohidekar.com:44451/cmsfs/";
 	var destinationDirSimpleNameBase64 = button.getAttribute('dir');
 	var destinationDirSimpleName = atob(destinationDirSimpleNameBase64);	
-	var itemElement = button.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement;
+	var itemElement = button.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement;
 	var filePathBase64 = itemElement.getAttribute('file');
 
 	itemElement.remove();
