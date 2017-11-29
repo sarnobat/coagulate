@@ -79,6 +79,7 @@ function refresh() {
 		.reduce(function(acc, item){
 			return acc + "\n" + item;
 		}, "");
+	$("#items").empty();
 	$("#items").append(html);
 }
 
@@ -141,6 +142,7 @@ function getColorForDir(dirName) {
 <h3>Command</h3>
 <textarea cols=30>
 find $PWD/ -maxdepth 1
+cd /Unsorted/Videos; find $PWD/ -maxdepth 1 -type d -o -type l ; find $PWD/ -maxdepth 1 -type f
 </textarea>
 
 <h3>input : files</h3>
