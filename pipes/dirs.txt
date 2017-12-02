@@ -22,6 +22,7 @@
 /Unsorted/Videos/documentary
 /Unsorted/Videos/Documentary
 /Unsorted/Videos/.dsc01731_0.jpg .VtAeYB
+/Unsorted/Videos/duplicates.txt
 /Unsorted/Videos/entertainment
 /Unsorted/Videos/food
 /Unsorted/Videos/friends
@@ -61,7 +62,6 @@
 /Unsorted/Videos/stock_music
 /Unsorted/Videos/technology
 /Unsorted/Videos/_thumbnails
-/Unsorted/Videos/trash
 /Unsorted/Videos/travel
 /Unsorted/Videos/Turtles
 /Unsorted/Videos/unsolved
