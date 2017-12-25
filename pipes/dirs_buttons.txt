@@ -1,23 +1,5 @@
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "Anshu", this)' value="Anshu">Anshu</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "Atletico", this)' value="Atletico">Atletico</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "book_clippings", this)' value="book_clippings">book_clippings</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "cats", this)' value="cats">cats</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "chatting", this)' value="chatting">chatting</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "documents", this)' value="documents">documents</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "friends", this)' value="friends">friends</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "genealogy", this)' value="genealogy">genealogy</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "Godaddy.com", this)' value="Godaddy.com">Godaddy.com</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "home", this)' value="home">home</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "humor", this)' value="humor">humor</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "lookalikes", this)' value="lookalikes">lookalikes</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "matrimonial", this)' value="matrimonial">matrimonial</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "other", this)' value="other">other</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "photos", this)' value="photos">photos</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "SCU_MBA", this)' value="SCU_MBA">SCU_MBA</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "_thumbnails", this)' value="_thumbnails">_thumbnails</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "trash", this)' value="trash">trash</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "tutorials", this)' value="tutorials">tutorials</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "web", this)' value="web">web</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "work", this)' value="work">work</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "Wrestlemania_Sridhar_on_TV", this)' value="Wrestlemania_Sridhar_on_TV">Wrestlemania_Sridhar_on_TV</button>
-<button onclick='moveFile("/Unsorted/new/screenshots/Screen Shot 2017-06-26 at 10.35.44 AM.png", "z_some_duplicates", this)' value="z_some_duplicates">z_some_duplicates</button>
+<button onclick='moveFile("", "image_geotags_pipes", this)' value="image_geotags_pipes">image_geotags_pipes</button>
+<button onclick='moveFile("", "imagezoom.hover.ssarnobat.js", this)' value="imagezoom.hover.ssarnobat.js">imagezoom.hover.ssarnobat.js</button>
+<button onclick='moveFile("", "server.groovy", this)' value="server.groovy">server.groovy</button>
+<button onclick='moveFile("", "v1", this)' value="v1">v1</button>
+<button onclick='moveFile("", "v2", this)' value="v2">v2</button>
