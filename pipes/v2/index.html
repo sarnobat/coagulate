@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+<title>4452 Coagulate Pipes V2 (Content Management System)</title>
+<link rel="shortcut icon" href="http://netgear.rohidekar.com/static/icons/Orb_Icons_010.png" type="image/x-icon" />
 <style>
 .buttonize {
 	//padding:20px;
@@ -29,17 +31,29 @@ $(document).ready(function(){
   });
 });
 
+function uniq(a) {
+    return a.filter(function(item, pos, ary) {
+        return !pos || item != ary[pos - 1];
+    })
+}
+
 function refresh() {
 
-	var dirs1 = $("#urls").val().split(/\n/)
+	var dirs2 = $("#urls").val().split(/\n/)
 		.filter(function(item) { return !item.match(/.*fuse.*/);})
 		.filter(function(item) { return item.match(/.*\/([^.]+)$/);})
 		.map(function(item) { return item.replace(/.*\/(.+)/g,'$1') ;})
-		.sort(CASE_INESENSITIVE)
+		.sort(CASE_INESENSITIVE);
+
+
+	var dirs1 =	
+		uniq(["aaaaaaaaaaa"].concat(dirs2))
 		.map(function(item) { return "<button onclick='moveFile(this)' dir='"+btoa(item)+"' style='background-color:"+getColorForDir(item)+"'>" + item.substring(0,20) + "</button>";})
 		//.join("<br>")
 		;
-		
+
+
+	
 	var dirs = "<table><tr><td>";
 	var i = 0;
 	dirs1.forEach(function(item){
@@ -58,7 +72,16 @@ function refresh() {
 		.map(function(item) { return item.replace('/media/sarnobat','') ;})
 		.map(function(item) { 
 			
-			var img2 = item.replace(/(.*\/)(.*)/g,'http://netgear.rohidekar.com:44452$1_thumbnails/$2.jpg');
+			var matchesVideo = item.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi)|(mts))/gi);
+			var matchesTxt = item.match(/.*((txt)|(log))/gi);
+
+			var img2;
+			if (matchesVideo) {
+				img2 = item.replace(/(.*\/)(.*)/g,'http://netgear.rohidekar.com:44452$1_thumbnails/$2.jpg');
+			} else {
+				img2 = item.replace(/(.*\/.*)/g,'http://netgear.rohidekar.com:44452$1');
+			}
+			
 			var img = "<img src='" + img2 + "' width=160>";
 			var file = item.replace(/.*\/(.*)/g,'$1');
 			var h =
@@ -71,7 +94,8 @@ function refresh() {
 							+ "<td>" +dirs+"</td>"
 							+ "</tr>"
 						+ "</table>"
-						+ "<textarea cols=100 rows=1>" + item + "</textarea>"
+						+ "<textarea cols=100 rows=1>" + item + "</textarea><br>"
+						+ "<textarea cols=100 rows=1>rsync -a '" + item + "' '/Unsorted/images/other/favorites/'</textarea>"
 					+ "</div>"
 				+"</li>";
 			return h;
@@ -94,10 +118,10 @@ function moveFile(button) {
 
 	itemElement.remove();
 
-	$.getJSON(urlBase + "/moveBase64?filePath="+encodeURIComponent(filePathBase64) + "&destinationDirSimpleName=" + encodeURIComponent(destinationDirSimpleName),function() {
+	$.getJSON(urlBase + "moveBase64?filePath="+encodeURIComponent(filePathBase64) + "&destinationDirSimpleName=" + encodeURIComponent(destinationDirSimpleName),function() {
 			
 	}).fail(function(e) {
-    alert( "error: " + e);
+		alert( "error 4451: " + e);
   });
 
 }
@@ -141,7 +165,7 @@ function getColorForDir(dirName) {
 
 <h3>Command</h3>
 <textarea cols=30>
-find $PWD/ -maxdepth 1
+find $PWD/ -maxdepth 1 | pbcopy
 cd /Unsorted/Videos; find $PWD/ -maxdepth 1 -type d -o -type l ; find $PWD/ -maxdepth 1 -type f
 </textarea>
 

@@ -89,6 +89,18 @@ public class Coagulate {
 		public MyResource() {
 			System.out.println("Coagulate.MyResource.MyResource()");
 		}
+		
+		@GET
+		@javax.ws.rs.Path("test")
+		@Produces("application/json")
+		public Response test(@QueryParam("filePath") String sourceFilePathString)
+				throws JSONException {
+			System.out.println("test()");
+			return Response.ok()
+					.header("Access-Control-Allow-Origin", "*")
+					.entity(new JSONObject().toString(4)).type("application/json")
+					.build();
+		}
 
 		//
 		// mutators
@@ -1122,21 +1134,21 @@ System.out.println("DirObj::getFiles() - " + path);
 		
 		static void moveFileToSubfolder(String filePath,
 				String iSubfolderSimpleName) throws IllegalAccessError, IOException {
-			System.out.println("moveFileToSubfolder() - beginn: " + filePath);
+			//System.out.println("moveFileToSubfolder() - beginn: " + filePath);
 			Path sourceFilePath = Paths.get(filePath);
-			System.out.println("moveFileToSubfolder() - sourceFilePathh = " + sourceFilePath);
+//			System.out.println("moveFileToSubfolder() - sourceFilePathh = " + sourceFilePath);
 			File f = sourceFilePath.toFile();
-			System.out.println("moveFileToSubfolder() - f = " + f);
+//			System.out.println("moveFileToSubfolder() - f = " + f);
 			boolean sourceExists = f.exists();
-			System.out.println("moveFileToSubfolder() - sourceExists = " + sourceExists);
+//			System.out.println("moveFileToSubfolder() - sourceExists = " + sourceExists);
 			try {
 				if (!sourceExists) {
 					System.out.println("moveFileToSubfolder() - file doesn't exist: " + filePath);
 					throw new RuntimeException("No such source file: " + sourceFilePath.toAbsolutePath().toString());
 				}
-				System.out.println("moveFileToSubfolder() - getting targetDir path " + sourceFilePath);
+//				System.out.println("moveFileToSubfolder() - getting targetDir path " + sourceFilePath);
 				Path targetDir = Paths.get(sourceFilePath.getParent().toString() + "/" + iSubfolderSimpleName);
-				if (!Files.exists(targetDir)) {
+//				if (!Files.exists(targetDir)) {
 					System.out.println("moveFileToSubfolder() - Target directory doesn't exist. Creating dir " + targetDir.toString());
 					Files.createDirectory(targetDir);
 				} else if (!Files.isDirectory(targetDir)) {

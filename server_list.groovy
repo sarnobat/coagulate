@@ -63,7 +63,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import com.pastdev.jsch.IOUtils;
 
 /**
  * SSHD uses slf4j. So add the api + binding jars, and point to a properties file
@@ -113,7 +112,7 @@ public class CoagulateList {
                                         System.err.println("list() - wrote to cache file");
 				} else {
 					System.err.println("list() - reading cache");
-					output = IOUtils.readFile(Paths.get(cacheFile).toFile());
+					output = FileUtils.readFileToString(Paths.get(cacheFile).toFile(), "UTF-8");
 					new Thread() {
 						@Override
 						public void run() {
