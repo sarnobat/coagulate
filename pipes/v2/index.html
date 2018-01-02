@@ -2,7 +2,7 @@
 <html>
 <head>
 <title>4452 Coagulate Pipes V2 (Content Management System)</title>
-<link rel="shortcut icon" href="http://netgear.rohidekar.com/static/icons/Orb_Icons_010.png" type="image/x-icon" />
+<link rel="shortcut icon" href="http://73.222.165.111/static/icons/Orb_Icons_010.png" type="image/x-icon" />
 <style>
 .buttonize {
 	//padding:20px;
@@ -77,9 +77,9 @@ function refresh() {
 
 			var img2;
 			if (matchesVideo) {
-				img2 = item.replace(/(.*\/)(.*)/g,'http://netgear.rohidekar.com:44452$1_thumbnails/$2.jpg');
+				img2 = item.replace(/(.*\/)(.*)/g,'http://73.222.165.111:44452$1_thumbnails/$2.jpg');
 			} else {
-				img2 = item.replace(/(.*\/.*)/g,'http://netgear.rohidekar.com:44452$1');
+				img2 = item.replace(/(.*\/.*)/g,'http://73.222.165.111:44452$1');
 			}
 			
 			var img = "<img src='" + img2 + "' width=160>";
@@ -110,7 +110,7 @@ function refresh() {
 
 function moveFile(button) {
 
-	var urlBase = "http://netgear.rohidekar.com:44451/cmsfs/";
+	var urlBase = "http://73.222.165.111:44451/cmsfs/";
 	var destinationDirSimpleNameBase64 = button.getAttribute('dir');
 	var destinationDirSimpleName = atob(destinationDirSimpleNameBase64);	
 	var itemElement = button.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement;
