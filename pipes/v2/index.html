@@ -72,8 +72,8 @@ function refresh() {
 		.map(function(item) { return item.replace('/media/sarnobat','') ;})
 		.map(function(item) { 
 			
-			var matchesVideo = item.match(/.*((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi)|(mts))/gi);
-			var matchesTxt = item.match(/.*((txt)|(log))/gi);
+			var matchesVideo = /.*\.((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi)|(mts))/.test(item);
+			var matchesTxt = /.*\.((txt)|(log))/.test(item);
 
 			var img2;
 			if (matchesVideo) {
