@@ -74,15 +74,24 @@ function refresh() {
 			
 			var matchesVideo = /.*\.((mp4)|(webm)|(mov)|(mkv)|(flv)|(avi)|(mts))/.test(item);
 			var matchesTxt = /.*\.((txt)|(log))/.test(item);
-
+			var matchesMwk = item.match(/.*\.((txt)|(mwk))/gi);
+			
+			
+			var img;
 			var img2;
 			if (matchesVideo) {
 				img2 = item.replace(/(.*\/)(.*)/g,'http://netgear.rohidekar.com:44452$1_thumbnails/$2.jpg');
+				img = "<img src='" + img2 + "' width=160>";
+			} else if (matchesMwk) {		
+				//debugger;
+				var url = "http://netgear.rohidekar.com:44452" + item;
+				img2 = "<iframe src='" + url+ "'></iframe>";
+				img = img2;
 			} else {
 				img2 = item.replace(/(.*\/.*)/g,'http://netgear.rohidekar.com:44452$1');
+				img = "<img src='" + img2 + "' width=160>";
 			}
-			
-			var img = "<img src='" + img2 + "' width=160>";
+
 			var file = item.replace(/.*\/(.*)/g,'$1');
 			var h =
 				"<li class='buttonize' style='background-color:#FDFD96' file='"+btoa(unescape(encodeURIComponent(item)))+"'>"
@@ -164,14 +173,15 @@ function getColorForDir(dirName) {
 <body>
 
 <h3>Command</h3>
-<textarea cols=50>
+<textarea cols=50 rows=4>
 find /Unsorted/images/ -maxdepth 1 | grep -v txt | pbcopy
 find $PWD/ -maxdepth 1 | pbcopy
 cd /Unsorted/Videos; find $PWD/ -maxdepth 1 -type d -o -type l ; find $PWD/ -maxdepth 1 -type f
 </textarea>
 
-<h3>input : files</h3>
-<textarea id="urls" cols=100 oninput="refresh()">
+<h3>Input : files</h3>
+<a href="http://netgear.rohidekar.com:44487/files.txt">/tmp/files.txt</a><br>
+<textarea id="urls" cols=100 rows=4 oninput="refresh()">
 </textarea>
 <br>
 

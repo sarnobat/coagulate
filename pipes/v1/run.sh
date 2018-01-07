@@ -1,1 +1,3 @@
-find /Unsorted/images/other/ -type d | head -60 | xargs -n 1 -d '\n' one_file | sh file2htmlimg.sh | tee index.html
+#!/bin/bash
+find /home/sarnobat/sarnobat.git/mwk/snippets -type d  | xargs -n 1 -d '\n' ~/github/coagulate/pipes/v1/one_file | grep '.mwk' | sh ~/github/coagulate/pipes/v1/file2htmlimg.sh |groovy ~/github/coagulate/pipes/v1/mwk2htmlCard.groovy 2>/dev/null  | cat <(echo "<script  src='https://code.jquery.com/jquery-3.2.1.js'   integrity='sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE='   crossorigin='anonymous'></script>") - | tee /tmp/index.html
+#find /Unsorted/images/other/ -type d | head -60 | xargs -n 1 -d '\n' ~/github/coagulate/pipes/v1/one_file | sh ~/github/coagulate/pipes/v1/file2htmlimg.sh | tee index.html

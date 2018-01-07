@@ -1148,7 +1148,7 @@ System.out.println("DirObj::getFiles() - " + path);
 				}
 //				System.out.println("moveFileToSubfolder() - getting targetDir path " + sourceFilePath);
 				Path targetDir = Paths.get(sourceFilePath.getParent().toString() + "/" + iSubfolderSimpleName);
-//				if (!Files.exists(targetDir)) {
+				if (!Files.exists(targetDir)) {
 					System.out.println("moveFileToSubfolder() - Target directory doesn't exist. Creating dir " + targetDir.toString());
 					Files.createDirectory(targetDir);
 				} else if (!Files.isDirectory(targetDir)) {
