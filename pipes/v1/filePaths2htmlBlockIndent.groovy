@@ -23,7 +23,7 @@ public class filePaths2htmlBlockIndent {
 					// program output
 					System.out.println(close + open + line);
 				} else {
-					System.out.println(line);
+					System.out.println(line + "<br>");
 				}
 			}
 		} catch (IOException e) {
