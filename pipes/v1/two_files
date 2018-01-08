@@ -1,0 +1,21 @@
+# If it's a directory, just get one file from there. Don't go into a huge subtree
+
+
+# Input : directories only
+
+# print the directory name
+#ls -d "$@"
+#find "$@" | head -1
+echo "$@"
+
+# print two files
+#ls  "$@" | head -1
+find "$@" -maxdepth 1 -mindepth 1 -type f | head -2
+
+# recurse into all subdirs
+find "$@" -maxdepth 1 -mindepth 1 -type d  | xargs -n 1 -d'\n' -I% sh  ~/github/coagulate/pipes/v1/two_files "%"
+
+
+#find "$@" -type f | head -2
+#find "$@" -maxdepth 1 -mindepth 1 -type d 
+#echo "$@"
