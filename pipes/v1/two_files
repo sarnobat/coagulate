@@ -8,12 +8,12 @@
 #find "$@" | head -1
 echo "$@"
 
-# print one file
+# print two files
 #ls  "$@" | head -1
-find "$@" -maxdepth 1 -mindepth 1 -type f | head -1
+find "$@" -maxdepth 1 -mindepth 1 -type f | head -2
 
 # recurse into all subdirs
-find "$@" -maxdepth 1 -mindepth 1 -type d  | head | xargs -n 1 -d'\n' -I% sh  ~/github/coagulate/pipes/v1/two_files "%"
+find "$@" -maxdepth 1 -mindepth 1 -type d  | xargs -n 1 -d'\n' -I% sh  ~/github/coagulate/pipes/v1/two_files "%"
 
 
 #find "$@" -type f | head -2
