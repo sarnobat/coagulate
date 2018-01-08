@@ -21,9 +21,9 @@ public class filePaths2htmlBlockIndent {
 					String open = StringUtils.repeat("<blockquote>", count);
 					close = StringUtils.repeat("</blockquote>", count);
 					// program output
-					System.out.println(close + open + line);
+					System.out.println(close + open + "\n" + line + "\n");
 				} else {
-					System.out.println(line + "<br>");
+					System.out.println(line + "");
 				}
 			}
 		} catch (IOException e) {
