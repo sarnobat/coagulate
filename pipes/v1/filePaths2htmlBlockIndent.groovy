@@ -7,6 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 public class filePaths2htmlBlockIndent {
 
 	public static void main(String[] args) {
+		int lowestLevel = 0;
 		String close = "";
 		BufferedReader br = null;
 		try {
@@ -15,13 +16,16 @@ public class filePaths2htmlBlockIndent {
 			while ((line = br.readLine()) != null) {
 				// log message
 				System.err.println("[DEBUG] current line is: " + line);
-				if (!line.contains(".") && line.startsWith("/")) {
+				if (line.startsWith("/") && !line.endsWith("mwk")) {
 					// is a directory
 					int count = StringUtils.countMatches(line, "/");
-					String open = StringUtils.repeat("<blockquote>", count);
-					close = StringUtils.repeat("</blockquote>", count);
+					if (lowestLevel == 0) {
+						lowestLevel = count - 1;
+					}
+					String open = StringUtils.repeat("<blockquote>", count - lowestLevel);
+					close = StringUtils.repeat("</blockquote>", count - lowestLevel);
 					// program output
-					System.out.println(close + open + "\n" + line + "\n");
+					System.out.println(close +"\n"+ open + "\n" + line + "\n<br>\n");
 				} else {
 					System.out.println(line + "");
 				}

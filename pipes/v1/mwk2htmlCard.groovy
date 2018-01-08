@@ -17,7 +17,7 @@ public class Mwk2HtmlCard {
 char dollar = ((char)36);
 int id = Math.random() * 100000;
 String style = "padding:20px; margin:25px; border-radius: 15px; box-shadow: inset 0 0 9px #222222, 10px 10px 14px #999999; background-color: #FDFD96;clear : left;display: inline-block;vertical-align:top;width : 150px; height : 150px;overflow-y: auto;"
-String html = "<span id="+id+" style='" +style+ "'></span><script>var div = " +((char)36)+ "('#"+id+"'); var div2 = div;var jqxhr = "+dollar+ ".get('http://att.rohidekar.com:44452"							+ line							+ "', function(data) {	var i = 1;	var lines = data.split('\\n');	var out;	var titled = false;	for (var i = 0; i < lines.length; i++) {	var line = lines[i].replace(/^=+ /,'').replace(/ =+/,'');	if (!titled) {			if (/^[^=]/.test(line)) {				out = '<h3>' +line + '</h3>';				titled = true;				continue;			}		}		out += line + '';	};	 "+dollar+"('#"+id+"').append(out);}).done(function(e){ console.debug('done: ' + e)});</script>";
+String html = "<span id="+id+" style='" +style+ "'></span><script>var div = " +((char)36)+ "('#"+id+"'); var div2 = div;var jqxhr = "+dollar+ ".get('http://att.rohidekar.com:44452"							+ line							+ "', function(data) {	var i = 1;	var lines = data.split('\\n');	var out;	var titled = false;	for (var i = 0; i < lines.length; i++) {	var line = lines[i].replace(/^=+ /,'').replace(/ =+/,'');	if (!titled) {			if (/^[^=]/.test(line)) {				out = '<h3>' +line + '</h3>';				titled = true;				continue;			}		}		out += line + '';	};	 "+dollar+"('#"+id+"').append(out);});</script>";
 					output = html;
 				} else {
 					// program output

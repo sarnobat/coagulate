@@ -1,0 +1,3 @@
+# If it's a directory, just get one file from there. Don't go into a huge subtree
+find "$@" | head -3 
+#echo "$@"
