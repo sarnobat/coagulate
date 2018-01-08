@@ -20,7 +20,7 @@ public class filePaths2htmlBlockIndent {
 					// is a directory
 					int count = StringUtils.countMatches(line, "/");
 					if (lowestLevel == 0) {
-						lowestLevel = count - 1;
+						lowestLevel = count;
 					}
 					String open = StringUtils.repeat("<blockquote>", count - lowestLevel);
 					close = StringUtils.repeat("</blockquote>", count - lowestLevel);
