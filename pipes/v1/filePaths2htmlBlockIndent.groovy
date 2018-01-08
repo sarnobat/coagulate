@@ -1,6 +1,10 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.*;
+import java.io.nio.*;
+import java.io.nio.file.*;
+import java.nio.file.*;
 import java.util.*;
 
 import org.apache.commons.lang3.StringUtils;
@@ -38,7 +42,10 @@ public class filePaths2htmlBlockIndent {
 					String tobepushed = StringUtils.repeat("</blockquote>", level);
 					stack.push(tobepushed);
 					// program output
-					System.out.println(close +"\n"+ open + "\n<h2>" + line.replace(initial,"") + "</h2>\n<br>\n");
+					
+//					String file = line.replace(initial,"");
+					String file = Paths.get(line).getFileName().toString();
+					System.out.println(close +"\n"+ open + "\n<h2>" + file + "</h2>\n<br>\n");
 				} else {
 					System.out.println(line + "");
 				}
