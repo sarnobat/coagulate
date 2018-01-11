@@ -174,6 +174,7 @@ function getColorForDir(dirName) {
 
 <h3>Command</h3>
 <textarea cols=50 rows=4>
+find /media/sarnobat/3TB/new/move_to_unsorted/images/ -maxdepth 1 > /tmp/images.txt
 find /Unsorted/images/ -maxdepth 1 | grep -v txt | pbcopy
 find $PWD/ -maxdepth 1 | pbcopy
 cd /Unsorted/Videos; find $PWD/ -maxdepth 1 -type d -o -type l ; find $PWD/ -maxdepth 1 -type f
@@ -181,6 +182,7 @@ cd /Unsorted/Videos; find $PWD/ -maxdepth 1 -type d -o -type l ; find $PWD/ -max
 
 <h3>Input : files</h3>
 <a href="http://netgear.rohidekar.com:44487/files.txt">/tmp/files.txt</a><br>
+<a href="http://netgear.rohidekar.com:44487/images.txt">/tmp/images.txt</a><br>
 <textarea id="urls" cols=100 rows=4 oninput="refresh()">
 </textarea>
 <br>
