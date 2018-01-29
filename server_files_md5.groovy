@@ -64,6 +64,7 @@ public class CoagulateFileServer {
 	    public Response streamFile(
 	    		@PathParam("filePath") @Encoded String filePath3,
 	    		@HeaderParam("Range") String range) throws Exception {
+System.out.println("StreamingFileServer::streamFile()");
 String filePath1 = StringUtils.newStringUtf8(Base64.decodeBase64(filePath3));
 //System.out.println("Request raw:\t" + filePath2);
 //String filePath1 = new org.apache.commons.codec.net.URLCodec("UTF8").decode(filePath2);
@@ -292,6 +293,7 @@ String filePath1 = StringUtils.newStringUtf8(Base64.decodeBase64(filePath3));
 			public void run() {
 				try {
 					//NioFileServerWithStreamingVideoAndPartialContent.startServer(fsPort);
+System.out.println("thread 1 : " + fsPort);
 					JdkHttpServerFactory.createHttpServer(new URI(
 							"http://localhost:" + fsPort + "/"), new ResourceConfig(
 							StreamingFileServer.class));
@@ -305,6 +307,7 @@ String filePath1 = StringUtils.newStringUtf8(Base64.decodeBase64(filePath3));
 			
 		}.start();
 		try {
+System.out.println("thread 2 : " + fsPort2);
 			//NioFileServerWithStreamingVideoAndPartialContent.startServer(fsPort);
 			JdkHttpServerFactory.createHttpServer(new URI(
 					"http://localhost:" + fsPort2 + "/"), new ResourceConfig(
