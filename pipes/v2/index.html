@@ -48,7 +48,14 @@ function refresh() {
 
 	var dirs1 =	
 		uniq(["aaaaaaaaaaa"].concat(dirs2))
-		.map(function(item) { return "<button onclick='moveFile(this)' dir='"+btoa(item)+"' style='background-color:"+getColorForDir(item)+"'>" + item.substring(0,20) + "</button>";})
+		.map(function(item) { 
+			var dir = "";
+			try {
+				dir = btoa(item);
+			} catch (error) {
+				console.debug(error);
+			}
+			return "<button onclick='moveFile(this)' dir='" + dir + "' style='background-color:"+getColorForDir(item)+"'>" + item.substring(0,20) + "</button>";})
 		//.join("<br>")
 		;
 
@@ -174,7 +181,9 @@ function getColorForDir(dirName) {
 
 <h3>Command</h3>
 <textarea cols=50 rows=4>
-find /media/sarnobat/3TB/new/move_to_unsorted/images/ -maxdepth 1 > /tmp/images.txt
+cat <(find /Unsorted/images/ -maxdepth 1 -type f | shuf | head -100) <(find /Unsorted/images/ -maxdepth 1 -type d -o -type l) > /tmp/images.txt
+find /3TB/new/move_to_unsorted/images/ -maxdepth 1 > /tmp/images.txt
+find ~/sarnobat.git/mwk/snippets/atletico -maxdepth 1 > /tmp/atletico_mwk.txt
 find /Unsorted/images/ -maxdepth 1 | grep -v txt | pbcopy
 find $PWD/ -maxdepth 1 | pbcopy
 cd /Unsorted/Videos; find $PWD/ -maxdepth 1 -type d -o -type l ; find $PWD/ -maxdepth 1 -type f
@@ -183,6 +192,7 @@ cd /Unsorted/Videos; find $PWD/ -maxdepth 1 -type d -o -type l ; find $PWD/ -max
 <h3>Input : files</h3>
 <a href="http://netgear.rohidekar.com:44487/files.txt">/tmp/files.txt</a><br>
 <a href="http://netgear.rohidekar.com:44487/images.txt">/tmp/images.txt</a><br>
+<a href="http://netgear.rohidekar.com:44487/atletico_mwk.txt">/tmp/atletico_mwk.txt</a><br>
 <textarea id="urls" cols=100 rows=4 oninput="refresh()">
 </textarea>
 <br>
