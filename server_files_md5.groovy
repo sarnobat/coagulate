@@ -38,6 +38,9 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.FilenameUtils;
 import org.glassfish.jersey.jdkhttp.JdkHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
+import org.apache.commons.codec.binary.StringUtils;
+import org.apache.commons.codec.binary.Base64;
+
 
 /**
  * SSHD uses slf4j. So add the api + binding jars, and point to a properties file
@@ -64,10 +67,18 @@ public class CoagulateFileServer {
 	    public Response streamFile(
 	    		@PathParam("filePath") @Encoded String filePath3,
 	    		@HeaderParam("Range") String range) throws Exception {
-String filePath1 = StringUtils.newStringUtf8(Base64.decodeBase64(filePath3));
+System.out.println("StreamingFileServer::streamFile()");
+String filePath1;
+try {
+byte[] decoded = Base64.decodeBase64(filePath3);
+filePath1 = StringUtils.newStringUtf8(decoded);
+} catch (Exception  e) {
+  e.printStackTrace();
+  throw e;
+}
 //System.out.println("Request raw:\t" + filePath2);
 //String filePath1 = new org.apache.commons.codec.net.URLCodec("UTF8").decode(filePath2);
-//System.out.println("Request:\t\t" + filePath1);
+System.out.println("Request:\t\t" + filePath1);
 	        File audio;
 	        String filePath = filePath1;
 	        if (!filePath1.startsWith("/")) {
@@ -81,7 +92,7 @@ String filePath1 = StringUtils.newStringUtf8(Base64.decodeBase64(filePath3));
 				throw e;
 			}
 			audio = p.toFile();
-//System.out.println("audio: " + audio);
+System.out.println("audio: " + audio);
 	        return PartialContentServer.buildStream(audio, range, getMimeType(audio));
 	    }	
 	    
@@ -292,6 +303,7 @@ String filePath1 = StringUtils.newStringUtf8(Base64.decodeBase64(filePath3));
 			public void run() {
 				try {
 					//NioFileServerWithStreamingVideoAndPartialContent.startServer(fsPort);
+System.out.println("thread 1 : " + fsPort);
 					JdkHttpServerFactory.createHttpServer(new URI(
 							"http://localhost:" + fsPort + "/"), new ResourceConfig(
 							StreamingFileServer.class));
@@ -305,6 +317,7 @@ String filePath1 = StringUtils.newStringUtf8(Base64.decodeBase64(filePath3));
 			
 		}.start();
 		try {
+System.out.println("thread 2 : " + fsPort2);
 			//NioFileServerWithStreamingVideoAndPartialContent.startServer(fsPort);
 			JdkHttpServerFactory.createHttpServer(new URI(
 					"http://localhost:" + fsPort2 + "/"), new ResourceConfig(
