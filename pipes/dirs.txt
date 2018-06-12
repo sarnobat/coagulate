@@ -1,0 +1,5 @@
+./image_geotags_pipes
+./imagezoom.hover.ssarnobat.js
+./server.groovy
+./v1
+./v2
