@@ -9,6 +9,7 @@ import org.apache.commons.io.FilenameUtils;
 public class FileToImage {
 
 	public static void main(String[] args) {
+		System.err.println("[DEBUG] FileToImage.main() - start");
 		boolean error = false;
 		BufferedReader br = null;
 		try {
