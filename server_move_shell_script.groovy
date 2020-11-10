@@ -32,7 +32,7 @@ public class CoagulateMoveLargeFast {
         public Response moveBase64(@QueryParam("filePath") String iFilePath1,
                 @QueryParam("destinationDirPath") String iDestinationDirSimpleName) throws JSONException, IOException {
 
-//            System.err.println("moveBase64() " + iFilePath1);
+            System.err.println("moveBase64() " + iFilePath1);
 
             Path path = Paths.get(System.getProperty("user.home") + "/bin/coagulate_move_file_to_subfolder.sh");
             if (!path.toFile().exists()) {
@@ -42,8 +42,7 @@ public class CoagulateMoveLargeFast {
 
             String srcFilePathDecoded = "";
             try {
-                srcFilePathDecoded = StringUtils.newStringUtf8(Base64.decodeBase64(iFilePath1)).replaceAll(".*webdav",
-                        "");// Base64.getDecoder().decode(iFilePath1);
+                srcFilePathDecoded = StringUtils.newStringUtf8(Base64.decodeBase64((String)iFilePath1)).replaceAll(".*webdav",                        "");// Base64.getDecoder().decode(iFilePath1);
             } catch (Exception e) {
                 e.printStackTrace();
                 System.err.println("moveBase64() " + e.toString());
@@ -56,6 +55,7 @@ public class CoagulateMoveLargeFast {
 
             String destDirDecoded = StringUtils.newStringUtf8(Base64.decodeBase64(iDestinationDirSimpleName))
                     .replaceAll(".*webdav", "");
+	    // TODO 2020-11: do not allow move to /dev/null
             try {
                 Process start = new ProcessBuilder(path.toAbsolutePath().toString(), srcFilePathDecoded, destDirDecoded)
                         .inheritIO().start();
