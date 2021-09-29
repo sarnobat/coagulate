@@ -23,6 +23,7 @@ public class FileToImage {
 				} else if (line.contains(".webm") || line.contains(".mkv") || line.contains(".mp4") || line.contains(".flv") || line.contains(".mpg") || line.contains(".avi")) {
 					Path p = Paths.get(line);
 					Path parent = p.getParent();
+					// TODO: this is no longer correct.
 					out = parent.toString() + "/_thumbnails/" + FilenameUtils.getName(line) + ".jpg";
 					
 //					if (line.endsWith(".mp4 .mkv")) {
